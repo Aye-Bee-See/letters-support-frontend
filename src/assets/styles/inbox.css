@@ -1,0 +1,467 @@
+/* ============================================================
+   INBOX LAYOUT
+   Constrained to the same max-width as the public site,
+   centred on wide screens, two-column grid inside.
+   ============================================================ */
+
+/* Outer shell — matches .wrap from style.css */
+.app-wrap {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 0;
+  min-height: calc(100vh - 60px);
+  align-items: start;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.app-main {
+  border-right: 1px solid var(--border);
+  min-height: calc(100vh - 60px);
+  padding: 0 2rem;
+  order: 1;
+}
+
+.app-sidebar {
+  padding: 2rem 1.5rem;
+  position: sticky;
+  top: 60px;
+  order: 2;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.inbox-hero {
+  padding: 1.75rem 0 1.25rem;
+}
+
+.inbox-hero-sub {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 0.25rem;
+}
+
+.inbox-hero-title {
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+/* ============================================================
+   INBOX SECTION
+   The section label / name sits at the outer padding level.
+   The card is indented further underneath it.
+   ============================================================ */
+.inbox-section {
+  margin-bottom: 2rem;
+}
+
+.inbox-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  gap: 1rem;
+}
+
+.inbox-section-title {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+
+/* ============================================================
+   CARD — the table lives inside this, further indented
+   ============================================================ */
+.inbox-card {
+  margin-left: 1.25rem;  /* extra indent vs the section title */
+  border: 1px solid var(--border);
+  background: var(--white);
+  overflow: hidden;
+}
+
+/* ============================================================
+   WRITER BLOCKS (org view)
+   ============================================================ */
+.writer-block {
+  margin-bottom: 1.75rem;
+}
+
+.writer-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-bottom: 0.5rem;
+  gap: 0.6rem;
+}
+
+.writer-name {
+  font-family: var(--sans);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-right: 0.4rem;
+}
+
+.writer-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.writer-handoff-btn {
+  border-color: var(--border) !important;
+  color: var(--mid) !important;
+  font-size: 0.68rem !important;
+  white-space: nowrap;
+}
+
+.writer-handoff-btn:hover {
+  border-color: var(--text) !important;
+  color: var(--text) !important;
+  background: var(--white) !important;
+}
+
+.writer-new-letter-btn {
+  font-size: 0.68rem !important;
+  white-space: nowrap;
+  color: var(--white) !important;
+  border-color: var(--text) !important;
+  background: var(--text) !important;
+}
+
+.writer-new-letter-btn:hover {
+  background: #333 !important;
+  border-color: #333 !important;
+}
+
+.convo-empty {
+  padding: 1rem 1.25rem;
+  font-size: 0.83rem;
+  color: var(--mid);
+  font-style: italic;
+}
+
+/* ============================================================
+   ADD WRITER ROW
+   ============================================================ */
+.add-writer-row {
+  padding: 0.5rem 0 2rem;
+}
+
+/* ============================================================
+   CONVERSATION TABLE
+   ============================================================ */
+.convo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.convo-table th {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+  text-align: left;
+  background: var(--off-white);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  padding: 0.4rem 1rem;
+}
+
+.convo-table th:first-child { padding-left: 1.25rem; }
+
+/* The + action column header is narrow and right-aligned */
+.col-action { width: 2.5rem; text-align: center; }
+.col-prisoner  { width: 44%; }
+.col-direction { width: 18%; }
+.col-date      { width: 30%; }
+
+.convo-row {
+  border-bottom: 1px solid #f0f0ee;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.convo-row:last-child { border-bottom: none; }
+.convo-row:hover td { background: var(--off-white); }
+
+.convo-row.unread td { font-weight: 700; }
+.convo-row.unread .convo-prisoner { font-weight: 800; }
+
+.convo-row td {
+  padding: 0.8rem 1rem;
+  vertical-align: middle;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.convo-row td:first-child { padding-left: 1.25rem; }
+
+/* Prisoner cell */
+.convo-prisoner-link {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.convo-prisoner-link:hover { text-decoration: underline; }
+
+.convo-prisoner {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline;
+}
+
+.convo-facility {
+  font-size: 0.73rem;
+  color: var(--mid);
+  font-family: var(--sans);
+  font-weight: 400;
+  margin-top: 0.15rem;
+}
+
+.unread-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--alert);
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  flex-shrink: 0;
+}
+
+/* Direction cell */
+.convo-direction {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  color: var(--mid);
+}
+
+.convo-direction .arrow {
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.convo-direction.outbound .arrow { color: #2a6e2a; }
+.convo-direction.inbound  .arrow { color: #2244aa; }
+
+.convo-row.unread .convo-direction { color: var(--text); }
+
+/* Date cell */
+.convo-date {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+.convo-row.unread .convo-date { color: var(--text); }
+
+/* + action button cell */
+.convo-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--mid);
+  border: 1px solid var(--border);
+  background: var(--white);
+  text-decoration: none;
+  cursor: pointer;
+  vertical-align: middle;
+  font-weight: 400;
+}
+
+.convo-add-btn:hover {
+  background: var(--text);
+  color: var(--white);
+  border-color: var(--text);
+  text-decoration: none;
+}
+
+/* ============================================================
+   PAGINATION (anonymous inbox)
+   ============================================================ */
+.card-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--off-white);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+}
+
+.pagination-pages {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.3rem;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--mid);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.page-btn:hover { border-color: var(--text); color: var(--text); }
+.page-btn.active { background: var(--text); color: var(--white); border-color: var(--text); }
+.page-btn:disabled, .page-btn[aria-disabled="true"] { opacity: 0.4; cursor: default; pointer-events: none; }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar-heading {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-new-letter {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 1rem;
+  background: var(--text);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  margin-bottom: 1.75rem;
+}
+
+.sidebar-new-letter:hover { background: #333; text-decoration: none; }
+
+.sidebar-info {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--mid);
+  margin-bottom: 1.25rem;
+}
+
+.sidebar-info strong { color: var(--text); font-weight: 600; }
+
+.sidebar-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+.sidebar-account {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--mid);
+  line-height: 1.7;
+}
+
+.sidebar-account a {
+  color: var(--mid);
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+}
+
+.sidebar-account a:hover { color: var(--text); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* Narrow the sidebar column a little at medium widths */
+@media (max-width: 900px) {
+  .app-layout { grid-template-columns: 1fr 220px; }
+}
+
+/* Mobile: stack vertically, sidebar moves above content */
+@media (max-width: 640px) {
+  .app-wrap { padding: 0; }           /* let it go edge-to-edge on small screens */
+
+  .app-layout {
+    grid-template-columns: 1fr;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* Sidebar first visually on mobile */
+  .app-sidebar {
+    order: 1;
+    position: static;
+    border-bottom: 2px solid var(--border);
+    border-top: none;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  /* Main content below on mobile */
+  .app-main {
+    order: 2;
+    padding: 0 1rem;
+    border-right: none;
+    min-height: auto;
+  }
+
+  /* Sidebar internal elements wrap naturally */
+  .sidebar-new-letter   { width: auto; flex-shrink: 0; margin-bottom: 0; }
+  .sidebar-heading      { margin-top: 0.25rem; }
+  .sidebar-divider      { display: none; }
+
+  /* Cards flush left on mobile */
+  .inbox-card { margin-left: 0; }
+
+  /* Tighten hero on mobile */
+  .inbox-hero { padding: 1.25rem 0 0.75rem; }
+}
