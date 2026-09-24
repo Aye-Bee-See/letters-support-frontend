@@ -1,0 +1,183 @@
+/* ============================================================
+   Page styles from solidarity-site/prisoner-profile.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   PROFILE PAGE STYLES
+   ============================================================ */
+.print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid var(--border);
+  color: var(--mid);
+  background: var(--white);
+  cursor: pointer;
+  text-decoration: none;
+}
+.print-btn:hover { border-color: var(--text); color: var(--text); }
+
+.profile-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.verified-note {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--mid);
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--off-white);
+}
+
+/* Interests section in main column */
+.interests-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+/* Support website link */
+.support-website-link {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.support-website-link:hover { text-decoration: underline; }
+
+/* Donation / commissary info */
+.donation-text {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #3a3a3a;
+  white-space: pre-wrap;
+}
+
+/* ============================================================
+   PRINT STYLESHEET
+   ============================================================ */
+/* React port: rules below that match markup outside the profile (site
+   chrome, body, every link) are scoped with body:has(.profile-layout) so
+   printing any other page is unaffected. .profile-layout exists only on the
+   prisoner profile. The other rules use profile-only classes and are verbatim. */
+@media print {
+  /* Hide all chrome */
+  body:has(.profile-layout) .admin-edit-bar,
+  body:has(.profile-layout) .site-header,
+  body:has(.profile-layout) .breadcrumb,
+  body:has(.profile-layout) .profile-actions,
+  body:has(.profile-layout) .verified-note,
+  body:has(.profile-layout) .support-org-list,
+  body:has(.profile-layout) .profile-section-title:last-of-type,
+  body:has(.profile-layout) .site-footer,
+  body:has(.profile-layout) nav,
+  body:has(.profile-layout) .nav-auth,
+  body:has(.profile-layout) .nav-toggle { display: none !important; }
+
+  /* Reset page */
+  body:has(.profile-layout) {
+    font-size: 11pt;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Full-width single column */
+  .profile-layout {
+    display: block !important;
+  }
+
+  /* Sidebar becomes a compact header block */
+  .profile-sidebar {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1.5rem;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #000;
+  }
+
+  .profile-sidebar-img-placeholder {
+    width: 90pt !important;
+    height: 110pt !important;
+    flex-shrink: 0;
+    background: #eee;
+    border: 1px solid #ccc;
+  }
+
+  .profile-sidebar-meta {
+    font-size: 9pt;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .profile-sidebar-meta dt {
+    font-weight: bold;
+    font-size: 7pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 0.35rem;
+  }
+
+  /* Name */
+  .profile-main-name { font-size: 20pt; margin-bottom: 2pt; }
+  .profile-aliases { font-size: 10pt; margin-bottom: 10pt; }
+
+  /* Section titles */
+  .profile-section-title {
+    font-size: 8pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-bottom: 1pt solid #000;
+    padding-bottom: 2pt;
+    margin: 12pt 0 6pt;
+  }
+
+  /* Bio */
+  .profile-bio { font-size: 10pt; line-height: 1.55; }
+
+  /* Interests */
+  .interests-cloud .tag {
+    border: 1pt solid #999;
+    font-size: 8pt;
+    padding: 1pt 4pt;
+    background: none;
+  }
+
+  /* Mail rules */
+  .prison-rule-list li {
+    font-size: 9.5pt;
+    padding: 3pt 0;
+    border-bottom: none;
+  }
+
+  /* Support site / donation */
+  .support-website-link { font-size: 10pt; }
+  .donation-text { font-size: 9.5pt; line-height: 1.5; }
+
+  /* Prevent orphaned headings */
+  .profile-section-title { page-break-after: avoid; }
+  .profile-bio, .prison-rule-list { page-break-inside: avoid; }
+
+  /* Print URL after links */
+  body:has(.profile-layout) a[href]::after { content: " (" attr(href) ")"; font-size: 8pt; color: #666; }
+  body:has(.profile-layout) .print-btn::after { content: none; }
+}

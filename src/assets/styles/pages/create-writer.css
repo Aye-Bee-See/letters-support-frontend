@@ -1,0 +1,241 @@
+/* ============================================================
+   Page styles from solidarity-site/create-writer.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   CREATE WRITER — narrow centered form, no sidebar needed
+   ============================================================ */
+.create-writer-wrap {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.create-writer-inner {
+  max-width: 520px;
+  padding: 2.5rem 0 4rem;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+.create-writer-back {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1.25rem;
+}
+
+.create-writer-back:hover { color: var(--text); }
+
+.create-writer-title {
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.35rem;
+}
+
+.create-writer-subtitle {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  line-height: 1.55;
+  margin-bottom: 2rem;
+  max-width: 440px;
+}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+.cw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cw-label {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cw-label-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.72rem;
+  color: var(--mid);
+}
+
+.cw-input {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.cw-input:focus { border-color: #888; }
+
+.cw-input::placeholder { color: var(--border); }
+
+.cw-hint {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+.cw-textarea {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+}
+
+.cw-textarea:focus { border-color: #888; }
+.cw-textarea::placeholder { color: var(--border); }
+
+/* ============================================================
+   DIVIDER BEFORE ACTIONS
+   ============================================================ */
+.cw-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.5rem 0 0;
+}
+
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
+.cw-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cw-btn-primary {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 1.5rem;
+  background: var(--text);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cw-btn-primary:hover { background: #333; }
+
+.cw-btn-primary:disabled {
+  background: var(--border);
+  color: var(--mid);
+  cursor: not-allowed;
+}
+
+.cw-btn-secondary {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 1.5rem;
+  background: var(--white);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cw-btn-secondary:hover { border-color: var(--text); }
+
+.cw-btn-secondary:disabled {
+  color: var(--mid);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+.cw-btn-description {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--mid);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.cw-btn-primary .cw-btn-description { color: rgba(255,255,255,0.6); }
+
+.cw-cancel {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--mid);
+  text-decoration: none;
+  display: inline-block;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+  align-self: flex-start;
+}
+
+.cw-cancel:hover { color: var(--text); }
+
+/* ============================================================
+   ANONYMOUS BUCKET NOTE
+   ============================================================ */
+.cw-anon-note {
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--mid);
+  padding: 0.75rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--mid);
+}
+
+.cw-anon-note strong { color: var(--text); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  .create-writer-inner { padding: 1.5rem 0 3rem; }
+  .cw-btn-description { display: none; }
+}

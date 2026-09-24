@@ -1,0 +1,504 @@
+/* ============================================================
+   Page styles from solidarity-site/facility-profile.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   FACILITY PROFILE LAYOUT
+   ============================================================ */
+.facility-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+  max-width: var(--col);
+  margin: 0 auto;
+  align-items: start;
+}
+
+.facility-main {
+  padding: 0 2.5rem 4rem 0;
+  border-right: 1px solid var(--border);
+}
+
+.facility-sidebar {
+  padding: 2rem 0 2rem 2rem;
+  position: sticky;
+  top: 60px;
+}
+
+/* ============================================================
+   STALE WARNING BANNER
+   ============================================================ */
+.stale-banner {
+  background: #fdf8e8;
+  border: 1px solid #e8d4a0;
+  border-left: 3px solid #b38600;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.stale-banner-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.stale-banner-text { color: #7a5500; }
+.stale-banner-text strong { font-weight: 700; }
+
+/* ============================================================
+   FACILITY HEADER
+   ============================================================ */
+.facility-header {
+  padding: 2rem 0 1.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.facility-breadcrumb {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  margin-bottom: 0.9rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.facility-breadcrumb a { color: var(--mid); text-decoration: none; }
+.facility-breadcrumb a:hover { color: var(--text); }
+
+.facility-name {
+  font-family: var(--sans);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.4rem;
+}
+
+.facility-country {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.9rem;
+}
+
+.facility-address {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--mid);
+  line-height: 1.7;
+}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.facility-section {
+  margin-bottom: 2.5rem;
+}
+
+.facility-section-title {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+/* ============================================================
+   ROUTING METHOD
+   ============================================================ */
+.routing-method {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.routing-tag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--mid);
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  padding: 0.15rem 0.5rem;
+  font-weight: 400;
+}
+
+.routing-note {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--mid);
+  line-height: 1.6;
+  max-width: 520px;
+}
+
+/* ============================================================
+   MAIL RULES
+   ============================================================ */
+.mail-rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mail-rules-list li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--off-white);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.mail-rules-list li:last-child { border-bottom: none; }
+
+.mail-rules-list li::before {
+  content: '—';
+  color: var(--border);
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* Scan service subsection */
+.scan-service-box {
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.scan-service-heading {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+}
+
+.scan-service-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scan-service-list li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  line-height: 1.4;
+}
+
+.scan-service-list li:last-child { border-bottom: none; }
+
+.scan-service-list li::before {
+  content: '·';
+  color: var(--border);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   HISTORY LOG
+   ============================================================ */
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--off-white);
+  font-size: 0.85rem;
+}
+
+.history-item:last-child { border-bottom: none; }
+
+.history-date {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--mid);
+  padding-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.history-event {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.history-by {
+  font-size: 0.72rem;
+  color: var(--mid);
+  margin-top: 0.1rem;
+}
+
+/* ============================================================
+   PRISONER GRID — 2-col, same as group profile
+   ============================================================ */
+.facility-prisoner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* ============================================================
+   SUBMIT CORRECTION FORM — shown when org is logged in
+   ============================================================ */
+.correction-card {
+  margin-top: 3rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+
+.correction-card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--off-white);
+}
+
+.correction-card-title {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.correction-card-note {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+.correction-card-note strong { color: #7a5500; }
+
+.correction-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.corr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.corr-label {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mid);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.corr-label-opt {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--mid);
+  font-size: 0.7rem;
+}
+
+.corr-input {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.corr-input:focus { border-color: #888; }
+.corr-input::placeholder { color: var(--border); }
+
+.corr-textarea {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.corr-textarea:focus { border-color: #888; }
+.corr-textarea::placeholder { color: var(--border); }
+
+.corr-hint {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+.corr-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* Evidence / explanation field — visually distinct */
+.corr-evidence-field {
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  padding: 0.85rem 1rem;
+}
+
+.corr-evidence-label {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.corr-approval-warning {
+  background: #fdf8e8;
+  border: 1px solid #e8d4a0;
+  padding: 0.65rem 0.85rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: #7a5500;
+  line-height: 1.55;
+}
+
+.correction-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--off-white);
+}
+
+.corr-submit-btn {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.6rem 1.5rem;
+  background: var(--text);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+}
+
+.corr-submit-btn:hover { background: #333; }
+
+.corr-cancel {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--mid);
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.corr-cancel:hover { color: var(--text); }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.fac-sidebar-section {
+  margin-bottom: 1.5rem;
+}
+
+.fac-sidebar-heading {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 0.5rem;
+}
+
+.fac-sidebar-text {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--mid);
+}
+
+.fac-sidebar-text strong { color: var(--text); }
+
+.fac-sidebar-address {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  line-height: 1.65;
+  color: var(--mid);
+  margin-top: 0.25rem;
+}
+
+.fac-sidebar-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+.fac-verified {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+.fac-verified.stale { color: var(--alert); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 860px) {
+  .facility-layout { grid-template-columns: 1fr; }
+  .facility-main { padding-right: 0; border-right: none; }
+  .facility-sidebar { position: static; padding: 1.5rem 0 0; border-top: 1px solid var(--border); }
+  .facility-prisoner-grid { grid-template-columns: 1fr; }
+}

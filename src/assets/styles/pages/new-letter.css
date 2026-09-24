@@ -1,0 +1,526 @@
+/* ============================================================
+   Page styles from solidarity-site/new-letter.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   PAGE LAYOUT — same constrained wrap as inbox pages
+   ============================================================ */
+.letter-wrap {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.letter-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+  min-height: calc(100vh - 60px);
+  align-items: start;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.letter-main {
+  padding: 2rem 2.5rem 3rem;
+  border-right: 1px solid var(--border);
+  order: 1;
+}
+
+.letter-sidebar {
+  padding: 1.5rem 1.25rem;
+  position: sticky;
+  top: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  order: 2;
+}
+
+/* ============================================================
+   PAGE TITLE
+   ============================================================ */
+.letter-page-title {
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.75rem;
+}
+
+/* ============================================================
+   FACILITY GUIDANCE BAR
+   ============================================================ */
+.facility-guidance {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.facility-rules {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--mid);
+  flex: 1;
+  min-width: 0;
+  max-width: 63%;
+}
+
+.facility-rules-heading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.facility-rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
+}
+
+.facility-rules-list li {
+  color: var(--mid);
+}
+
+.facility-rules-list li::before {
+  content: '— ';
+  color: var(--border);
+}
+
+.facility-guidance-empty {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--border);
+  font-style: italic;
+  flex: 1;
+  padding-top: 0.15rem;
+}
+
+/* ============================================================
+   COMPACT UPLOAD ZONE — right side of facility guidance bar
+   ============================================================ */
+.upload-compact-wrap {
+  flex-shrink: 0;
+  width: 33%;
+  min-width: 140px;
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+}
+
+.upload-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px dashed var(--border);
+  background: var(--off-white);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.upload-compact:hover, .upload-compact.drag-over {
+  border-color: #888;
+  background: #eeedea;
+}
+
+.upload-compact-icon {
+  font-size: 1.1rem;
+  color: var(--mid);
+  line-height: 1;
+}
+
+.upload-compact-label {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.upload-compact-hint {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  color: var(--mid);
+}
+
+/* File attached state */
+.upload-attached {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+.upload-attached-icon { color: var(--mid); }
+
+.upload-attached-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.upload-attached-remove {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--mid);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.upload-attached-remove:hover { color: var(--alert); }
+.letter-textarea {
+  width: 100%;
+  min-height: 480px;
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 1.25rem 1.5rem;
+  resize: vertical;
+  background: var(--white);
+  outline: none;
+}
+
+.letter-textarea:focus { border-color: #888; }
+
+.letter-textarea::placeholder {
+  color: var(--border);
+  font-style: italic;
+}
+
+.letter-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--mid);
+}
+
+
+/* ============================================================
+   NOTES TO RELAY
+   ============================================================ */
+.notes-toggle {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.6rem;
+}
+
+.notes-toggle:hover { color: var(--text); }
+
+.notes-area { display: none; margin-top: 0.5rem; }
+.notes-area.is-open { display: block; }
+
+.notes-textarea {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  resize: vertical;
+  min-height: 60px;
+  background: var(--off-white);
+  outline: none;
+}
+
+.notes-textarea:focus { border-color: #888; background: var(--white); }
+
+.notes-hint {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--mid);
+  margin-top: 0.3rem;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SUBMIT ROW
+   ============================================================ */
+.submit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.submit-btn {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.8rem 2rem;
+  background: #2a6e2a;
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.submit-btn:hover { background: #225922; }
+
+.submit-btn:disabled {
+  background: var(--border);
+  color: var(--mid);
+  cursor: not-allowed;
+}
+
+.submit-notes {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  line-height: 1.65;
+  color: var(--mid);
+}
+
+.submit-notes p + p { margin-top: 0.4rem; }
+.submit-notes strong { color: var(--text); font-weight: 600; }
+
+/* ============================================================
+   ADDRESS SIDEBAR TILES
+   ============================================================ */
+.addr-tile {
+  border: 1px solid var(--border);
+  background: var(--white);
+  overflow: visible;
+}
+
+.addr-tile-header {
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding: 0.5rem 0.75rem 0.35rem;
+  background: var(--off-white);
+  border-bottom: 1px solid var(--border);
+}
+
+.addr-tile-body { padding: 0.65rem 0.75rem; position: relative; }
+
+.addr-search {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+}
+
+.addr-search:focus { border-color: #888; }
+
+.addr-dropdown {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: calc(100% - 0.65rem);
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--white);
+  z-index: 50;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.addr-dropdown.is-open { display: block; }
+
+.addr-option {
+  padding: 0.5rem 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--off-white);
+}
+
+.addr-option:last-child { border-bottom: none; }
+.addr-option:hover { background: var(--off-white); }
+
+.addr-option-sub {
+  font-size: 0.68rem;
+  color: var(--mid);
+  margin-top: 0.1rem;
+}
+
+.addr-selected { display: none; }
+.addr-selected.is-visible { display: block; }
+
+.addr-selected-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.addr-selected-name {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.addr-remove-btn {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--mid);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.addr-remove-btn:hover { color: var(--alert); }
+
+.addr-info {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--mid);
+}
+
+.addr-info dt {
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-top: 0.45rem;
+}
+
+.addr-info dd { margin-left: 0; }
+
+.addr-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-top: 0.3rem;
+}
+
+.addr-anon {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--border);
+  font-style: italic;
+  padding: 0.15rem 0 0.4rem;
+}
+
+/* Relay tiles */
+.relay-tiles { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.relay-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.65rem;
+  border: 1.5px solid var(--border);
+  background: var(--off-white);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0.5;
+  gap: 0.4rem;
+}
+
+.relay-option:hover { opacity: 0.75; }
+
+.relay-option.selected {
+  opacity: 1;
+  border-color: var(--text);
+  background: var(--white);
+}
+
+.relay-option-name { font-weight: 700; line-height: 1.2; }
+.relay-option-location { font-size: 0.65rem; color: var(--mid); margin-top: 0.05rem; }
+.relay-checkmark { font-size: 0.65rem; color: var(--mid); }
+
+.relay-select-hint {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  color: var(--mid);
+  margin-top: 0.4rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .letter-layout { grid-template-columns: 1fr 220px; }
+}
+
+@media (max-width: 640px) {
+  .letter-wrap { padding: 0; }
+
+  .letter-layout {
+    grid-template-columns: 1fr;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* Sidebar above content on mobile */
+  .letter-sidebar {
+    order: 1;
+    position: static;
+    border-bottom: 2px solid var(--border);
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+    gap: 0.75rem;
+    top: auto;
+  }
+
+  .letter-main {
+    order: 2;
+    padding: 1.25rem 1rem 2rem;
+    border-right: none;
+  }
+  .addr-tile { flex: 1 1 220px; }
+}

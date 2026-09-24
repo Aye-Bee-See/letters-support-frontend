@@ -1,0 +1,271 @@
+/* ============================================================
+   Page styles from solidarity-site/group-profile.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   GROUP PROFILE LAYOUT
+   ============================================================ */
+.group-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+  max-width: var(--col);
+  margin: 0 auto;
+  align-items: start;
+}
+
+.group-main {
+  padding: 0 2.5rem 4rem 0;
+  border-right: 1px solid var(--border);
+}
+
+.group-sidebar {
+  padding: 2rem 0 2rem 2rem;
+  position: sticky;
+  top: 60px;
+}
+
+/* ============================================================
+   ANNOUNCEMENT BOX
+   ============================================================ */
+.group-announcement {
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text);
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 2rem;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* ============================================================
+   GROUP HEADER
+   ============================================================ */
+.group-header {
+  padding: 2rem 0 1.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.group-breadcrumb {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  margin-bottom: 0.9rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.group-breadcrumb a { color: var(--mid); text-decoration: none; }
+.group-breadcrumb a:hover { color: var(--text); }
+
+.group-name {
+  font-family: var(--sans);
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.group-location {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-bottom: 1rem;
+}
+
+/* Website + email under name */
+.group-primary-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.group-website-link {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.group-website-link:hover { text-decoration: underline; }
+
+.group-email-link {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.group-email-link:hover { color: var(--text); text-decoration: underline; }
+
+/* Social links row */
+.group-social-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--mid);
+  text-decoration: none;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  letter-spacing: 0.04em;
+}
+
+.social-link:hover {
+  color: var(--text);
+  border-color: var(--text);
+  text-decoration: none;
+}
+
+.social-icon {
+  font-size: 0.88rem;
+  line-height: 1;
+}
+
+/* Services */
+/* React port: scoped to .group-layout. style.css also styles .group-services
+   (the group cards on /groups), which this page-level override must not change. */
+.group-layout .group-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ============================================================
+   SECTION HEADINGS
+   ============================================================ */
+.group-section {
+  margin-bottom: 2.5rem;
+}
+
+.group-section-title {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+/* ============================================================
+   ABOUT TEXT
+   ============================================================ */
+.group-about {
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #3a3a3a;
+  max-width: 580px;
+}
+
+.group-about p + p { margin-top: 1rem; }
+
+/* ============================================================
+   PRISONER CARDS — same tile style as prisoner index
+   but 2-col here since the main column is narrower
+   ============================================================ */
+.group-prisoner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Reuse .prisoner-tile from style.css */
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+/* React port: scoped to .group-sidebar. admin.css has its own .sidebar-section
+   (admin sidebar), and both stylesheets are loaded in the admin area. */
+.group-sidebar .sidebar-section {
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-section-heading {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 0.6rem;
+}
+
+.sidebar-text {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--mid);
+}
+
+.sidebar-text strong { color: var(--text); }
+
+/* React port: .sidebar-divider removed here; inbox.css has the identical rule
+   and is loaded globally. */
+
+/* Org settings link — only visible when logged in as this org */
+.sidebar-org-link {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--mid);
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-org-link:hover {
+  color: var(--text);
+  border-color: var(--text);
+  text-decoration: none;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 860px) {
+  .group-layout { grid-template-columns: 1fr; }
+  .group-main { padding-right: 0; border-right: none; }
+  .group-sidebar {
+    padding: 1.5rem 0 0;
+    border-top: 1px solid var(--border);
+    position: static;
+  }
+  .group-prisoner-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .group-prisoner-grid { grid-template-columns: 1fr; }
+}

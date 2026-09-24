@@ -1,0 +1,334 @@
+/* ============================================================
+   Page styles from solidarity-site/org-settings.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   ORG SETTINGS — same app-wrap as inbox, no sidebar needed
+   ============================================================ */
+.settings-wrap {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.settings-inner {
+  max-width: 600px;
+  padding: 2.5rem 0 4rem;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+.settings-back {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1.25rem;
+}
+
+.settings-back:hover { color: var(--text); }
+
+.settings-title {
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+}
+
+.settings-subtitle {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  margin-bottom: 2.5rem;
+}
+
+/* ============================================================
+   SETTINGS SECTIONS
+   ============================================================ */
+.settings-section {
+  margin-bottom: 2.75rem;
+}
+
+.settings-section-heading {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-label {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-label-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.72rem;
+  color: var(--mid);
+}
+
+.settings-input {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.settings-input:focus { border-color: #888; }
+.settings-input::placeholder { color: var(--border); }
+
+.settings-textarea {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.55;
+}
+
+.settings-textarea:focus { border-color: #888; }
+.settings-textarea::placeholder { color: var(--border); }
+
+.settings-hint {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SOCIAL LINKS — icon + input pairs
+   ============================================================ */
+.social-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-field-row {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.social-field-icon {
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1;
+  color: var(--mid);
+}
+
+.social-field-input {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 0.45rem 0.65rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.social-field-input:focus { border-color: #888; }
+.social-field-input::placeholder { color: var(--border); font-style: italic; }
+
+/* ============================================================
+   ANNOUNCEMENT PREVIEW
+   ============================================================ */
+.announcement-preview {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--off-white);
+  border-left: 3px solid var(--text);
+  padding: 0.75rem 1rem;
+  font-family: var(--serif);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text);
+  display: none;
+}
+
+.announcement-preview.has-content { display: block; }
+
+.announcement-preview-label {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+/* ============================================================
+   ABOUT — editable long text
+   ============================================================ */
+.settings-about-textarea {
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  padding: 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.7;
+}
+
+.settings-about-textarea:focus { border-color: #888; }
+
+/* ============================================================
+   SERVICES CHECKBOXES
+   ============================================================ */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.service-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.service-check input[type="checkbox"] {
+  accent-color: var(--text);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   SAVE BUTTON
+   ============================================================ */
+.settings-save-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+}
+
+.settings-save-btn {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.65rem 1.75rem;
+  background: var(--text);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+}
+
+.settings-save-btn:hover { background: #333; }
+
+.settings-saved-note {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: #2a6e2a;
+  display: none;
+}
+
+.settings-saved-note.is-visible { display: block; }
+
+/* ============================================================
+   DANGER ZONE
+   ============================================================ */
+.danger-zone {
+  border: 1px solid #e8b4b4;
+  padding: 1.25rem;
+  background: var(--alert-bg);
+}
+
+.danger-zone-title {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--alert);
+  margin-bottom: 0.4rem;
+}
+
+.danger-zone-body {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--mid);
+  line-height: 1.55;
+  margin-bottom: 0.75rem;
+}
+
+.danger-btn {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  background: var(--white);
+  color: var(--alert);
+  border: 1.5px solid var(--alert);
+  cursor: pointer;
+}
+
+.danger-btn:hover { background: var(--alert); color: var(--white); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  .services-grid { grid-template-columns: 1fr; }
+  .settings-inner { padding: 1.5rem 0 3rem; }
+}

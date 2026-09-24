@@ -1,0 +1,604 @@
+/* ============================================================
+   Page styles from solidarity-site/thread.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+/* ============================================================
+   THREAD LAYOUT — same app-wrap shell as inbox pages
+   ============================================================ */
+.thread-main {
+  padding: 0 2rem 4rem;
+  order: 1;
+  min-height: calc(100vh - 60px);
+  border-right: 1px solid var(--border);
+}
+
+.thread-sidebar {
+  padding: 2rem 1.5rem;
+  position: sticky;
+  top: 60px;
+  order: 2;
+}
+
+/* ============================================================
+   THREAD HEADER
+   ============================================================ */
+.thread-header {
+  padding: 1.5rem 0 1.25rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.thread-back {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.thread-back:hover { color: var(--text); }
+
+.thread-title {
+  font-family: var(--sans);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-bottom: 0.25rem;
+}
+
+.thread-title a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.thread-title a:hover { text-decoration: underline; }
+
+.thread-meta {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--mid);
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.thread-meta-writer {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ============================================================
+   LETTER CHAIN
+   ============================================================ */
+.letter-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── SHARED LETTER SHELL ── */
+.letter-item {
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── OUTBOUND (to prisoner) — white background ── */
+.letter-item.outbound {
+  background: var(--white);
+}
+
+/* ── INBOUND (from prisoner) — black background ── */
+.letter-item.inbound {
+  background: var(--text);
+  color: var(--white);
+  border-bottom-color: #333;
+}
+
+/* ── COLLAPSED STATE ── */
+.letter-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.letter-collapsed:hover { opacity: 0.8; }
+
+.letter-collapsed-direction {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.outbound .letter-collapsed-direction { color: #2a6e2a; }
+.inbound  .letter-collapsed-direction { color: #88c488; }
+
+.letter-collapsed-date {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--mid);
+  flex-shrink: 0;
+  width: 7rem;
+}
+
+.inbound .letter-collapsed-date { color: #999; }
+
+.letter-collapsed-preview {
+  font-family: var(--serif);
+  font-size: 0.82rem;
+  color: var(--mid);
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+.inbound .letter-collapsed-preview { color: #aaa; }
+
+.letter-collapsed-status {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.status-pending { color: #b38600; }
+.status-mailed  { color: #2a6e2a; }
+.status-received {
+  color: #999;
+}
+
+.inbound .status-received { color: #888; }
+
+.letter-collapsed-chevron {
+  font-size: 0.65rem;
+  color: var(--mid);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.inbound .letter-collapsed-chevron { color: #666; }
+
+/* ── EXPANDED STATE ── */
+.letter-expanded {
+  display: none;
+  padding: 0 2em 2em;
+}
+
+.letter-item.is-open .letter-collapsed-chevron {
+  transform: rotate(180deg);
+}
+
+.letter-item.is-open .letter-expanded {
+  display: block;
+}
+
+/* Expanded header row */
+.letter-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.inbound .letter-expanded-header { border-bottom-color: #333; }
+
+.letter-expanded-direction {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.outbound .letter-expanded-direction { color: #2a6e2a; }
+.inbound  .letter-expanded-direction { color: #88c488; }
+
+.letter-expanded-date {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--mid);
+}
+
+.inbound .letter-expanded-date { color: #999; }
+
+.letter-expanded-writer {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+}
+
+.inbound .letter-expanded-writer { color: #999; }
+
+.letter-expanded-status {
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Typed letter content */
+.letter-body-text {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.inbound .letter-body-text { color: var(--white); }
+
+/* Scan placeholder */
+.letter-body-scan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  text-align: center;
+}
+
+.outbound .letter-body-scan {
+  background: var(--off-white);
+  border-color: var(--border);
+}
+
+.letter-body-scan-icon {
+  font-size: 1.5rem;
+  color: var(--mid);
+}
+
+.inbound .letter-body-scan-icon { color: #888; }
+
+.letter-body-scan-name {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--mid);
+}
+
+.inbound .letter-body-scan-name { color: #aaa; }
+
+.letter-body-scan-note {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--mid);
+  font-style: italic;
+}
+
+.inbound .letter-body-scan-note { color: #777; }
+
+/* ============================================================
+   INLINE REPLY PANEL
+   ============================================================ */
+.reply-panel {
+  margin-top: 2rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+
+.reply-panel-header {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--off-white);
+}
+
+.reply-panel-title {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+  align-self: center;
+}
+
+/* Facility rules inside reply panel — same inline bar as new-letter */
+.reply-facility-rules {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  flex: 1;
+  line-height: 1.5;
+}
+
+.reply-facility-rules-heading {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.reply-facility-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1rem;
+}
+
+.reply-facility-list li::before {
+  content: '— ';
+  color: var(--border);
+}
+
+/* Upload zone in reply panel header */
+.reply-upload-wrap {
+  flex-shrink: 0;
+  width: 30%;
+  min-width: 120px;
+  display: flex;
+  align-items: stretch;
+}
+
+.reply-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1.5px dashed var(--border);
+  background: var(--white);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.1s;
+  font-family: var(--sans);
+}
+
+.reply-upload-zone:hover, .reply-upload-zone.drag-over {
+  border-color: #888;
+}
+
+.reply-upload-icon { font-size: 0.9rem; color: var(--mid); }
+.reply-upload-label { font-size: 0.68rem; font-weight: 600; color: var(--text); }
+.reply-upload-hint  { font-size: 0.6rem; color: var(--mid); }
+
+.reply-upload-attached {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text);
+  width: 100%;
+}
+
+.reply-upload-attached-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reply-upload-attached-remove {
+  background: none;
+  border: none;
+  font-size: 0.7rem;
+  color: var(--mid);
+  cursor: pointer;
+  padding: 0;
+}
+
+.reply-upload-attached-remove:hover { color: var(--alert); }
+
+/* Textarea */
+.reply-panel-body { padding: 1rem 1.25rem; }
+
+.reply-textarea {
+  width: 100%;
+  min-height: 160px;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  resize: vertical;
+  background: var(--white);
+  outline: none;
+}
+
+.reply-textarea:focus { border-color: #888; }
+
+.reply-textarea::placeholder {
+  color: var(--border);
+  font-style: italic;
+}
+
+.reply-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--mid);
+}
+
+/* Footer: notes + submit */
+.reply-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--off-white);
+  flex-wrap: wrap;
+}
+
+.reply-notes-toggle {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--mid);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.reply-notes-toggle:hover { color: var(--text); }
+
+.reply-notes-area {
+  display: none;
+  padding: 0 1.25rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.reply-notes-area.is-open { display: block; }
+
+.reply-notes-textarea {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.7rem;
+  resize: vertical;
+  min-height: 52px;
+  background: var(--white);
+  outline: none;
+  margin-top: 0.5rem;
+}
+
+.reply-notes-textarea:focus { border-color: #888; }
+
+.reply-notes-hint {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  color: var(--mid);
+  margin-top: 0.25rem;
+}
+
+.reply-submit-btn {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.6rem 1.5rem;
+  background: #2a6e2a;
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reply-submit-btn:hover { background: #225922; }
+.reply-submit-btn:disabled {
+  background: var(--border);
+  color: var(--mid);
+  cursor: not-allowed;
+}
+
+.reply-submit-note {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--mid);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.reply-submit-note strong { color: var(--text); font-weight: 600; }
+
+/* ============================================================
+   SIDEBAR — thread context
+   ============================================================ */
+.thread-sidebar-section {
+  margin-bottom: 1.5rem;
+}
+
+.thread-sidebar-heading {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 0.5rem;
+}
+
+.thread-sidebar-info {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--mid);
+}
+
+.thread-sidebar-info strong { color: var(--text); font-weight: 600; }
+
+.thread-sidebar-address {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  line-height: 1.55;
+  color: var(--mid);
+  margin-top: 0.25rem;
+}
+
+.thread-sidebar-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+.thread-sidebar-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+/* React port: scoped to the thread page (.thread-main exists only there) so the
+   inbox pages keep inbox.css's 220px column. Also limited to 641px and up: in the
+   prototype this rule came after inbox.css's 640px rule and overrode it, keeping
+   two columns on phones, while the 640px rules below assume a stacked layout. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .app-layout:has(.thread-main) { grid-template-columns: 1fr 200px; }
+}
+
+@media (max-width: 640px) {
+  .thread-main { padding: 0 1rem 3rem; border-right: none; }
+  .thread-sidebar { position: static; border-top: 2px solid var(--border); }
+  .reply-upload-wrap { width: 40%; }
+}

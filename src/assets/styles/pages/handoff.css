@@ -1,0 +1,210 @@
+/* ============================================================
+   Page styles from solidarity-site/handoff.html (its <style> block).
+   Loaded globally from main.tsx after style.css and inbox.css,
+   matching the prototype's cascade order.
+   ============================================================ */
+
+.handoff-wrap {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.handoff-inner {
+  max-width: 540px;
+  padding: 2.5rem 0 4rem;
+}
+
+.handoff-back {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1.25rem;
+}
+
+.handoff-back:hover { color: var(--text); }
+
+.handoff-title {
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+}
+
+.handoff-writer-name {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--mid);
+  margin-bottom: 2rem;
+}
+
+/* ── EXPLAINER ── */
+.handoff-explainer {
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text);
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.handoff-explainer p { margin: 0; }
+
+.handoff-explainer ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* ── GENERATE BUTTON (pre-token state) ── */
+.handoff-generate-btn {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 1.75rem;
+  background: var(--text);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+}
+
+.handoff-generate-btn:hover { background: #333; }
+
+/* ── TOKEN DISPLAY (post-generate state) ── */
+.token-display {
+  display: none;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.token-display.is-visible { display: flex; }
+
+.token-box {
+  background: var(--text);
+  color: var(--white);
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.token-value {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.token-copy-btn {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.85rem;
+  background: transparent;
+  color: #ccc;
+  border: 1px solid #555;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.token-copy-btn:hover { color: var(--white); border-color: #aaa; }
+.token-copy-btn.copied { color: #88c488; border-color: #88c488; }
+
+.token-meta {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--mid);
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.token-meta-item { display: flex; flex-direction: column; gap: 0.1rem; }
+.token-meta-label {
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+
+.token-instructions {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--mid);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.token-instructions strong { color: var(--text); }
+
+.token-warning {
+  background: #fdf8e8;
+  border: 1px solid #e8d4a0;
+  border-left: 3px solid #b38600;
+  padding: 0.75rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: #7a5500;
+  line-height: 1.55;
+}
+
+.token-regenerate {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--mid);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  align-self: flex-start;
+}
+
+.token-regenerate:hover { color: var(--text); }
+
+/* ── DIVIDER ── */
+.handoff-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* ── PENDING STATE (already has a token out) ── */
+.pending-banner {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--mid);
+}
+
+.pending-banner strong { color: var(--text); }
