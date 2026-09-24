@@ -4,9 +4,17 @@ import { displayName, estimatedRelease, heldAt, otherNames, shortDate, yearOf } 
 import StatusNotice from './StatusNotice'
 import TagCloud from './TagCloud'
 
-// Markup and classes from the prisoner grid in solidarity-site/index.html and prisoners.html.
-// The front page shows the year detained ("Since: 2021"); the index the date ("Since: 14 Jul 2021").
-export default function PrisonerTile({ prisoner, since = 'year' }: { prisoner: Prisoner; since?: 'year' | 'date' }) {
+interface Props {
+  prisoner: Prisoner
+  /** The front page shows the year detained ("Since: 2021"); the index the date ("Since: 14 Jul 2021"). */
+  since?: 'year' | 'date'
+  /** On a facility page the facility is known: no other-names or "Held at" lines (facility-profile.html). */
+  compact?: boolean
+}
+
+// Markup and classes from the prisoner grids in solidarity-site/index.html,
+// prisoners.html and facility-profile.html.
+export default function PrisonerTile({ prisoner, since = 'year', compact = false }: Props) {
   const name = displayName(prisoner)
   const facility = heldAt(prisoner.prison_details as PrisonSummary | null | undefined)
   const detained = since === 'date' ? shortDate(prisoner.detainedSince) : yearOf(prisoner.detainedSince)
@@ -21,10 +29,14 @@ export default function PrisonerTile({ prisoner, since = 'year' }: { prisoner: P
       <div className="prisoner-tile-body">
         <StatusNotice text={prisoner.statusNotice} />
         <p className="prisoner-tile-name">{name}</p>
-        <p className="prisoner-tile-aliases">{otherNames(prisoner).join(', ')}</p>
+        {!compact && <p className="prisoner-tile-aliases">{otherNames(prisoner).join(', ')}</p>}
         <p className="prisoner-tile-meta">
-          <strong>Held at:</strong> {facility ?? 'Contact support site for address'}
-          <br />
+          {!compact && (
+            <>
+              <strong>Held at:</strong> {facility ?? 'Contact support site for address'}
+              <br />
+            </>
+          )}
           <strong>Since:</strong> {detained ?? 'Unknown'} &nbsp;·&nbsp;{' '}
           <strong>Est. release:</strong> {estimatedRelease(prisoner) ?? 'Unknown'}
         </p>

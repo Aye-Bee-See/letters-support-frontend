@@ -37,6 +37,22 @@ export function addressLine(address: Prison['address'] | null | undefined): stri
   return parts.length ? parts.join(', ') : null
 }
 
+/** The address as printed lines: street, "city postalCode", any other parts, country. */
+export function addressLines(prison: Pick<Prison, 'address' | 'country'>): string[] {
+  const { street, city, postalCode, ...rest } = prison.address ?? {}
+  return [street, [city, postalCode].filter(Boolean).join(' '), ...Object.values(rest), prison.country].filter(
+    (s): s is string => typeof s === 'string' && s.trim() !== '',
+  )
+}
+
+/** Short tag beside the routing method on the facility profile. */
+export const ROUTING_TAGS: Record<RoutingMethod, string> = {
+  direct: 'physical letter',
+  scan_only: 'scan service',
+  direct_and_scan: 'physical letter or scan',
+  relay_only: 'via relay group',
+}
+
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
 
 /** Short restriction phrases for the facilities table: "No polaroids · Max 10 pages · English or Spanish only". */
