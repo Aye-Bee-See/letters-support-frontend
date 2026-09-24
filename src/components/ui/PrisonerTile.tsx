@@ -10,11 +10,13 @@ interface Props {
   since?: 'year' | 'date'
   /** On a facility page the facility is known: no other-names or "Held at" lines (facility-profile.html). */
   compact?: boolean
+  /** The group profile's tiles show "Since" without "Est. release" (group-profile.html). */
+  showRelease?: boolean
 }
 
 // Markup and classes from the prisoner grids in solidarity-site/index.html,
 // prisoners.html and facility-profile.html.
-export default function PrisonerTile({ prisoner, since = 'year', compact = false }: Props) {
+export default function PrisonerTile({ prisoner, since = 'year', compact = false, showRelease = true }: Props) {
   const name = displayName(prisoner)
   const facility = heldAt(prisoner.prison_details as PrisonSummary | null | undefined)
   const detained = since === 'date' ? shortDate(prisoner.detainedSince) : yearOf(prisoner.detainedSince)
@@ -37,8 +39,12 @@ export default function PrisonerTile({ prisoner, since = 'year', compact = false
               <br />
             </>
           )}
-          <strong>Since:</strong> {detained ?? 'Unknown'} &nbsp;·&nbsp;{' '}
-          <strong>Est. release:</strong> {estimatedRelease(prisoner) ?? 'Unknown'}
+          <strong>Since:</strong> {detained ?? 'Unknown'}
+          {showRelease && (
+            <>
+              {' '}&nbsp;·&nbsp; <strong>Est. release:</strong> {estimatedRelease(prisoner) ?? 'Unknown'}
+            </>
+          )}
         </p>
         <TagCloud tags={prisoner.interests} />
       </div>
