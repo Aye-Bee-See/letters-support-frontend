@@ -94,6 +94,20 @@ export async function getList<T>(url: string, params?: ListParams): Promise<List
   return { items: data, total, page, pageSize: page_size }
 }
 
+/**
+ * Every row of a list, following pages (the API caps page_size at 100). For
+ * directory lists expected to stay in the low hundreds, loaded whole and
+ * filtered in the browser.
+ */
+export async function getAllPages<T>(url: string, params?: Omit<ListParams, 'page' | 'page_size'>): Promise<T[]> {
+  const all: T[] = []
+  for (let page = 1; ; page++) {
+    const result = await getList<T>(url, { ...params, page, page_size: 100 })
+    all.push(...result.items)
+    if (all.length >= result.total || result.items.length === 0) return all
+  }
+}
+
 export async function post<T>(url: string, body?: unknown, headers?: Record<string, string>): Promise<T> {
   const response = await client.post<ApiEnvelope<T>>(url, body, { headers })
   return response.data.data
