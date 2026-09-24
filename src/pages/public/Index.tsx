@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getAbcfFeed } from '../../api/feed'
 import { getPrisoners } from '../../api/prisoners'
+import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
 import { useApi } from '../../hooks/useApi'
 
@@ -91,15 +92,7 @@ export default function Index() {
             <div className="section-rule"></div>
           </div>
 
-          {tiles.loading && <p>Loading prisoners…</p>}
-          {tiles.error && (
-            <p>
-              Couldn't load prisoners ({tiles.error.message}).{' '}
-              <button type="button" className="btn btn-sm" onClick={tiles.reload}>
-                Try again
-              </button>
-            </p>
-          )}
+          <LoadState state={tiles} what="prisoners" />
           {tiles.data && (
             <div className="prisoner-grid">
               {tiles.data.prisoners.map((p) => (

@@ -1,4 +1,19 @@
-import type { Prisoner, PrisonSummary } from '../types'
+import type { Prisoner, PrisonerStatus, PrisonSummary } from '../types'
+
+/** On-screen words for the API's status values. */
+export const STATUS_LABELS: Record<PrisonerStatus, string> = {
+  pretrial: 'Pretrial',
+  incarcerated: 'Incarcerated',
+  free: 'Released',
+}
+
+/** "14 Jul 2021", or null. */
+export function shortDate(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+}
 
 // Display helpers for prisoner records, shared by tiles, the index and the profile.
 

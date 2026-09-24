@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import AdminLayout, { AdminStyles } from './components/layout/AdminLayout'
 import { RequireAdmin, RequireAuth } from './components/layout/RouteGuards'
+import ScrollToTop from './components/layout/ScrollToTop'
 
 import Index from './pages/public/Index'
 import Prisoners from './pages/public/Prisoners'
@@ -48,6 +49,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Public directory: header and footer */}
           <Route element={<SiteLayout />}>

@@ -1,0 +1,17 @@
+import type { ApiState } from '../../hooks/useApi'
+
+// Loading and error lines for a useApi request. The prototype has no design for
+// either, so these stay plain until one is decided.
+export default function LoadState({ state, what }: { state: ApiState<unknown>; what: string }) {
+  if (state.loading) return <p>Loading {what}…</p>
+  if (state.error)
+    return (
+      <p>
+        Couldn't load {what} ({state.error.message}).{' '}
+        <button type="button" className="btn btn-sm" onClick={state.reload}>
+          Try again
+        </button>
+      </p>
+    )
+  return null
+}

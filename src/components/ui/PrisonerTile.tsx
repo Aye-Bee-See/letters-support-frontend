@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom'
 import type { Prisoner, PrisonSummary } from '../../types'
-import { displayName, estimatedRelease, heldAt, otherNames, yearOf } from '../../utils/prisoners'
+import { displayName, estimatedRelease, heldAt, otherNames, shortDate, yearOf } from '../../utils/prisoners'
 import StatusNotice from './StatusNotice'
 import TagCloud from './TagCloud'
 
 // Markup and classes from the prisoner grid in solidarity-site/index.html and prisoners.html.
-export default function PrisonerTile({ prisoner }: { prisoner: Prisoner }) {
+// The front page shows the year detained ("Since: 2021"); the index the date ("Since: 14 Jul 2021").
+export default function PrisonerTile({ prisoner, since = 'year' }: { prisoner: Prisoner; since?: 'year' | 'date' }) {
   const name = displayName(prisoner)
   const facility = heldAt(prisoner.prison_details as PrisonSummary | null | undefined)
+  const detained = since === 'date' ? shortDate(prisoner.detainedSince) : yearOf(prisoner.detainedSince)
 
   return (
     <Link to={`/prisoners/${prisoner.id}`} className="prisoner-tile">
@@ -23,7 +25,7 @@ export default function PrisonerTile({ prisoner }: { prisoner: Prisoner }) {
         <p className="prisoner-tile-meta">
           <strong>Held at:</strong> {facility ?? 'Contact support site for address'}
           <br />
-          <strong>Since:</strong> {yearOf(prisoner.detainedSince) ?? 'Unknown'} &nbsp;·&nbsp;{' '}
+          <strong>Since:</strong> {detained ?? 'Unknown'} &nbsp;·&nbsp;{' '}
           <strong>Est. release:</strong> {estimatedRelease(prisoner) ?? 'Unknown'}
         </p>
         <TagCloud tags={prisoner.interests} />
