@@ -14,7 +14,8 @@ dist-ssr
 
 .vite/
 
-# Environment
+# Environment (commit .env.example only)
+.env
 .env.local
 .env.*.local
 

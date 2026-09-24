@@ -6,7 +6,9 @@ export default defineConfig({
   cacheDir: '/home/rechelon/CodeWSL/claude/abc-mailbox/frontend/.vite',
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    // Matches the backend's default CORS_ORIGIN (http://localhost:3001)
+    port: 3001,
+    strictPort: true,
   },
 })
 
