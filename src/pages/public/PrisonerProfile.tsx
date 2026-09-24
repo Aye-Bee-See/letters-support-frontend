@@ -1,8 +1,232 @@
-// TODO: Step 2. Prototype: solidarity-site/prisoner-profile.html
+import { Link, useParams } from 'react-router-dom'
+import { getGroup } from '../../api/groups'
+import { getPrisoner } from '../../api/prisoners'
+import Breadcrumb from '../../components/ui/Breadcrumb'
+import LoadState from '../../components/ui/LoadState'
+import StatusNotice from '../../components/ui/StatusNotice'
+import TagCloud from '../../components/ui/TagCloud'
+import { useApi } from '../../hooks/useApi'
+import type { Prison } from '../../types'
+import { addressLine, mailRuleLines } from '../../utils/facilities'
+import { displayName, estimatedRelease, longDate, otherNames } from '../../utils/prisoners'
+
+/** The prisoner with the whole facility and support groups, plus the verifying group's name. */
+async function loadProfile(id: number) {
+  const prisoner = await getPrisoner(id, true)
+  const verifier = prisoner.verifiedBy ? await getGroup(prisoner.verifiedBy, false).catch(() => null) : null
+  return { prisoner, verifierName: verifier?.name ?? null }
+}
+
+/** "https://spring96.org/en/" -> "spring96.org/en" */
+const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
+
+// Markup and classes from solidarity-site/prisoner-profile.html, including its
+// print info sheet (pages/prisoner-profile.css, scoped to .profile-layout).
 export default function PrisonerProfile() {
+  const id = Number(useParams().id)
+  const profile = useApi(() => loadProfile(id), [id])
+
+  if (!profile.data) {
+    return (
+      <>
+        <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Prisoners', to: '/prisoners' }, { label: '…' }]} />
+        <div className="wrap">
+          <LoadState state={profile} what="prisoner" />
+        </div>
+      </>
+    )
+  }
+
+  const { prisoner: p, verifierName } = profile.data
+  const name = displayName(p)
+  const prison = p.prison_details as Prison | null | undefined
+  const address = addressLine(prison?.address)
+  const rules = prison ? mailRuleLines(prison) : []
+  const aliases = otherNames(p)
+  const bio = (p.bio ?? '').split(/\n\s*\n/).filter((para) => para.trim())
+  const release = estimatedRelease(p)
+
   return (
-    <div className="wrap">
-      <h1>Prisoner</h1>
-    </div>
+    <>
+      <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Prisoners', to: '/prisoners' }, { label: name }]} />
+
+      <div className="wrap">
+        <div className="profile-layout">
+          {/* SIDEBAR */}
+          <aside className="profile-sidebar">
+            {p.photoUrl ? (
+              // style.css styles `.profile-sidebar img`; the prototype only has the placeholder.
+              <img src={p.photoUrl} alt={name} />
+            ) : (
+              <div className="profile-sidebar-img-placeholder">Photo</div>
+            )}
+
+            <dl className="profile-sidebar-meta">
+              {p.country && (
+                <>
+                  <dt>Country</dt>
+                  <dd>{p.country}</dd>
+                </>
+              )}
+
+              <dt>Current facility</dt>
+              <dd>
+                {prison ? prison.prisonName : 'Contact a support group for the current address'}
+                {address && (
+                  <>
+                    <br />
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: '0.7rem', color: 'var(--mid)' }}>{address}</span>
+                  </>
+                )}
+              </dd>
+
+              {/* Not in the prototype: needed to address a letter. */}
+              {p.inmateID && (
+                <>
+                  <dt>Inmate no.</dt>
+                  <dd>{p.inmateID}</dd>
+                </>
+              )}
+
+              {p.detainedSince && (
+                <>
+                  <dt>Detained since</dt>
+                  <dd>{longDate(p.detainedSince)}</dd>
+                </>
+              )}
+
+              {p.sentence && (
+                <>
+                  <dt>Sentence</dt>
+                  <dd>{p.sentence}</dd>
+                </>
+              )}
+
+              {release && (
+                <>
+                  <dt>Est. release</dt>
+                  <dd>{release}</dd>
+                </>
+              )}
+
+              {p.charges && (
+                <>
+                  <dt>Charge(s)</dt>
+                  <dd>{p.charges}</dd>
+                </>
+              )}
+            </dl>
+
+            <div className="profile-actions">
+              <a
+                href="#"
+                className="print-btn"
+                onClick={(e) => {
+                  e.preventDefault()
+                  window.print()
+                }}
+              >
+                ⎙ Print info sheet
+              </a>
+            </div>
+
+            <p className="verified-note">
+              {p.verifiedAt ? (
+                <>
+                  Record last verified{verifierName && (
+                    <>
+                      {' '}by <strong>{verifierName}</strong>
+                    </>
+                  )}
+                  <br />
+                  {longDate(p.verifiedAt)}
+                </>
+              ) : (
+                'This record has not been verified yet.'
+              )}
+            </p>
+          </aside>
+
+          {/* MAIN CONTENT */}
+          <main>
+            <StatusNotice text={p.statusNotice} />
+            <h1 className="profile-main-name">{name}</h1>
+            {aliases.length > 0 && <p className="profile-aliases">{aliases.join('  ·  ')}</p>}
+
+            {bio.length > 0 && (
+              <>
+                <h2 className="profile-section-title">About</h2>
+                <div className="profile-bio">
+                  {bio.map((para, i) => (
+                    <p key={i} style={i > 0 ? { marginTop: '1rem' } : undefined}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {p.interests && p.interests.length > 0 && (
+              <>
+                <h2 className="profile-section-title">Interests</h2>
+                <TagCloud tags={p.interests} className="interests-cloud" />
+              </>
+            )}
+
+            <h2 className="profile-section-title">Facility mail rules</h2>
+            {rules.length > 0 ? (
+              <ul className="prison-rule-list">
+                {rules.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No mail rules are on record for this facility. Check with a support group before writing.</p>
+            )}
+
+            {p.supportWebsite && (
+              <>
+                <h2 className="profile-section-title">Support</h2>
+                <p style={{ marginBottom: '0.6rem' }}>
+                  <a href={p.supportWebsite} target="_blank" rel="noopener noreferrer" className="support-website-link">
+                    🔗 {shortUrl(p.supportWebsite)}
+                  </a>
+                </p>
+              </>
+            )}
+
+            {p.donationInfo && (
+              <>
+                <h2 className="profile-section-title">Donate / commissary</h2>
+                <div className="donation-text">{p.donationInfo}</div>
+              </>
+            )}
+
+            {/* Always rendered and always last: the print sheet hides the last
+                section title (.profile-section-title:last-of-type) and this list. */}
+            <h2 className="profile-section-title">Support groups</h2>
+            <div className="support-org-list">
+              {p.support_groups?.length ? (
+                p.support_groups.map((g) => (
+                  <div key={g.id} className="support-org-item">
+                    <div>
+                      <div className="support-org-item-name">{g.name}</div>
+                      {g.PrisonerSupport?.description && (
+                        <div className="support-org-item-role">{g.PrisonerSupport.description}</div>
+                      )}
+                    </div>
+                    <Link to={`/groups/${g.id}`} className="btn btn-sm">
+                      View group
+                    </Link>
+                  </div>
+                ))
+              ) : (
+                <p>No groups have listed support for this person yet.</p>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+    </>
   )
 }

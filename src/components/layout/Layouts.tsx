@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import AdminBar from './AdminBar'
 import Header from './Header'
 import Footer from './Footer'
 
@@ -8,6 +9,7 @@ import Footer from './Footer'
 export function SiteLayout() {
   return (
     <>
+      <AdminBar />
       <Header />
       <Outlet />
       <Footer />

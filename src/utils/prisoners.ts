@@ -7,6 +7,14 @@ export const STATUS_LABELS: Record<PrisonerStatus, string> = {
   free: 'Released',
 }
 
+/** "14 July 2021", or null. */
+export function longDate(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
 /** "14 Jul 2021", or null. */
 export function shortDate(iso: string | null | undefined): string | null {
   if (!iso) return null
