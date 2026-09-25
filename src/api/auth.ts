@@ -1,6 +1,6 @@
 import client, { getOne, post, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
-import type { ApiEnvelope, KeyBundle, LoginParams, LoginResult } from '../types'
+import type { ApiEnvelope, KeyBundle, LoginParams, LoginResult, User } from '../types'
 
 // Sign-in is split (README "Signing in without sending the password"):
 //   1. getLoginParams(username) -> { scheme, kdfSalt, kdfParams }
@@ -49,5 +49,36 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
     kdfParams: creds.kdfParams,
   })
 
+/** GET /auth/pen-name-available (public, rate limited). `name` is the cleaned form the API would store. */
 export const checkPenName = (name: string) =>
-  getOne<{ available: boolean; reason?: string }>('/auth/pen-name-available', { name })
+  getOne<{ available: boolean; name: string; reason: string | null; twoParts: boolean }>('/auth/pen-name-available', { name })
+
+// --- Invite codes (joining) ---------------------------------------------------
+
+/**
+ * GET /auth/join?code= (public, rate limited): who is vouching, while the code
+ * is usable. 404 for a code never issued; 410 with a `condition` of used,
+ * cancelled, expired or inactive otherwise.
+ */
+export const checkInviteCode = (code: string) =>
+  getOne<{ chapter: { id: number; name: string }; expiresAt: string }>('/auth/join', { code })
+
+export interface JoinRequest {
+  code: string
+  username: string
+  penName: string
+  /** base64 auth key; sent as `password` with authScheme "split". */
+  authKey: string
+  keyFields: { publicKey: string } & PasswordKeyFields & RecoveryKeyFields
+}
+
+/** POST /auth/join: makes the account, with its keys, and spends the code in one step. */
+export const joinWithCode = (req: JoinRequest) =>
+  post<{ user: User; chapter: { id: number; name: string } }>('/auth/join', {
+    code: req.code,
+    username: req.username,
+    penName: req.penName,
+    authScheme: 'split',
+    password: req.authKey,
+    ...req.keyFields,
+  })

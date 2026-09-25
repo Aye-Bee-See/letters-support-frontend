@@ -58,12 +58,14 @@ src/crypto/            the crypto core: no API calls, no React, no state
   account.ts           account flows: new keys, sign-in unlock, recovery, claim, group keys
   letters.ts           letters: content keys, envelopes, attachments
   crypto.test.ts       cross-client test vectors and round trips (npm test)
-src/auth/
-  signIn.ts            sign-in: joins the API calls and the crypto
+src/auth/              flows that join the API calls and the crypto
+  signIn.ts            sign-in
+  join.ts              joining with an invite code: account and keys in one request
 src/context/
   AuthContext.tsx      holds the session and unlocked keys, in memory only
 src/pages/auth/
   Login.tsx            the sign-in form
+  Join.tsx             joining: code, form, recovery code
 src/api/auth.ts        API calls: sign-in parameters, sign-in, key bundle, setting keys, split password
 scripts/
   dev-split-accounts.ts  DEVELOPMENT ONLY: moves local seeded accounts to split sign-in
@@ -187,19 +189,45 @@ A form around `signIn`, using the prototype's markup. A plain account gets an ex
 
 ---
 
-## 5. Status
+## 5. Joining with an invite code
+
+A newcomer's account and keys are made together, on their device, in one request. There's no separate "set up your keys" step, because an account that can sign in always already has keys (decided 25 September).
+
+### `src/auth/join.ts`
+
+`join({code, username, penName, password})`:
+
+1. **`createAccountKeys(password)`** generates a keypair, locks the private key under the password (split scheme: one Argon2id run gives the wrap key and the auth key) and, separately, under a new random recovery code (a second Argon2id run with its own salt).
+2. **`POST /auth/join`** sends the code, username, pen name, `authScheme: "split"`, the auth key as `password`, and the key fields: the public key and both locked copies. Only locked copies leave the device. The API makes the account and spends the code in one transaction, so a refusal (a taken username or pen name) leaves the code unspent.
+3. **`POST /auth/login`** signs straight in with the auth key it already has. The password isn't run through Argon2id a second time, and the keypair is already in memory, so nothing needs unlocking.
+4. It returns the session to start, and the recovery code to show.
+
+### `src/pages/auth/Join.tsx`
+
+There's no prototype, so the markup reuses `claim.html`'s classes and journey:
+
+- **Code:** from the link (`/join?code=…`, the QR code on a slip) or typed. `GET /auth/join` says which group is vouching, or why the code can't be used (never issued, used, expired, cancelled, or the group isn't active).
+- **Form:** username, pen name (checked with `GET /auth/pen-name-available` when the field loses focus, nudging towards two parts), password (10 characters minimum, with the prototype's strength meter, `src/utils/password.ts`) and a confirmation. The form shows its own "Setting up your account…" state, so a refusal returns to the form with what was typed.
+- **Recovery code:** shown once, with a Copy button and the decided recovery wording, and they can't continue until they tick "I have saved my recovery code". Only then does the session start (`startSession`) and they reach the inbox.
+
+The wording follows the everyday-screen rule: "Your password never leaves this device. Only you, and the group that prints and mails your letters, can read them", with a link to the explanation.
+
+---
+
+## 6. Status
 
 | Piece | State |
 | --- | --- |
 | Crypto core (`src/crypto/`) | Built and tested (Step 3) |
 | Sign-in: split only (plain refused), unlocking keys | Built (Step 4) |
 | Dev script moving local seeded accounts to split | Built |
-| Key set-up after sign-in (a split account without keys; a group without a key) | Next |
-| Join with invite code, Claim, Recovery pages | Step 4, to come |
+| Join with an invite code: keys made with the account, recovery code confirmed | Built (Step 4) |
+| Claim, Recovery pages; safety net for an account without keys at sign-in | Step 4, next |
+| Group key creation and approving access (group-owner admin) | Step 6 |
 | Encrypting and reading letters in the UI | Step 5 |
 | Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
 
-## 6. Known limits
+## 7. Known limits
 
 - **The web app runs whatever JavaScript the server sends.** A tampered web host could serve code that leaks keys. The native apps are stronger on this point. Nothing here claims otherwise.
 - **An account the server holds as `plain` can't sign in to the web client at all.** That's the price of never sending a password. On a real deployment, every account is created split (`REQUIRE_SPLIT_AUTH=true`); how the first admin is created split is an open question for the API side (`questions-for-pax.md` E).
