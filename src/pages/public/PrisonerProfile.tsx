@@ -6,6 +6,7 @@ import LoadState from '../../components/ui/LoadState'
 import StatusNotice from '../../components/ui/StatusNotice'
 import TagCloud from '../../components/ui/TagCloud'
 import { useApi } from '../../hooks/useApi'
+import { useAuth } from '../../hooks/useAuth'
 import type { Prison } from '../../types'
 import { addressLine, mailRuleLines } from '../../utils/facilities'
 import { displayName, estimatedRelease, longDate, otherNames } from '../../utils/prisoners'
@@ -24,6 +25,7 @@ const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replac
 // print info sheet (pages/prisoner-profile.css, scoped to .profile-layout).
 export default function PrisonerProfile() {
   const id = Number(useParams().id)
+  const { isWriter } = useAuth()
   const profile = useApi(() => loadProfile(id), [id])
 
   if (!profile.data) {
@@ -118,6 +120,12 @@ export default function PrisonerProfile() {
             </dl>
 
             <div className="profile-actions">
+              {/* Not in the prototype: the way into New Letter for a signed-in writer. */}
+              {isWriter && (
+                <Link to={`/letters/new?prisoner=${p.id}`} className="btn btn-sm btn-primary" style={{ marginBottom: '0.5rem' }}>
+                  Write a letter
+                </Link>
+              )}
               <a
                 href="#"
                 className="print-btn"

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
+import ReplyPanel from '../../components/forms/ReplyPanel'
 import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
@@ -310,6 +311,7 @@ export default function Thread() {
   const prisonerName = threadPrisonerName(chat)
   const facility = (prisoner?.prison_details as Prison | null | undefined)?.prisonName
   const writerName = chat.user === user?.id ? (user.penName ?? user.username) : (chat.user_details?.name ?? chat.user_details?.username ?? 'Writer')
+  const lastRelayId = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group?.id
 
   return (
     <div className="app-wrap">
@@ -348,7 +350,19 @@ export default function Thread() {
               />
             ))}
           </div>
-          {/* TODO(Step 5, New Letter): the inline reply panel from thread.html. */}
+          {/* The writer's reply. Group admins record replies and write for their
+              writers from the group inbox (Step 5, later). */}
+          {!isChapter && prisoner?.prison && (
+            <ReplyPanel
+              prisonerId={prisoner.id}
+              prisonId={prisoner.prison}
+              preferredGroup={lastRelayId}
+              onSent={() => page.reload()}
+            />
+          )}
+          {!isChapter && !prisoner && (
+            <p className="convo-empty">This person is not in the directory at the moment, so replies can't be sent from here.</p>
+          )}
         </main>
 
         <Sidebar chat={chat} letters={letters} showWriter={isChapter} />

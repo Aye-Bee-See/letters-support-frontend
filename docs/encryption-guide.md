@@ -69,6 +69,7 @@ src/components/forms/
   RecoveryCodeStep.tsx the recovery code, shown once and confirmed
 src/letters/           letter flows that join the API calls and the crypto
   open.ts              opening a letter's envelope, body, relay note and attachments
+  send.ts              encrypting and sending a letter (with idempotency and key-version retry)
 src/context/
   AuthContext.tsx      holds the session and unlocked keys, in memory only
 src/pages/auth/
@@ -290,6 +291,19 @@ When someone forgets their password, the recovery code is the only way back in. 
 
 Tested end to end against the local API: a letter encrypted for the writer and the group, posted, printed and mailed; a reply recorded by the group through the letter's reference number, with an encrypted image attached; everything opened again as the writer, the image byte for byte.
 
+### Sending: `src/letters/send.ts`
+
+`sendLetter(draft, writer)` is used by New Letter and the thread's reply panel, through the `useLetterDraft` hook that holds the draft:
+
+1. **`GET /auth/public-key?chapter=`** fetches the current public key and key version of the group that will print and mail the letter.
+2. **`encryptLetter`** makes a fresh content key, encrypts the body and the note to the group with it, and seals it to two readers: **the writer** and **the mailing group** (whose envelope names the key version). A **paper letter** still carries the encryption of an empty body, because its content key is what encrypts the optional photo.
+3. **`POST /messaging/message`** carries an **`Idempotency-Key`**: 128 random bits, made once per letter and reused on every retry, so a double click or a lost connection never mails two copies. The API answers a repeat with the letter it already made.
+4. **If the group changed its key meanwhile** (`409 KeyVersionError`), the client fetches the new key, seals again and retries once. A `409 IdempotencyError`, meaning the first attempt is still being processed, is retried after a second.
+5. **An attached file** (a scan, or a photo of a paper letter) is encrypted with the same content key and its own nonce, then uploaded with the idempotency key plus `-file`. It's checked first: PDF, JPG or PNG, up to 20 MB.
+6. The content key is wiped. Only ciphertext and sealed copies left the device.
+
+Tested against the local API: a typed letter with a note and a file, the same letter retried under the same key (same letter back), and paper letters with and without a photo (both starting as `printed`), all read back as the writer.
+
 ---
 
 ## 9. Status
@@ -307,7 +321,8 @@ Tested end to end against the local API: a letter encrypted for the writer and t
 | First superadmin created with keys (bootstrap setup code) | API side (Pax), `questions-for-pax.md` H |
 | Group key creation and approving access (group-owner admin) | Step 6 |
 | Reading letters: envelopes, bodies, relay notes, attachments (Thread page) | Built (Step 5) |
-| Writing and sending letters (New Letter, reply panel); group inbox, printing | Step 5, next |
+| Writing and sending letters: New Letter, reply panel, paper letters, scans | Built (Step 5) |
+| Group inbox: print queue, printing with the reply reference, recording replies | Step 5, next |
 | Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
 
 ## 10. Known limits
