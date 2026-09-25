@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getAllPrisoners } from '../../api/prisoners'
+import { getAllPrisoners, getPrisonerFilters } from '../../api/prisoners'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
@@ -10,32 +10,26 @@ import { STATUS_LABELS } from '../../utils/prisoners'
 
 const STATUS_ORDER: PrisonerStatus[] = ['incarcerated', 'pretrial', 'free']
 
-// Markup and classes from solidarity-site/prisoners.html.
-// The whole directory is loaded once and filtered here; the chips are built
-// from the data (countries and statuses present), one active at a time.
+// Markup and classes from solidarity-site/prisoners.html. Chips come from
+// GET /prisoner/filters (the values present); one is active at a time, kept in
+// the URL, and the API returns only the matching records.
 export default function Prisoners() {
   const [params] = useSearchParams()
-  const country = params.get('country')
-  const status = params.get('status')
-  const prisoners = useApi(() => getAllPrisoners({ sort: 'name' }), [])
+  const country = params.get('country') ?? undefined
+  const status = (params.get('status') ?? undefined) as PrisonerStatus | undefined
+  const filters = useApi(getPrisonerFilters, [])
+  const prisoners = useApi(() => getAllPrisoners({ sort: 'name', country, status }), [country, status])
 
-  const { countries, statuses } = useMemo(() => {
-    const all = prisoners.data ?? []
-    return {
-      countries: [...new Set(all.map((p) => p.country).filter((c): c is string => !!c))].sort((a, b) =>
-        a.localeCompare(b),
-      ),
-      statuses: STATUS_ORDER.filter((s) => all.some((p) => p.status === s)),
-    }
-  }, [prisoners.data])
-
-  const shown = useMemo(
-    () =>
-      (prisoners.data ?? []).filter(
-        (p) => (!country || p.country === country) && (!status || p.status === status),
-      ),
-    [prisoners.data, country, status],
+  const countries = useMemo(
+    () => (filters.data?.country ?? []).map((c) => c.value).sort((a, b) => a.localeCompare(b)),
+    [filters.data],
   )
+  const statuses = useMemo(() => {
+    const present = new Set((filters.data?.status ?? []).map((s) => s.value))
+    return STATUS_ORDER.filter((s) => present.has(s))
+  }, [filters.data])
+
+  const count = prisoners.data?.length ?? 0
 
   return (
     <>
@@ -68,7 +62,7 @@ export default function Prisoners() {
           ))}
           {prisoners.data && (
             <span className="results-count">
-              {shown.length} {shown.length === 1 ? 'record' : 'records'}
+              {count} {count === 1 ? 'record' : 'records'}
             </span>
           )}
         </div>
@@ -79,7 +73,7 @@ export default function Prisoners() {
           <LoadState state={prisoners} what="prisoners" />
           {prisoners.data && (
             <div className="prisoner-grid">
-              {shown.map((p) => (
+              {prisoners.data.map((p) => (
                 <PrisonerTile key={p.id} prisoner={p} since="date" />
               ))}
             </div>

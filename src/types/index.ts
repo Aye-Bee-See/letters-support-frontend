@@ -156,12 +156,24 @@ export interface MailRuleList {
   parameters: Record<string, { type: string; label: string; description: string; minimum?: number; items?: string }>
 }
 
+/** A facility's postal address. */
+export interface PrisonAddress {
+  street?: string
+  city?: string
+  postalCode?: string
+  /** The exact lines to print on an envelope, in order (1 to 8). Print these as given when present. */
+  lines?: string[]
+  [part: string]: string | string[] | undefined
+}
+
+/** GET /prisoner/filters and /prison/filters: the values present, with counts, most common first. */
+export type FilterValues<K extends string> = Record<K, { value: string; count: number }[]>
+
 /** A correctional facility. The UI calls it a "facility"; the API calls it a "prison". */
 export interface Prison extends Timestamps {
   id: number
   prisonName: string
-  /** Free-form JSON; the seeds use { street: "..." }. */
-  address: Record<string, string>
+  address: PrisonAddress
   country: string | null
   routing: RoutingMethod | null
   scanService: string | null

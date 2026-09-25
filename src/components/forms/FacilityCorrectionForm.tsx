@@ -3,7 +3,7 @@ import { submitCorrection } from '../../api/corrections'
 import { getMailRules } from '../../api/facilities'
 import { toApiError } from '../../api/client'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, MailRuleCategory, Prison, RoutingMethod } from '../../types'
+import type { ApiError, MailRuleCategory, Prison, PrisonAddress, RoutingMethod } from '../../types'
 
 const ROUTING_OPTIONS: [RoutingMethod, string][] = [
   ['direct', 'Direct mail (physical letter)'],
@@ -38,6 +38,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
   const [street, setStreet] = useState(current.street ?? '')
   const [city, setCity] = useState(current.city ?? '')
   const [postalCode, setPostalCode] = useState(current.postalCode ?? '')
+  const [linesText, setLinesText] = useState((current.lines ?? []).join('\n'))
   const [routing, setRouting] = useState<RoutingMethod | ''>('')
   const [scanService, setScanService] = useState('')
   const [ruleTags, setRuleTags] = useState(() => new Set(prison.mailRules ?? []))
@@ -57,10 +58,20 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
     if (name.trim() && name.trim() !== prison.prisonName) fields.prisonName = name.trim()
 
     const address = { street: street.trim(), city: city.trim(), postalCode: postalCode.trim() }
-    if (address.street !== (current.street ?? '') || address.city !== (current.city ?? '') || address.postalCode !== (current.postalCode ?? '')) {
-      // Keep any other address parts the record has; drop parts cleared here.
-      const merged: Record<string, string> = { ...current, ...address }
-      fields.address = Object.fromEntries(Object.entries(merged).filter(([, v]) => v))
+    const lines = linesText.split('\n').map((l) => l.trim()).filter(Boolean)
+    const linesChanged = lines.join('\n') !== (current.lines ?? []).join('\n')
+    if (
+      linesChanged ||
+      address.street !== (current.street ?? '') ||
+      address.city !== (current.city ?? '') ||
+      address.postalCode !== (current.postalCode ?? '')
+    ) {
+      // The whole address object is replaced: keep any other parts the record has,
+      // drop parts cleared here, and send print lines only when there are some.
+      const merged: PrisonAddress = { ...current, ...address, lines: lines.length ? lines : undefined }
+      fields.address = Object.fromEntries(
+        Object.entries(merged).filter(([, v]) => (Array.isArray(v) ? v.length > 0 : !!v)),
+      )
     }
 
     if (routing && routing !== prison.routing) fields.routing = routing
@@ -165,6 +176,21 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
             Postal code
           </label>
           <input className="corr-input" type="text" id="corrPostal" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+        </div>
+        <div className="corr-field">
+          <label className="corr-label" htmlFor="corrLines">
+            As printed on envelopes
+            <span className="corr-label-opt">— one line per row, in the order the facility says to write them</span>
+          </label>
+          <textarea
+            className="corr-textarea"
+            id="corrLines"
+            rows={4}
+            placeholder={'e.g.\n247755\nMozyr, Gomel region\nIK-20'}
+            value={linesText}
+            onChange={(e) => setLinesText(e.target.value)}
+          />
+          <p className="corr-hint">Up to 8 lines. When set, these are printed exactly as given instead of the fields above.</p>
         </div>
 
         <div className="corr-field">

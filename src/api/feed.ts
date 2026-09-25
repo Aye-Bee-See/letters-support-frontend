@@ -1,7 +1,23 @@
+import { getOne, toApiError } from './client'
 import type { AbcfFeedItem } from '../types'
 
-// TODO: wire to real endpoint. A cron job will pull ABCF.net and populate this
-// server-side; until then the items are the prototype's (solidarity-site/index.html).
+/**
+ * ABCF.net news, newest first. The API pulls the feed on a schedule and stores
+ * it (GET /news), so visitors' browsers never contact abcf.net. The list is
+ * empty until the first fetch after boot, or when the feature is turned off.
+ */
+export async function getAbcfFeed(limit = 3): Promise<AbcfFeedItem[]> {
+  try {
+    return await getOne<AbcfFeedItem[]>('/news', { limit })
+  } catch (err) {
+    // TODO: remove once the API with GET /news (pull request #124) is merged.
+    if (toApiError(err).status === 404) return MOCK_FEED
+    throw err
+  }
+}
+
+// The prototype's items (solidarity-site/index.html), shown only while the
+// running API predates GET /news.
 const MOCK_FEED: AbcfFeedItem[] = [
   {
     title: 'Political Prisoner Update: Kevin "Rashid" Johnson Transferred Again',
@@ -25,5 +41,3 @@ const MOCK_FEED: AbcfFeedItem[] = [
       'Sundiata Acoli, released in 2023 after more than 49 years of imprisonment, continues to face significant medical expenses. The ABCF is raising funds for ongoing care.',
   },
 ]
-
-export const getAbcfFeed = async (): Promise<AbcfFeedItem[]> => MOCK_FEED

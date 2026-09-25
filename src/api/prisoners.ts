@@ -1,5 +1,5 @@
 import { getAllPages, getList, getOne } from './client'
-import type { ListParams, Prisoner, PrisonerStatus } from '../types'
+import type { FilterValues, ListParams, Prisoner, PrisonerStatus } from '../types'
 
 export interface PrisonerListParams extends ListParams {
   status?: PrisonerStatus
@@ -13,9 +13,12 @@ export interface PrisonerListParams extends ListParams {
 export const getPrisoners = (params?: PrisonerListParams) =>
   getList<Prisoner>('/prisoner/prisoners', params)
 
-/** The whole directory (every page), for the index to filter in the browser. */
+/** Every prisoner matching the filters (every page). */
 export const getAllPrisoners = (params?: Omit<PrisonerListParams, 'page' | 'page_size'>) =>
   getAllPages<Prisoner>('/prisoner/prisoners', params)
+
+/** The countries and statuses present, with counts, for the index's chips. */
+export const getPrisonerFilters = () => getOne<FilterValues<'country' | 'status'>>('/prisoner/filters')
 
 /** full=true adds the whole prison_details and support_groups. */
 export const getPrisoner = (id: number, full = true) =>

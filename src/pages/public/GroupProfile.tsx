@@ -1,13 +1,12 @@
 import { Fragment } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getAllFacilities } from '../../api/facilities'
 import { getGroup } from '../../api/groups'
 import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
 import ServiceTag from '../../components/ui/ServiceTag'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
-import type { PrisonSummary, SocialLinkKey } from '../../types'
+import type { SocialLinkKey } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
 
 const SOCIAL: [SocialLinkKey, string, string][] = [
@@ -22,29 +21,13 @@ const isUrl = (s: string) => /^https?:\/\//i.test(s)
 /** "https://www.portlandabc.org/" -> "portlandabc.org" */
 const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
 
-/**
- * The group with its supported prisoners and relay facilities. The embedded
- * prisoners carry no facility, so the facility list is loaded to fill in
- * "Held at" (see questions-for-pax.md).
- */
-async function loadGroup(id: number) {
-  const group = await getGroup(id, true)
-  const supported = group.supported_prisoners ?? []
-  if (supported.some((p) => p.prison)) {
-    const facilities = new Map((await getAllFacilities()).map((f) => [f.id, f]))
-    for (const p of supported) {
-      const f = p.prison ? facilities.get(p.prison) : undefined
-      if (f && !p.prison_details) p.prison_details = { id: f.id, prisonName: f.prisonName, country: f.country } satisfies PrisonSummary
-    }
-  }
-  return group
-}
-
-// Markup and classes from solidarity-site/group-profile.html.
+// Markup and classes from solidarity-site/group-profile.html. full=true embeds the
+// prisoners the group mails directly to (each with its facility) and the
+// facilities it relays for.
 export default function GroupProfile() {
   const id = Number(useParams().id)
   const { user, isAdmin } = useAuth()
-  const page = useApi(() => loadGroup(id), [id])
+  const page = useApi(() => getGroup(id, true), [id])
 
   if (!page.data) {
     return (

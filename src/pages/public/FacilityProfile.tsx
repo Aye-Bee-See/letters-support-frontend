@@ -53,7 +53,7 @@ export default function FacilityProfile() {
   }
 
   const { facility: f, verifierName } = page.data
-  const address = [f.prisonName, ...addressLines(f)]
+  const address = addressLines(f)
   const rules = mailRuleLines(f)
   const stale = isStale(f.verifiedAt)
   const months = f.verifiedAt ? monthsSince(f.verifiedAt) : null

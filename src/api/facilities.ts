@@ -1,6 +1,6 @@
 // The UI says "facility"; the API says "prison" (/prison).
 import { getAllPages, getList, getOne } from './client'
-import type { ListParams, MailRuleList, Prison, RoutingMethod } from '../types'
+import type { FilterValues, ListParams, MailRuleList, Prison, RoutingMethod } from '../types'
 
 export interface FacilityListParams extends ListParams {
   country?: string
@@ -17,9 +17,12 @@ export interface FacilityListParams extends ListParams {
 export const getFacilities = (params?: FacilityListParams) =>
   getList<Prison>('/prison/prisons', params)
 
-/** Every facility (every page), for the index to filter in the browser. */
+/** Every facility matching the filters (every page). */
 export const getAllFacilities = (params?: Omit<FacilityListParams, 'page' | 'page_size'>) =>
   getAllPages<Prison>('/prison/prisons', params)
+
+/** The countries and routing methods present, with counts, for the index's chips. */
+export const getFacilityFilters = () => getOne<FilterValues<'country' | 'routing'>>('/prison/filters')
 
 /** full=true adds prisoners and relay_groups. */
 export const getFacility = (id: number, full = true) =>

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { getAllFacilities } from '../../api/facilities'
+import { getAllFacilities, getFacilityFilters, type FacilityListParams } from '../../api/facilities'
 import { getAllGroups } from '../../api/groups'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
@@ -9,9 +9,9 @@ import { useApi } from '../../hooks/useApi'
 import { addressLine, restrictionPhrases, routingLines } from '../../utils/facilities'
 import { shortDate } from '../../utils/prisoners'
 
-/** All facilities with their relay groups, plus names for the groups that verified them. */
-async function loadFacilities() {
-  const facilities = await getAllFacilities({ sort: 'name', full: true })
+/** The matching facilities with their relay groups, plus names for the groups that verified them. */
+async function loadFacilities(filter: Omit<FacilityListParams, 'page' | 'page_size'>) {
+  const facilities = await getAllFacilities({ sort: 'name', full: true, ...filter })
   const groupNames = new Map<number, string>()
   if (facilities.some((f) => f.verifiedBy)) {
     for (const g of await getAllGroups()) groupNames.set(g.id, g.name)
@@ -19,34 +19,26 @@ async function loadFacilities() {
   return { facilities, groupNames }
 }
 
-// Markup and classes from solidarity-site/prisons.html. The whole list is
-// loaded once and filtered here; chips are built from the data, one active at
-// a time, kept in the URL.
+// Markup and classes from solidarity-site/prisons.html. Chips come from
+// GET /prison/filters (countries and routing methods present); one is active
+// at a time, kept in the URL, and the API returns only the matching records.
 export default function Facilities() {
   const [params] = useSearchParams()
-  const country = params.get('country')
+  const country = params.get('country') ?? undefined
   const scanOnly = params.get('routing') === 'scan_only'
   const relay = params.get('relay') === 'true'
-  const list = useApi(loadFacilities, [])
-  const all = useMemo(() => list.data?.facilities ?? [], [list.data])
+  const filters = useApi(getFacilityFilters, [])
+  const list = useApi(
+    () => loadFacilities({ country, routing: scanOnly ? 'scan_only' : undefined, relay: relay || undefined }),
+    [country, scanOnly, relay],
+  )
+  const shown = useMemo(() => list.data?.facilities ?? [], [list.data])
 
   const countries = useMemo(
-    () => [...new Set(all.map((f) => f.country).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b)),
-    [all],
+    () => (filters.data?.country ?? []).map((c) => c.value).sort((a, b) => a.localeCompare(b)),
+    [filters.data],
   )
-  const anyScanOnly = all.some((f) => f.routing === 'scan_only')
-  const anyRelay = all.some((f) => f.relay_groups?.length)
-
-  const shown = useMemo(
-    () =>
-      all.filter(
-        (f) =>
-          (!country || f.country === country) &&
-          (!scanOnly || f.routing === 'scan_only') &&
-          (!relay || (f.relay_groups?.length ?? 0) > 0),
-      ),
-    [all, country, scanOnly, relay],
-  )
+  const anyScanOnly = (filters.data?.routing ?? []).some((r) => r.value === 'scan_only')
 
   return (
     <>
@@ -77,11 +69,10 @@ export default function Facilities() {
               Scan service required
             </FilterChip>
           )}
-          {anyRelay && (
-            <FilterChip to="/facilities?relay=true" active={relay}>
-              Relay group available
-            </FilterChip>
-          )}
+          {/* The filters endpoint has no relay values; like the prototype, this chip is always offered. */}
+          <FilterChip to="/facilities?relay=true" active={relay}>
+            Relay group available
+          </FilterChip>
           {list.data && (
             <span className="results-count">
               {shown.length} {shown.length === 1 ? 'facility' : 'facilities'}

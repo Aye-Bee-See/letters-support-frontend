@@ -1,4 +1,4 @@
-import type { Prison, RoutingMethod } from '../types'
+import type { Prison, PrisonAddress, RoutingMethod } from '../types'
 
 // Display helpers for facility (prison) records.
 
@@ -25,23 +25,39 @@ export function isStale(verifiedAt: string | null | undefined): boolean {
   return Date.now() - new Date(verifiedAt).getTime() > STALE_AFTER_DAYS * 24 * 60 * 60 * 1000
 }
 
+const nonEmpty = (s: unknown): s is string => typeof s === 'string' && s.trim() !== ''
+
+/** Lines composed from the structured fields: street, "city postalCode", any other string parts. */
+function composedLines(address: PrisonAddress): string[] {
+  const known = ['street', 'city', 'postalCode', 'lines']
+  const others = Object.entries(address)
+    .filter(([key]) => !known.includes(key))
+    .map(([, value]) => value)
+  return [address.street, [address.city, address.postalCode].filter(Boolean).join(' '), ...others].filter(nonEmpty)
+}
+
+/** The facility's own print lines, when it has them (address.lines, set per facility). */
+export const printLines = (address: PrisonAddress | null | undefined): string[] | null =>
+  address?.lines?.filter(nonEmpty).length ? address.lines.filter(nonEmpty) : null
+
 /**
- * One line of postal address from the free-form JSON (seeds use street, city,
- * postalCode): "PO Box 2000, White Deer, PA 17887".
+ * One line of postal address: the print lines joined when the facility has
+ * them, otherwise composed from the fields ("PO Box 2000, White Deer, PA 17887").
  */
-export function addressLine(address: Prison['address'] | null | undefined): string | null {
+export function addressLine(address: PrisonAddress | null | undefined): string | null {
   if (!address) return null
-  const { street, city, postalCode, ...rest } = address
-  const cityLine = [city, postalCode].filter(Boolean).join(' ')
-  const parts = [street, cityLine, ...Object.values(rest)].filter((s) => typeof s === 'string' && s.trim())
+  const parts = printLines(address) ?? composedLines(address)
   return parts.length ? parts.join(', ') : null
 }
 
-/** The address as printed lines: street, "city postalCode", any other parts, country. */
-export function addressLines(prison: Pick<Prison, 'address' | 'country'>): string[] {
-  const { street, city, postalCode, ...rest } = prison.address ?? {}
-  return [street, [city, postalCode].filter(Boolean).join(' '), ...Object.values(rest), prison.country].filter(
-    (s): s is string => typeof s === 'string' && s.trim() !== '',
+/**
+ * The address block for the facility profile. The print lines exactly as given
+ * when present (they are what goes on the envelope, in the facility's order);
+ * otherwise the facility name, the composed lines and the country.
+ */
+export function addressLines(prison: Pick<Prison, 'address' | 'country' | 'prisonName'>): string[] {
+  return (
+    printLines(prison.address) ?? [prison.prisonName, ...composedLines(prison.address ?? {}), prison.country].filter(nonEmpty)
   )
 }
 

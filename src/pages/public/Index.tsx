@@ -21,7 +21,8 @@ const feedDate = (iso: string) =>
 
 // Markup and classes from solidarity-site/index.html.
 export default function Index() {
-  const feed = useApi(getAbcfFeed, [])
+  // No loading or error line for the feed: until the API has fetched it, it is empty and shows nothing.
+  const feed = useApi(() => getAbcfFeed(3), [])
   const tiles = useApi(getFrontPagePrisoners, [])
 
   return (
@@ -77,7 +78,8 @@ export default function Index() {
               <a href={ABCF_URL} target="_blank" rel="noopener noreferrer" className="feed-more">
                 More at ABCF.net →
               </a>
-              <span className="feed-note">Updated hourly</span>
+              {/* The API fetches every few hours (NEWS_EVERY_HOURS, 6 by default); the prototype said hourly. */}
+              <span className="feed-note">Updated regularly</span>
             </div>
           </aside>
         </div>
