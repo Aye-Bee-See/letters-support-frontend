@@ -170,7 +170,7 @@ Run with `npm test`. Two kinds of test:
 1. **`GET /auth/login-params?username=`** returns `{scheme, kdfSalt, kdfParams}`. For a username that doesn't exist, the API returns a stable fake salt, so this call can't be used to find out who has an account.
 2. **If the scheme is `plain`, sign-in stops and nothing is sent.** The web client has no plain path at all (the owner's decision, 25 September). The old sign-in sends the password itself, and a tampered server could answer `plain` just to get it. Since the client never sends a password, whatever a server answers, the question of which accounts are plain doesn't arise, and there's nothing to remember per device.
 3. **If `split`:** `signInKeys` runs Argon2id once and derives both keys. Only `authKey` is sent, with **`POST /auth/login`**, which returns the user and a token. A `401` is reported as "Incorrect username or password"; the API never says which was wrong. A `429` reports how long to wait.
-4. **`GET /auth/keys`** returns the key bundle, using the new token directly because the session doesn't exist yet. If the account has keys, `unlockAccount` opens the private key with `wrapKey`. For a group admin who holds the group key, `unlockGroupKey` opens that too.
+4. **`GET /auth/keys`** returns the key bundle, using the new token directly because the session doesn't exist yet. **An account without keys is refused.** Every account has keys, superadmins included, made when the account is created (the owner's decision, 25 September), so a keyless bundle means something is wrong. `unlockAccount` opens the private key with `wrapKey`. For a group admin who holds the group key, `unlockGroupKey` opens that too.
 5. `wrapKey` is wiped whatever happens (a `finally` block).
 
 ### Moving an account to split, and `scripts/dev-split-accounts.ts`
@@ -281,7 +281,8 @@ When someone forgets their password, the recovery code is the only way back in. 
 | Claim: the group-made keypair re-locked under the writer's password | Built (Step 4) |
 | Local backend switched to end-to-end mode | Done 25 September |
 | Recovery with a recovery code: same keypair, new password and new recovery code | Built (Step 4) |
-| Safety net for an account without keys at sign-in | Step 4, next |
+| Every account has keys; sign-in refuses a keyless account | Built (Step 4) |
+| First superadmin created with keys (bootstrap setup code) | API side (Pax), `questions-for-pax.md` H |
 | Group key creation and approving access (group-owner admin) | Step 6 |
 | Encrypting and reading letters in the UI | Step 5 |
 | Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
