@@ -53,6 +53,26 @@ export async function recoveryKeys(privateKey: string): Promise<{ recoveryCode: 
   }
 }
 
+export interface LockedKeys {
+  /** Sent as `password`, with `authScheme: "split"`. */
+  authKey: string
+  /** Shown once; the person must confirm they saved it. */
+  recoveryCode: string
+  /** Both wrapped copies of the private key, for the API. */
+  keyFields: PasswordKeyFields & RecoveryKeyFields
+}
+
+/**
+ * Lock an existing private key under a new password (split scheme) and a new
+ * recovery code. Used when claiming: the keypair is the one the group made, and
+ * letters are already sealed to it.
+ */
+export async function lockKeys(privateKey: string, password: string): Promise<LockedKeys> {
+  const pw = await passwordKeys(privateKey, password)
+  const rc = await recoveryKeys(privateKey)
+  return { authKey: pw.authKey, recoveryCode: rc.recoveryCode, keyFields: { ...pw.fields, ...rc.fields } }
+}
+
 export interface NewAccount {
   keypair: Keypair
   /** Sent as `password`, with `authScheme: "split"`. */
@@ -66,18 +86,12 @@ export interface NewAccount {
 /**
  * Everything a new account needs, made on the device: a keypair, the private
  * key wrapped under the password (split scheme) and under a new recovery code.
- * Used for joining with an invite code, claiming, and first key set-up.
+ * Used for joining with an invite code and accepting an invitation.
  */
 export async function createAccountKeys(password: string): Promise<NewAccount> {
   const keypair = await generateKeypair()
-  const pw = await passwordKeys(keypair.privateKey, password)
-  const rc = await recoveryKeys(keypair.privateKey)
-  return {
-    keypair,
-    authKey: pw.authKey,
-    recoveryCode: rc.recoveryCode,
-    keyFields: { publicKey: keypair.publicKey, ...pw.fields, ...rc.fields },
-  }
+  const locked = await lockKeys(keypair.privateKey, password)
+  return { keypair, ...locked, keyFields: { publicKey: keypair.publicKey, ...locked.keyFields } }
 }
 
 /**

@@ -61,11 +61,16 @@ src/crypto/            the crypto core: no API calls, no React, no state
 src/auth/              flows that join the API calls and the crypto
   signIn.ts            sign-in
   join.ts              joining with an invite code: account and keys in one request
+  claim.ts             claiming a group-made account: the same keypair, re-locked
+src/components/forms/
+  AccountFields.tsx    username, pen name, password fields (Join, Claim)
+  RecoveryCodeStep.tsx the recovery code, shown once and confirmed
 src/context/
   AuthContext.tsx      holds the session and unlocked keys, in memory only
 src/pages/auth/
   Login.tsx            the sign-in form
   Join.tsx             joining: code, form, recovery code
+  Claim.tsx            claiming: code, form, recovery code
 src/api/auth.ts        API calls: sign-in parameters, sign-in, key bundle, setting keys, split password
 scripts/
   dev-split-accounts.ts  DEVELOPMENT ONLY: moves local seeded accounts to split sign-in
@@ -214,7 +219,32 @@ The wording follows the everyday-screen rule: "Your password never leaves this d
 
 ---
 
-## 6. Status
+## 6. Claiming an account a group made
+
+A group can make an account for someone who writes through it (a *managed writer*). The group's browser generates that writer's keypair, and seals the private key to the group so the group can read and print the writer's letters. To hand the account over, the group's browser makes a **claim code** and locks another copy of the writer's private key under it (`createClaimToken`). The server gets only the code's SHA-256 hash and the locked copy, never the code.
+
+### `src/auth/claim.ts`
+
+`claim(info, {token, username, penName, password})`:
+
+1. **`GET /auth/claim?token=`** (done by the page) says who the account is for, and in end-to-end mode returns the locked copy with its salt and parameters, plus the writer's public key. `claimIsUsable` checks all of it is present. A code without it (made by a server in the old mode) can't be used.
+2. **`unlockWithClaimToken`** opens the writer's private key with the typed code (normalised first, so dashes and case don't matter) and checks it matches the public key.
+3. **`lockKeys(privateKey, password)`** (in `account.ts`) locks the **same** private key under the writer's new password (split scheme) and a new recovery code. The keypair doesn't change, so every letter already sealed to the writer stays readable.
+4. **`POST /auth/claim`** sends the username, optional pen name, the auth key and the two locked copies. The API refuses a changed public key. It spends the code, makes the account the writer's, and **clears the group's sealed copy of the key**. The group keeps its own envelopes on letters it mailed, because a group that prints a letter can always read that letter.
+5. It signs in with the auth key, and the recovery code is shown as in Join.
+
+### Shared pieces
+
+- **`src/components/forms/AccountFields.tsx`** (with `accountValues.ts`): username, pen name (with the availability check), password with the strength meter, and confirmation. Used by Join and Claim.
+- **`src/components/forms/RecoveryCodeStep.tsx`**: the recovery code shown once, with the confirmation checkbox. The session starts only after it's ticked.
+
+### A client fix found here
+
+`src/api/client.ts` adds the session's token to every request, but it now **leaves alone a request that names its own token**. Sign-in fetches the new account's key bundle with the new account's token before the session exists. Previously, signing in as a second account while another was signed in fetched the first account's keys, and unlocking failed.
+
+---
+
+## 7. Status
 
 | Piece | State |
 | --- | --- |
@@ -222,12 +252,14 @@ The wording follows the everyday-screen rule: "Your password never leaves this d
 | Sign-in: split only (plain refused), unlocking keys | Built (Step 4) |
 | Dev script moving local seeded accounts to split | Built |
 | Join with an invite code: keys made with the account, recovery code confirmed | Built (Step 4) |
-| Claim, Recovery pages; safety net for an account without keys at sign-in | Step 4, next |
+| Claim: the group-made keypair re-locked under the writer's password | Built (Step 4) |
+| Local backend switched to end-to-end mode | Done 25 September |
+| Recovery page; safety net for an account without keys at sign-in | Step 4, next |
 | Group key creation and approving access (group-owner admin) | Step 6 |
 | Encrypting and reading letters in the UI | Step 5 |
 | Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
 
-## 7. Known limits
+## 8. Known limits
 
 - **The web app runs whatever JavaScript the server sends.** A tampered web host could serve code that leaks keys. The native apps are stronger on this point. Nothing here claims otherwise.
 - **An account the server holds as `plain` can't sign in to the web client at all.** That's the price of never sending a password. On a real deployment, every account is created split (`REQUIRE_SPLIT_AUTH=true`); how the first admin is created split is an open question for the API side (`questions-for-pax.md` E).

@@ -5,6 +5,7 @@ import { deriveKey, KDF_PARAMS, normalizeCode, passwordBytes, splitFromMaster } 
 import {
   createAccountKeys,
   createClaimToken,
+  lockKeys,
   openChallenge,
   passwordKeys,
   sealPrivateKeyTo,
@@ -130,12 +131,19 @@ describe('account flows', () => {
     expect(await unlockAccount({ ...changed.fields, publicKey: keypair.publicKey }, signIn.wrapKey)).toEqual(keypair)
   })
 
-  it('hands a managed writer their key through a claim token', { timeout: SLOW }, async () => {
+  it('hands a managed writer their key through a claim token, then locks it under their password', { timeout: SLOW }, async () => {
     const writer = await generateKeypair()
     const claim = await createClaimToken(writer.privateKey)
     expect(claim.fields.tokenHash).toBe(await hashCode(claim.token))
     const opened = await unlockWithClaimToken({ ...claim.fields, publicKey: writer.publicKey }, claim.token.replace(/-/g, ''))
     expect(opened).toEqual(writer)
+
+    // Claiming: the same keypair, locked under the writer's own password and recovery code.
+    const locked = await lockKeys(opened.privateKey, 'the writer password')
+    const signIn = await signInKeys('the writer password', { scheme: 'split', kdfSalt: locked.keyFields.kdfSalt, kdfParams: locked.keyFields.kdfParams })
+    expect(signIn.authKey).toBe(locked.authKey)
+    expect(await unlockAccount({ ...locked.keyFields, publicKey: writer.publicKey }, signIn.wrapKey)).toEqual(writer)
+    expect(await unlockWithRecoveryCode({ ...locked.keyFields, publicKey: writer.publicKey }, locked.recoveryCode)).toEqual(writer)
   })
 
   it('opens a group key sealed to a member', async () => {

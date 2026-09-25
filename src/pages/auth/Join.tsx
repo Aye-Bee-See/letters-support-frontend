@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { checkInviteCode, checkPenName } from '../../api/auth'
+import { checkInviteCode } from '../../api/auth'
 import { toApiError } from '../../api/client'
 import { join, type Joined } from '../../auth/join'
-import { useAuth } from '../../hooks/useAuth'
+import { CODE_LENGTH, normalizeCode } from '../../crypto'
+import AccountFields from '../../components/forms/AccountFields'
+import { accountValuesReady, emptyAccountValues } from '../../components/forms/accountValues'
+import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import type { ApiError } from '../../types'
-import { MIN_PASSWORD_LENGTH, passwordStrength } from '../../utils/password'
 
 // No prototype for Join: markup and classes are claim.html's (pages/claim.css),
 // the same journey (code, form, working, then done), with a recovery-code step.
@@ -36,12 +38,18 @@ function codeProblem(error: ApiError): { title: string; body: string } {
 }
 
 export default function Join() {
+  const navigate = useNavigate()
   const [params] = useSearchParams()
   const codeFromLink = params.get('code') ?? ''
   const [step, setStep] = useState<Step>(codeFromLink ? { name: 'checking' } : { name: 'enter-code' })
   const [typedCode, setTypedCode] = useState('')
 
   async function check(code: string) {
+    // Claim codes are twice as long as invite codes: a claim code typed here goes to the claim page.
+    if (normalizeCode(code).length === CODE_LENGTH) {
+      navigate(`/claim?token=${encodeURIComponent(code.trim())}`, { replace: true })
+      return
+    }
     setStep({ name: 'checking' })
     try {
       const invite = await checkInviteCode(code)
@@ -54,6 +62,10 @@ export default function Join() {
   // A code in the link (the QR on a slip) is checked straight away.
   useEffect(() => {
     if (!codeFromLink) return
+    if (normalizeCode(codeFromLink).length === CODE_LENGTH) {
+      navigate(`/claim?token=${encodeURIComponent(codeFromLink)}`, { replace: true })
+      return
+    }
     let current = true
     checkInviteCode(codeFromLink)
       .then((invite) => current && setStep({ name: 'form', code: codeFromLink, group: invite.chapter.name }))
@@ -61,7 +73,7 @@ export default function Join() {
     return () => {
       current = false
     }
-  }, [codeFromLink])
+  }, [codeFromLink, navigate])
 
   return (
     <div className="claim-page">
@@ -143,7 +155,7 @@ export default function Join() {
             />
           )}
 
-          {step.name === 'recovery' && <RecoveryStep joined={step.joined} />}
+          {step.name === 'recovery' && <RecoveryCodeStep joined={step.joined} eyebrow="One more step" />}
         </div>
 
         <Link to="/" className="claim-back">
@@ -153,6 +165,7 @@ export default function Join() {
     </div>
   )
 }
+
 
 /**
  * The account form. It shows its own "working" view while the account is made,
@@ -171,31 +184,9 @@ function JoinForm({
   onCodeRefused: (error: ApiError) => void
 }) {
   const [busy, setBusy] = useState(false)
-  const [username, setUsername] = useState('')
-  const [penName, setPenName] = useState('')
-  const [penNote, setPenNote] = useState<{ ok: boolean; text: string } | null>(null)
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [show, setShow] = useState({ password: false, confirm: false })
+  const [values, setValues] = useState(emptyAccountValues)
   const [errors, setErrors] = useState<string[]>([])
-
-  const strength = passwordStrength(password)
-  const mismatch = confirm.length > 0 && confirm !== password
-  const ready =
-    username.trim().length >= 3 && penName.trim().length >= 3 && password.length >= MIN_PASSWORD_LENGTH && confirm === password && penNote?.ok !== false
-
-  async function checkPen() {
-    const name = penName.trim()
-    if (name.length < 3) return setPenNote(null)
-    try {
-      const r = await checkPenName(name)
-      if (!r.available) setPenNote({ ok: false, text: r.reason ?? 'That pen name is not available.' })
-      else if (!r.twoParts) setPenNote({ ok: true, text: 'Available. A two-part name, like “James Hollow”, reads as a name to a mail room.' })
-      else setPenNote({ ok: true, text: 'Available.' })
-    } catch {
-      setPenNote(null) // the API checks again on submit
-    }
-  }
+  const ready = accountValuesReady(values, { penNameRequired: true })
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -203,7 +194,7 @@ function JoinForm({
     setErrors([])
     setBusy(true)
     try {
-      onJoined(await join({ code, username, penName, password }))
+      onJoined(await join({ code, username: values.username, penName: values.penName, password: values.password }))
     } catch (err) {
       const apiError = toApiError(err)
       // The code was used or cancelled in the meantime.
@@ -248,166 +239,17 @@ function JoinForm({
 
         {errors.length > 0 && <span className="claim-error is-visible">{errors.join(' ')}</span>}
 
-        <div className="claim-field">
-          <label className="claim-label" htmlFor="joinUsername">
-            Username
-          </label>
-          <input
-            className="claim-input"
-            type="text"
-            id="joinUsername"
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            maxLength={16}
-            placeholder="choose a username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <span className="pw-strength-label">3 to 16 characters. You sign in with this; it is never printed.</span>
-        </div>
-
-        <div className="claim-field">
-          <label className="claim-label" htmlFor="joinPenName">
-            Pen name
-          </label>
-          <input
-            className={penNote && !penNote.ok ? 'claim-input error' : 'claim-input'}
-            type="text"
-            id="joinPenName"
-            maxLength={40}
-            placeholder="e.g. James Hollow"
-            value={penName}
-            onChange={(e) => {
-              setPenName(e.target.value)
-              setPenNote(null)
-            }}
-            onBlur={checkPen}
-          />
-          <span className="pw-strength-label" style={penNote && !penNote.ok ? { color: 'var(--alert)' } : undefined}>
-            {penNote?.text ?? 'Your letters are signed with this, and replies are addressed to it. You can change it later.'}
-          </span>
-        </div>
-
-        <div className="claim-field">
-          <label className="claim-label" htmlFor="joinPassword">
-            Password
-          </label>
-          <div className="claim-pw-wrap">
-            <input
-              className="claim-input"
-              type={show.password ? 'text' : 'password'}
-              id="joinPassword"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button type="button" className="claim-show-pw" onClick={() => setShow((s) => ({ ...s, password: !s.password }))}>
-              {show.password ? 'Hide' : 'Show'}
-            </button>
-          </div>
-          <div className="pw-strength-bar">
-            <div className={strength ? `pw-strength-fill ${strength.level}` : 'pw-strength-fill'}></div>
-          </div>
-          <span className="pw-strength-label">{strength?.label ?? `At least ${MIN_PASSWORD_LENGTH} characters.`}</span>
-        </div>
-
-        <div className="claim-field">
-          <label className="claim-label" htmlFor="joinConfirm">
-            Confirm password
-          </label>
-          <div className="claim-pw-wrap">
-            <input
-              className={mismatch ? 'claim-input error' : 'claim-input'}
-              type={show.confirm ? 'text' : 'password'}
-              id="joinConfirm"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
-            <button type="button" className="claim-show-pw" onClick={() => setShow((s) => ({ ...s, confirm: !s.confirm }))}>
-              {show.confirm ? 'Hide' : 'Show'}
-            </button>
-          </div>
-          <span className={mismatch ? 'claim-error is-visible' : 'claim-error'}>Passwords do not match.</span>
-        </div>
+        <AccountFields
+          values={values}
+          onChange={setValues}
+          idPrefix="join"
+          penNameHint="Your letters are signed with this, and replies are addressed to it. You can change it later."
+        />
 
         <button type="submit" className="claim-submit" disabled={!ready}>
           Create account
         </button>
       </div>
     </form>
-  )
-}
-
-/** Shown once, straight after the account is made. The decided recovery wording (22 Sept note §2). */
-function RecoveryStep({ joined }: { joined: Joined }) {
-  const { startSession } = useAuth()
-  const navigate = useNavigate()
-  const [saved, setSaved] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(joined.recoveryCode)
-      setCopied(true)
-    } catch {
-      // Clipboard unavailable (insecure context, permissions): writing it down still works.
-    }
-  }
-
-  return (
-    <div className="claim-state is-active">
-      <div className="claim-header">
-        <p className="claim-eyebrow">One more step</p>
-        <h1 className="claim-title">Save your recovery code</h1>
-        <p className="claim-org-note">
-          If you ever forget your password, this code is the only way back into your account.
-        </p>
-      </div>
-
-      <div className="claim-body">
-        <div className="claim-encryption-note" style={{ alignItems: 'center', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: '1.05rem', letterSpacing: '0.06em', wordBreak: 'break-all' }}>
-            {joined.recoveryCode}
-          </p>
-          <p>
-            <button type="button" className="claim-show-pw" style={{ position: 'static' }} onClick={copy}>
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </p>
-        </div>
-
-        <div className="claim-encryption-note">
-          <p>Write it down, or keep it in a password manager. It is shown only now.</p>
-          <p>
-            <strong>
-              If you lose both your password and your recovery code, your letters cannot be recovered by anyone — not
-              your group, not us.
-            </strong>
-          </p>
-        </div>
-
-        <div className="claim-check-row">
-          <input type="checkbox" id="joinSaved" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
-          <label className="claim-check-label" htmlFor="joinSaved">
-            I have saved my recovery code somewhere safe.
-          </label>
-        </div>
-
-        <button
-          type="button"
-          className="claim-submit"
-          disabled={!saved}
-          onClick={() => {
-            startSession(joined.signedIn)
-            navigate('/inbox', { replace: true })
-          }}
-        >
-          Go to your inbox →
-        </button>
-      </div>
-    </div>
   )
 }

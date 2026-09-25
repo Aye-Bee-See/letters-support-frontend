@@ -2,11 +2,12 @@
 // never touch libsodium directly (CLAUDE.md, "Encryption").
 
 export { KDF_PARAMS, normalizeCode } from './kdf'
-export { CODE_LENGTH, formatCode, generateCode, hashCode } from './codes'
+export { CODE_LENGTH, formatCode, generateCode, hashCode, INVITE_CODE_LENGTH } from './codes'
 export { generateKeypair, type Keypair } from './primitives'
 export {
   createAccountKeys,
   createClaimToken,
+  lockKeys,
   openChallenge,
   passwordKeys,
   recoveryKeys,
@@ -17,6 +18,7 @@ export {
   unlockWithClaimToken,
   unlockWithRecoveryCode,
   type ClaimMaterial,
+  type LockedKeys,
   type NewAccount,
   type PasswordKeyFields,
   type RecoveryKeyFields,

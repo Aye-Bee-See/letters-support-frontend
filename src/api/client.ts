@@ -21,7 +21,10 @@ const client = axios.create({
 })
 
 client.interceptors.request.use((config) => {
-  if (authToken) config.headers.Authorization = `Bearer ${authToken}`
+  // A request that names its own token (sign-in fetching the new account's keys
+  // before the session exists) keeps it; overriding it with the current session's
+  // would fetch another account's keys.
+  if (authToken && !config.headers.Authorization) config.headers.Authorization = `Bearer ${authToken}`
   return config
 })
 

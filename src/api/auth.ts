@@ -1,6 +1,6 @@
 import client, { getOne, post, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
-import type { ApiEnvelope, KeyBundle, LoginParams, LoginResult, User } from '../types'
+import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, User } from '../types'
 
 // Sign-in is split (README "Signing in without sending the password"):
 //   1. getLoginParams(username) -> { scheme, kdfSalt, kdfParams }
@@ -52,6 +52,45 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
 /** GET /auth/pen-name-available (public, rate limited). `name` is the cleaned form the API would store. */
 export const checkPenName = (name: string) =>
   getOne<{ available: boolean; name: string; reason: string | null; twoParts: boolean }>('/auth/pen-name-available', { name })
+
+// --- Claiming a managed account ---------------------------------------------
+
+/**
+ * GET /auth/claim?token= (public): who the claim code is for, and in end-to-end
+ * mode the writer's private key locked under the code. 404 for an unknown or
+ * revoked code; 410 with a `condition` of used or expired.
+ */
+export interface ClaimInfo {
+  writer: { id: number; name: string }
+  chapter: { id: number; name: string } | null
+  expiresAt: string
+  publicKey?: string | null
+  claimWrappedPrivateKey?: string | null
+  claimSalt?: string | null
+  claimKdfParams?: KdfParams | null
+}
+
+export const getClaimInfo = (token: string) => getOne<ClaimInfo>('/auth/claim', { token })
+
+export interface ClaimRequest {
+  token: string
+  username: string
+  /** Optional: a group may already have given the writer one. */
+  penName?: string
+  authKey: string
+  keyFields: PasswordKeyFields & RecoveryKeyFields
+}
+
+/** POST /auth/claim: the account becomes the writer's; the group's copy of the key is cleared. */
+export const claimAccount = (req: ClaimRequest) =>
+  post<User>('/auth/claim', {
+    token: req.token,
+    username: req.username,
+    ...(req.penName ? { penName: req.penName } : {}),
+    authScheme: 'split',
+    password: req.authKey,
+    ...req.keyFields,
+  })
 
 // --- Invite codes (joining) ---------------------------------------------------
 

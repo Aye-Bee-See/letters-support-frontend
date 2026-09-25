@@ -12,6 +12,9 @@ const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
 /** 24 characters = 120 bits. Recovery codes and claim tokens use this length. */
 export const CODE_LENGTH = 24
 
+/** Invite codes are 12 characters, shown XXXX-XXXX-XXXX (made by the API). */
+export const INVITE_CODE_LENGTH = 12
+
 /**
  * A random code. 256 is a multiple of 32, so taking each byte mod 32 is
  * unbiased.
