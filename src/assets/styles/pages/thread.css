@@ -12,6 +12,11 @@
   order: 1;
   min-height: calc(100vh - 60px);
   border-right: 1px solid var(--border);
+  /* React port: a grid item won't shrink below its content's natural width by
+     default, and the one-line letter preview (nowrap) is as wide as its whole
+     text, so a long preview widened the column and pushed the sidebar out.
+     The prototype's sample previews were short enough not to show it. */
+  min-width: 0;
 }
 
 .thread-sidebar {

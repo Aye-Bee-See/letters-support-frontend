@@ -67,6 +67,8 @@ src/components/forms/
   AccountFields.tsx    username, pen name, password fields (Join, Claim)
   NewPasswordFields.tsx a new password with the strength meter, and its confirmation
   RecoveryCodeStep.tsx the recovery code, shown once and confirmed
+src/letters/           letter flows that join the API calls and the crypto
+  open.ts              opening a letter's envelope, body, relay note and attachments
 src/context/
   AuthContext.tsx      holds the session and unlocked keys, in memory only
 src/pages/auth/
@@ -270,7 +272,27 @@ When someone forgets their password, the recovery code is the only way back in. 
 
 ---
 
-## 8. Status
+## 8. Reading letters
+
+### `src/letters/open.ts`
+
+- **`openLetter(message, reader)`** picks the envelope this reader can open: their own (`readerType: "user"`, their id), or, for a group admin holding the group key, the group's (`readerType: "chapter"`). It opens the envelope to get the letter's content key, then decrypts the body and relay note. It never throws; it returns one of three states:
+  - `open`: the text and relay note, plus the content key, kept for attachments. The text is `null` when there's no typed body, as with a paper letter or a scan-only reply.
+  - `waiting`: there's no envelope for this reader yet, for example a reply recorded before the writer had keys. The page says "Your group will share this letter with you shortly." (The group's client adds the missing envelope; that's Step 6.)
+  - `unreadable`: an envelope that wouldn't open, or ciphertext that failed to decrypt. XChaCha20-Poly1305 refuses altered data rather than returning garbage.
+- **`openAttachment(attachment, contentKey)`** downloads the stored file, which in end-to-end mode is ciphertext, and decrypts it with the letter's content key and the attachment's own nonce. It returns a `Blob` of the original type.
+
+### `src/pages/correspondence/Thread.tsx`
+
+- On load: `GET /chat/chat?id=&full=true` returns the letters (each with only the envelopes the caller can open), the prisoner and the writer. **Every letter is opened** straight away, since the collapsed rows show a preview of the text. **Attachments are fetched and decrypted only when a letter is expanded**, and shown from temporary in-memory URLs that are released when the letter closes.
+- The status pill uses `relay_group` ("Mailed by Test Chapter"). Held and returned letters say why, in plain words. The relay note is shown to the writer as "Note to [group]".
+- Opening a thread **marks its notifications read** (`PUT /auth/notifications/read`). The writer inbox shows an unread dot for any thread with an unread "reply received" notification.
+
+Tested end to end against the local API: a letter encrypted for the writer and the group, posted, printed and mailed; a reply recorded by the group through the letter's reference number, with an encrypted image attached; everything opened again as the writer, the image byte for byte.
+
+---
+
+## 9. Status
 
 | Piece | State |
 | --- | --- |
@@ -284,10 +306,11 @@ When someone forgets their password, the recovery code is the only way back in. 
 | Every account has keys; sign-in refuses a keyless account | Built (Step 4) |
 | First superadmin created with keys (bootstrap setup code) | API side (Pax), `questions-for-pax.md` H |
 | Group key creation and approving access (group-owner admin) | Step 6 |
-| Encrypting and reading letters in the UI | Step 5 |
+| Reading letters: envelopes, bodies, relay notes, attachments (Thread page) | Built (Step 5) |
+| Writing and sending letters (New Letter, reply panel); group inbox, printing | Step 5, next |
 | Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
 
-## 9. Known limits
+## 10. Known limits
 
 - **The web app runs whatever JavaScript the server sends.** A tampered web host could serve code that leaks keys. The native apps are stronger on this point. Nothing here claims otherwise.
 - **An account the server holds as `plain` can't sign in to the web client at all.** That's the price of never sending a password. On a real deployment, every account is created split (`REQUIRE_SPLIT_AUTH=true`); how the first admin is created split is an open question for the API side (`questions-for-pax.md` E).

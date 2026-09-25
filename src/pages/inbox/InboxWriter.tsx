@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { getAllChats } from '../../api/letters'
+import { getUnreadNotifications } from '../../api/notifications'
 import AppShell from '../../components/layout/AppShell'
 import LoadState from '../../components/ui/LoadState'
 import StatusNotice from '../../components/ui/StatusNotice'
@@ -13,7 +14,14 @@ import { heldAt } from '../../utils/prisoners'
 // list needs no decryption: who, where, and the last letter's direction and
 // state. Letters are opened on the thread page.
 
-function ConvoRow({ chat }: { chat: Chat }) {
+/** Threads, and which have a reply not yet seen (an unread `letter.reply` notification). */
+async function loadInbox() {
+  const [chats, unread] = await Promise.all([getAllChats(), getUnreadNotifications().catch(() => [])])
+  const unreadChats = new Set(unread.filter((n) => n.event === 'letter.reply' && n.chat != null).map((n) => n.chat as number))
+  return { chats, unreadChats }
+}
+
+function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
   const navigate = useNavigate()
   const last = chat.last_message
   const direction = last ? directionLabel(last.sender, last.status) : null
@@ -23,7 +31,7 @@ function ConvoRow({ chat }: { chat: Chat }) {
 
   return (
     <tr
-      className="convo-row"
+      className={unread ? 'convo-row unread' : 'convo-row'}
       onClick={open}
       tabIndex={0}
       onKeyDown={(e) => {
@@ -31,6 +39,7 @@ function ConvoRow({ chat }: { chat: Chat }) {
       }}
     >
       <td>
+        {unread && <span className="unread-dot"></span>}
         {prisoner ? (
           <Link to={`/prisoners/${prisoner.id}`} className="convo-prisoner-link" onClick={(e) => e.stopPropagation()}>
             <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
@@ -59,7 +68,8 @@ function ConvoRow({ chat }: { chat: Chat }) {
 export default function InboxWriter() {
   const { user, endSession } = useAuth()
   const navigate = useNavigate()
-  const chats = useApi(() => getAllChats(), [])
+  const inbox = useApi(loadInbox, [])
+  const chats = { ...inbox, data: inbox.data?.chats ?? null }
 
   const sidebar = (
     <>
@@ -132,7 +142,7 @@ export default function InboxWriter() {
               </thead>
               <tbody>
                 {chats.data.map((chat) => (
-                  <ConvoRow key={chat.id} chat={chat} />
+                  <ConvoRow key={chat.id} chat={chat} unread={inbox.data?.unreadChats.has(chat.id) ?? false} />
                 ))}
               </tbody>
             </table>
