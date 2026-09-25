@@ -94,14 +94,16 @@ export interface KeyBundle {
   kdfSalt: string | null
   kdfParams: KdfParams | null
   hasRecovery: boolean
+  /** Group admins only. The group's key fields are null until the group has a key / the member is handed it. */
   orgKey?: {
     chapterId: number
     chapterName: string
-    chapterPublicKey: string
-    wrappedOrgPrivateKey: string
-    keyVersion?: number
-    owner?: number | null
-    isOwner?: boolean
+    chapterPublicKey: string | null
+    /** The group's private key sealed to this member; null until the owner hands it over. */
+    wrappedOrgPrivateKey: string | null
+    keyVersion: number
+    owner: number | null
+    isOwner: boolean
   } | null
 }
 
@@ -494,4 +496,6 @@ export interface ApiError {
   errors: string[]
   /** Human-readable, English, not stable. Show it, never match on it. */
   message: string
+  /** Seconds to wait, from Retry-After on a 429. */
+  retryAfter?: number
 }

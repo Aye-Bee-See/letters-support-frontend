@@ -83,8 +83,7 @@ export async function createAccountKeys(password: string): Promise<NewAccount> {
 /**
  * Sign-in, step 2: derive the keys from the password and GET /auth/login-params.
  * Send `authKey`; keep `wrapKey` only until the private key is unlocked, then wipe it.
- * Split accounts only: the plain path (seeded and test accounts) sends the
- * typed password and must never be reached by falling back from this.
+ * The web client never sends a password, so a `plain` account is refused.
  */
 export async function signInKeys(password: string, params: LoginParams): Promise<SplitKeys> {
   if (params.scheme !== 'split') throw new Error('signInKeys is for split accounts only.')

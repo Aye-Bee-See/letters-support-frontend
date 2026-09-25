@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:split-accounts": "vite build --ssr scripts/dev-split-accounts.ts --outDir node_modules/.dev-scripts --emptyOutDir --logLevel warn && node node_modules/.dev-scripts/dev-split-accounts.js"
   },
   "dependencies": {
     "axios": "^1.20.0",

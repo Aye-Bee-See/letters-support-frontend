@@ -47,12 +47,14 @@ export function toApiError(error: unknown): ApiError {
       (typeof body?.info === 'string' && body.info) ||
       errors[0] ||
       (error.response ? error.message : 'Could not reach the server.')
+    const retryAfter = Number(error.response?.headers?.['retry-after'])
     return {
       status: error.response?.status ?? 0,
       name: typeof body?.name === 'string' ? body.name : null,
       condition: typeof body?.condition === 'string' ? body.condition : null,
       errors,
       message,
+      ...(Number.isFinite(retryAfter) && retryAfter > 0 ? { retryAfter } : {}),
     }
   }
   return {
