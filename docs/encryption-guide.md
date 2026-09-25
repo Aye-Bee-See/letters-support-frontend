@@ -62,8 +62,10 @@ src/auth/              flows that join the API calls and the crypto
   signIn.ts            sign-in
   join.ts              joining with an invite code: account and keys in one request
   claim.ts             claiming a group-made account: the same keypair, re-locked
+  recover.ts           recovery with a recovery code: challenge, then re-lock
 src/components/forms/
   AccountFields.tsx    username, pen name, password fields (Join, Claim)
+  NewPasswordFields.tsx a new password with the strength meter, and its confirmation
   RecoveryCodeStep.tsx the recovery code, shown once and confirmed
 src/context/
   AuthContext.tsx      holds the session and unlocked keys, in memory only
@@ -71,6 +73,7 @@ src/pages/auth/
   Login.tsx            the sign-in form
   Join.tsx             joining: code, form, recovery code
   Claim.tsx            claiming: code, form, recovery code
+  ForgotPassword.tsx   recovery: the decided wording, code, new password, new recovery code
 src/api/auth.ts        API calls: sign-in parameters, sign-in, key bundle, setting keys, split password
 scripts/
   dev-split-accounts.ts  DEVELOPMENT ONLY: moves local seeded accounts to split sign-in
@@ -244,7 +247,30 @@ A group can make an account for someone who writes through it (a *managed writer
 
 ---
 
-## 7. Status
+## 7. Recovering an account with its recovery code
+
+When someone forgets their password, the recovery code is the only way back in. The server can't reset a password, because the password is what locks the private key. A server that could reset it could read the letters.
+
+### `src/auth/recover.ts`
+
+1. **`openRecovery(username, code)`**:
+   - **`GET /auth/recover?username=`** returns the private key locked under the recovery code (with its salt and parameters), and a **challenge**: 32 random bytes the server sealed to the account's public key, valid for ten minutes and usable once.
+   - **`unlockWithRecoveryCode`** opens the private key with the typed code (normalised, so case and dashes don't matter) and checks it matches the public key. A code that doesn't fit throws `RecoveryCodeError`, which is caught before anything is sent.
+   - **`openChallenge`** opens the challenge with that private key. Answering it proves to the server that the person holds the code, without the code ever leaving the device.
+2. **`completeRecovery(opened, newPassword)`**:
+   - **`lockKeys`** locks the **same** private key under the new password (split scheme) and a **new** recovery code. The old one has now been typed out, so it's replaced.
+   - **`POST /auth/recover`** sends the username, the opened challenge, the new auth key and both locked copies. The API refuses a changed public key, spends the challenge, and **signs the account out on every device**.
+   - If the challenge expired while the person chose a password, the server answers `401`. A fresh challenge is then fetched and opened with the key already in memory, and the request is sent once more.
+   - It then signs in with the new auth key, opens a group admin's group key as at sign-in, and returns the new recovery code to show.
+
+### `src/pages/auth/ForgotPassword.tsx`
+
+- It uses the prototype's layout, but not its message: the prototype says there's no recovery. It shows the decided wording (22 September): recover with your recovery code; if a group made your account and you haven't claimed it, ask them for a new claim code; if you lose both, nobody can recover your letters.
+- Then: username and recovery code, "Checking your recovery code…", a new password (with the strength meter, `NewPasswordFields`, shared with Join and Claim), "Setting your new password…", and the new recovery code, shown and confirmed (`RecoveryCodeStep`).
+
+---
+
+## 8. Status
 
 | Piece | State |
 | --- | --- |
@@ -254,12 +280,13 @@ A group can make an account for someone who writes through it (a *managed writer
 | Join with an invite code: keys made with the account, recovery code confirmed | Built (Step 4) |
 | Claim: the group-made keypair re-locked under the writer's password | Built (Step 4) |
 | Local backend switched to end-to-end mode | Done 25 September |
-| Recovery page; safety net for an account without keys at sign-in | Step 4, next |
+| Recovery with a recovery code: same keypair, new password and new recovery code | Built (Step 4) |
+| Safety net for an account without keys at sign-in | Step 4, next |
 | Group key creation and approving access (group-owner admin) | Step 6 |
 | Encrypting and reading letters in the UI | Step 5 |
 | Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
 
-## 8. Known limits
+## 9. Known limits
 
 - **The web app runs whatever JavaScript the server sends.** A tampered web host could serve code that leaks keys. The native apps are stronger on this point. Nothing here claims otherwise.
 - **An account the server holds as `plain` can't sign in to the web client at all.** That's the price of never sending a password. On a real deployment, every account is created split (`REQUIRE_SPLIT_AUTH=true`); how the first admin is created split is an open question for the API side (`questions-for-pax.md` E).

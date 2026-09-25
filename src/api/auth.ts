@@ -53,6 +53,45 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
 export const checkPenName = (name: string) =>
   getOne<{ available: boolean; name: string; reason: string | null; twoParts: boolean }>('/auth/pen-name-available', { name })
 
+// --- Recovery with a recovery code --------------------------------------------
+
+/**
+ * GET /auth/recover?username= (public, rate limited): the private key locked
+ * under the recovery code, and a one-time challenge sealed to the account's
+ * public key, valid `expiresIn` seconds. 404 when no account with that
+ * username can be recovered with a code.
+ */
+export interface RecoveryStart {
+  user: number
+  publicKey: string
+  recoveryWrappedPrivateKey: string
+  recoverySalt: string
+  recoveryKdfParams: KdfParams
+  sealedChallenge: string
+  expiresIn: number
+}
+
+export const startRecovery = (username: string) => getOne<RecoveryStart>('/auth/recover', { username })
+
+/**
+ * POST /auth/recover: the opened challenge proves the recovery code opened the
+ * key; the same key is locked under the new password (and a new recovery code).
+ * 401 if the challenge expired or was used. Ends every existing session.
+ */
+export const finishRecovery = (req: {
+  username: string
+  challenge: string
+  authKey: string
+  keyFields: PasswordKeyFields & RecoveryKeyFields
+}) =>
+  post<{ user: number; username: string }>('/auth/recover', {
+    username: req.username,
+    challenge: req.challenge,
+    authScheme: 'split',
+    password: req.authKey,
+    ...req.keyFields,
+  })
+
 // --- Claiming a managed account ---------------------------------------------
 
 /**
