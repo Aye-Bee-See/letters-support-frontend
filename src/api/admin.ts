@@ -1,7 +1,7 @@
-// Superadmin-only reads for the admin dashboard. Every call here is a 403 for
-// anyone else; the /admin routes are behind RequireAdmin.
-import { getList, getOne } from './client'
-import type { AdminSummary, AuditEntry, EncryptionReadiness, ListParams } from '../types'
+// Superadmin-only calls: the dashboard counts and the moderation decisions. Every
+// call here is a 403 for anyone else; the /admin routes are behind RequireAdmin.
+import { getList, getOne, put } from './client'
+import type { AdminSummary, AuditEntry, EncryptionReadiness, ListParams, Submission } from '../types'
 
 export const getAdminSummary = () => getOne<AdminSummary>('/moderation/summary')
 
@@ -9,3 +9,17 @@ export const getEncryptionReadiness = () => getOne<EncryptionReadiness>('/auth/e
 
 export const getAuditLog = (params?: ListParams & { actor?: number; action?: string; resource?: string; target?: number }) =>
   getList<AuditEntry>('/moderation/audit', params)
+
+export interface ApproveInput {
+  id: number
+  /** Reviewer edits merged over the proposal; may include reviewer-only fields such as verifiedAt. */
+  fields?: Record<string, unknown>
+  decisionNote?: string
+  /** The submission's updatedAt as reviewed: a 409 SubmissionChangedError if the submitter revised it since. */
+  ifUnchangedSince?: string
+}
+
+export const approveSubmission = (input: ApproveInput) => put<Submission>('/moderation/approve', input)
+
+/** The note is required: the submitter is told why. */
+export const rejectSubmission = (id: number, decisionNote: string) => put<Submission>('/moderation/reject', { id, decisionNote })
