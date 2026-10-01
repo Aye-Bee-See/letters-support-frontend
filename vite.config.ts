@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  cacheDir: '/home/rechelon/CodeWSL/claude/abc-mailbox/frontend/.vite',
+  cacheDir: '.vite',
   server: {
     host: '0.0.0.0',
     // Matches the backend's default CORS_ORIGIN (http://localhost:3001)
