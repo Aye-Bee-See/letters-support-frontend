@@ -25,6 +25,8 @@ const who = (account: AccountBrief | null | undefined) => (account ? account.nam
 export default function Dashboard() {
   const summary = useApi(getAdminSummary, [])
   const readiness = useApi(getEncryptionReadiness, [])
+  // The API has no sort for submissions: they always come oldest first, the
+  // queue order (Submission.list in the API), so the first page is the oldest five.
   const queue = useApi(() => getSubmissions({ status: 'pending', page_size: 5 }), [])
   const audit = useApi(() => getAuditLog({ page_size: 10 }), [])
 
