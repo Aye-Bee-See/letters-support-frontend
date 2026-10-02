@@ -180,3 +180,6 @@
 }
 
 .login-back:hover { color: var(--text); }
+
+/* Two-factor step: the links under the code field. */
+.login-text-button { position: static; transform: none; padding: 0; text-decoration: underline; }

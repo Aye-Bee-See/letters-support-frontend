@@ -62,17 +62,27 @@ export default function RecoveryCodeStep({ joined, eyebrow, children }: { joined
           </label>
         </div>
 
-        <button
-          type="button"
-          className="claim-submit"
-          disabled={!saved}
-          onClick={() => {
-            startSession(joined.signedIn)
-            navigate('/inbox', { replace: true })
-          }}
-        >
-          Go to your inbox →
-        </button>
+        {joined.signedIn ? (
+          <button
+            type="button"
+            className="claim-submit"
+            disabled={!saved}
+            onClick={() => {
+              if (joined.signedIn) startSession(joined.signedIn)
+              navigate('/inbox', { replace: true })
+            }}
+          >
+            Go to your inbox →
+          </button>
+        ) : (
+          <>
+            {/* The account uses two-factor sign-in: the new password alone doesn't sign in. */}
+            <p className="claim-org-note">Your account uses two-factor sign-in, so sign in with your new password and a code from your authenticator app.</p>
+            <button type="button" className="claim-submit" disabled={!saved} onClick={() => navigate('/login', { replace: true })}>
+              Sign in →
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

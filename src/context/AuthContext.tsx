@@ -3,7 +3,7 @@ import { setAuthToken, setUnauthorizedHandler } from '../api/client'
 import type { SignedIn } from '../auth/signIn'
 import type { Keypair } from '../crypto'
 import { AuthContext, type AuthState } from './auth-context'
-import type { KeyBundle, User } from '../types'
+import type { KeyBundle, TwoFactorReason, User } from '../types'
 
 interface Session {
   user: User
@@ -12,6 +12,7 @@ interface Session {
   keys: KeyBundle | null
   keypair: Keypair | null
   groupKeypair: Keypair | null
+  twoFactorSetupRequired: TwoFactorReason[] | null
 }
 
 // The session, including unlocked private keys, lives in React state only:
@@ -30,7 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       keys: signedIn.bundle,
       keypair: signedIn.keypair,
       groupKeypair: signedIn.groupKeypair,
+      twoFactorSetupRequired: result.twoFactor?.setupRequired ? result.twoFactor.because : null,
     })
+  }, [])
+
+  const twoFactorSetUp = useCallback(() => {
+    setSession((s) => (s ? { ...s, twoFactorSetupRequired: null } : s))
   }, [])
 
   const endSession = useCallback(() => {
@@ -65,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       keys: session?.keys ?? null,
       keypair: session?.keypair ?? null,
       groupKeypair: session?.groupKeypair ?? null,
+      twoFactorSetupRequired: session?.twoFactorSetupRequired ?? null,
+      twoFactorSetUp,
       isAuthenticated: session !== null,
       isAdmin: role === 'admin',
       isChapter: role === 'chapter',
@@ -72,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       startSession,
       endSession,
     }
-  }, [session, startSession, endSession])
+  }, [session, startSession, endSession, twoFactorSetUp])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

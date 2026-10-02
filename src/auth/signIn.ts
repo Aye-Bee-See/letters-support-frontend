@@ -1,4 +1,5 @@
-import { getKeys, getLoginParams, login } from '../api/auth'
+import { getKeys, getLoginParams, isTwoFactorChallenge, login } from '../api/auth'
+import { loginTwoFactor, type SecondFactor } from '../api/twoFactor'
 import { toApiError } from '../api/client'
 import { signInKeys, unlockAccount, unlockGroupKey, wipe, type Keypair } from '../crypto'
 import type { KeyBundle, LoginResult } from '../types'
@@ -20,6 +21,10 @@ export type SignInFailure =
   | 'keys'
   /** The account has no keys. Every account must (owner's decision, 25 Sept), so this is refused. */
   | 'no_keys'
+  /** Second step: the authenticator or recovery code was wrong. The challenge is still good. */
+  | 'wrong_code'
+  /** Second step: the challenge expired or was used. Start again from the password. */
+  | 'challenge_expired'
   | 'network'
   | 'other'
 
@@ -31,6 +36,13 @@ export class SignInError extends Error {
     this.kind = kind
     this.retryAfter = retryAfter
   }
+}
+
+/** The password was right and the account uses two-factor sign-in: ask for a code, then call signIn again with it. */
+export interface CodeNeeded {
+  codeNeeded: true
+  challenge: string
+  expiresAt: string
 }
 
 export interface SignedIn {
@@ -52,6 +64,14 @@ function fail(err: unknown): never {
   throw new SignInError('other', e.message)
 }
 
+/** The second step's failures: a wrong code leaves the challenge usable; an expired or used one does not. */
+function failCode(err: unknown): never {
+  const e = toApiError(err)
+  if (e.status === 400) throw new SignInError('wrong_code', 'That code didn’t work. Check it and try again.')
+  if (e.status === 401) throw new SignInError('challenge_expired', 'That took too long. Sign in again from the start.')
+  return fail(err)
+}
+
 /**
  * Sign in and unlock the account's keys.
  *
@@ -59,13 +79,20 @@ function fail(err: unknown): never {
  *    usernames get a stable fake salt, so this reveals nothing.
  * 2. `plain`: refuse, sending nothing. `split`: derive wrapKey and authKey on
  *    the device (one Argon2id run) and send only authKey.
- * 3. POST /auth/login, then GET /auth/keys, and open the private key (and the
- *    group key) with wrapKey. wrapKey is wiped either way.
- * 4. An account without keys is refused: every account has keys, made when it
+ * 3. POST /auth/login. For an account with two-factor sign-in on, that answers
+ *    only a challenge: return CodeNeeded, and the caller calls again with the
+ *    challenge and a code (POST /auth/login/two-factor).
+ * 4. GET /auth/keys (or the bundle the sign-in answered with), and open the
+ *    private key (and the group key) with wrapKey. wrapKey is wiped either way.
+ * 5. An account without keys is refused: every account has keys, made when it
  *    is created (owner's decision, 25 September). There is no key set-up at
  *    sign-in.
  */
-export async function signIn(username: string, password: string): Promise<SignedIn> {
+export async function signIn(
+  username: string,
+  password: string,
+  second?: { challenge: string; factor: SecondFactor },
+): Promise<SignedIn | CodeNeeded> {
   const name = username.trim()
   let wrapKey: Uint8Array | null = null
   try {
@@ -78,9 +105,18 @@ export async function signIn(username: string, password: string): Promise<Signed
       )
     }
 
+    // The second step derives the keys again (a second or so) rather than holding
+    // wrapKey in memory while the person fetches their code.
     const keys = await signInKeys(password, params)
     wrapKey = keys.wrapKey
-    const result = await login(name, keys.authKey).catch(fail)
+    let result: LoginResult
+    if (second) {
+      result = await loginTwoFactor(second.challenge, second.factor).catch(failCode)
+    } else {
+      const answer = await login(name, keys.authKey).catch(fail)
+      if (isTwoFactorChallenge(answer)) return { codeNeeded: true, ...answer.twoFactor }
+      result = answer
+    }
     const bundle = result.keys ?? (await getKeys(result.token.token).catch(fail))
 
     if (!bundle.wrappedPrivateKey || !bundle.publicKey) {

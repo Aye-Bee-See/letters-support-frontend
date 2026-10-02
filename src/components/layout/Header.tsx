@@ -64,6 +64,9 @@ export default function Header() {
                 <Link to={isAdmin ? '/admin' : '/inbox'} className="btn btn-primary btn-sm">
                   {isAdmin ? 'Admin' : 'Inbox'}
                 </Link>
+                <Link to="/account/security" className="nav-auth-link">
+                  Security
+                </Link>
                 {/* Inline colours as in the prototype; style.css has no class for this button. */}
                 <button type="button" className="btn btn-sm" style={{ borderColor: '#666', color: '#aaa' }} onClick={signOut}>
                   Sign out

@@ -1,6 +1,6 @@
 import client, { getOne, post, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
-import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, User } from '../types'
+import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFactorChallenge, User } from '../types'
 
 // Sign-in is split (README "Signing in without sending the password"):
 //   1. getLoginParams(username) -> { scheme, kdfSalt, kdfParams }
@@ -13,7 +13,22 @@ export const getLoginParams = (username: string) =>
 
 /** `authKey` is base64 of the derived auth key (44 characters), never the password. */
 export const login = (username: string, authKey: string) =>
-  post<LoginResult>('/auth/login', { username, password: authKey })
+  post<LoginResult | TwoFactorChallenge>('/auth/login', { username, password: authKey })
+
+/** The password was right, and the account uses two-factor sign-in: no session yet, only a challenge for the code. */
+export const isTwoFactorChallenge = (answer: LoginResult | TwoFactorChallenge): answer is TwoFactorChallenge =>
+  answer.twoFactor !== undefined && 'challenge' in answer.twoFactor
+
+/**
+ * Sign in an account made a moment ago (claim, join), which can't have
+ * two-factor sign-in on yet. Should it ever ask for a code, the sign-in page
+ * is where that is answered.
+ */
+export async function loginNewAccount(username: string, authKey: string): Promise<LoginResult> {
+  const answer = await login(username, authKey)
+  if (isTwoFactorChallenge(answer)) throw new Error('This account asks for a two-factor code: sign in from the sign-in page.')
+  return answer
+}
 
 /**
  * The caller's key bundle. Pass the token explicitly during sign-in, before
