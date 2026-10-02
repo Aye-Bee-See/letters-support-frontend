@@ -609,3 +609,26 @@ a:hover { text-decoration: underline; }
 .dash-note { padding: 0.75rem 1rem; font-size: 0.8rem; color: var(--a-mid); }
 .dash-nowrap { white-space: nowrap; }
 .dash-code { font-family: var(--a-mono); font-size: 0.75rem; }
+
+/* ============================================================
+   MODERATION QUEUE PAGE
+   ============================================================ */
+.queue-filters { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.queue-filters .form-label { display: flex; flex-direction: column; gap: 0.3rem; }
+.queue-filters .form-select { width: auto; min-width: 160px; }
+
+.queue-decided { border-left-color: var(--a-border); }
+.queue-view-link { font-size: 0.72rem; font-weight: 400; margin-left: 0.4rem; }
+.queue-item-body p + p { margin-top: 0.35rem; }
+.queue-decision { font-size: 0.78rem; color: var(--a-mid); margin-bottom: 0.75rem; }
+
+.queue-review { margin-top: 0.75rem; }
+.queue-changes { margin-bottom: 0.9rem; }
+.queue-changes td { white-space: pre-wrap; word-break: break-word; }
+.queue-changes td:first-child { white-space: nowrap; font-weight: 600; width: 1%; }
+
+.queue-decision-form { display: flex; flex-direction: column; gap: 0.6rem; }
+.queue-check { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; }
+
+.queue-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; font-size: 0.78rem; color: var(--a-mid); margin-top: 1rem; }
+.queue-decision-form .form-hint { text-transform: none; letter-spacing: 0; font-weight: 400; }
