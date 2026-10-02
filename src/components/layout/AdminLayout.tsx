@@ -60,9 +60,9 @@ export default function AdminLayout() {
         <div className="sidebar-section">
           <div className="sidebar-section-label">Administration</div>
           <ul className="sidebar-nav">
-            {/* TODO: no pages for these yet (prototype links are placeholders too) */}
-            <li><a href="#">Invite a group</a></li>
+            <li><NavLink to="/admin/invite">Invite a group</NavLink></li>
             <li><NavLink to="/admin/audit">Audit log</NavLink></li>
+            {/* TODO: no page for this yet (the prototype link is a placeholder too) */}
             <li><a href="#">Site settings</a></li>
           </ul>
         </div>
