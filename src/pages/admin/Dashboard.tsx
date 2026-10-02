@@ -80,6 +80,7 @@ export default function Dashboard() {
           <section className="admin-table-wrap">
             <div className="admin-table-toolbar">
               <span className="admin-table-toolbar-title">Recent activity</span>
+              <Link to="/admin/audit" className="a-btn a-btn-sm">Open audit log</Link>
             </div>
             <Panel state={audit} what="the audit log">
               {audit.data && <ActivityTable entries={audit.data.items} />}
