@@ -42,6 +42,7 @@ import FacilitiesList from './pages/admin/FacilitiesList'
 import GroupsList from './pages/admin/GroupsList'
 import Invitations from './pages/admin/Invitations'
 import Queue from './pages/admin/Queue'
+import SiteSettings from './pages/admin/SiteSettings'
 
 /** /inbox shows the writer or the group view by role; superadmins have no inbox. */
 function InboxRoute() {
@@ -109,6 +110,7 @@ export default function App() {
                 <Route path="queue" element={<Queue />} />
                 <Route path="audit" element={<AuditLog />} />
                 <Route path="invite" element={<Invitations />} />
+                <Route path="settings" element={<SiteSettings />} />
               </Route>
             </Route>
           </Route>
