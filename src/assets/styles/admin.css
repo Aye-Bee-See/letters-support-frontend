@@ -158,6 +158,9 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* A grid column won't shrink below its content by default: without this a
+     wide table widens the whole page instead of scrolling in its own box. */
+  min-width: 0;
 }
 
 .admin-topbar {
@@ -632,3 +635,28 @@ a:hover { text-decoration: underline; }
 
 .queue-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; font-size: 0.78rem; color: var(--a-mid); margin-top: 1rem; }
 .queue-decision-form .form-hint { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+/* ============================================================
+   DIRECTORY LIST PAGES (prisoners, facilities, groups)
+   ============================================================ */
+.list-toolbar { justify-content: flex-start; background: var(--a-white); border: 1px solid var(--a-border); border-bottom: none; }
+.list-toolbar .form-select { width: auto; font-size: 0.78rem; padding: 0.35rem 0.6rem; }
+.list-name { font-weight: 600; color: var(--a-text); }
+.list-sub { font-size: 0.72rem; color: var(--a-mid); }
+.list-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--a-accent);
+  margin-left: 0.45rem;
+}
+.list-stale { color: var(--a-alert); }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
