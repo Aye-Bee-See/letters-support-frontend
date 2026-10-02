@@ -29,6 +29,12 @@ const ROLES: Record<NetworkRole, string> = {
 }
 const SERVICES = Object.keys(SERVICE_LABELS) as ChapterService[]
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+/**
+ * When the invitation stops working: a moment (14 days after it was made), not a
+ * calendar day, so it's shown in the reader's own time zone, named, with the year.
+ */
+const expiry = (iso: string) =>
+  new Date(iso).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
 
 /** What to say about an invitation that can't be used, from the API's status and condition. */
 function codeProblem(error: ApiError): { title: string; body: string } {
@@ -287,7 +293,7 @@ function AcceptForm({
               You’ll be one of <strong>{info.chapter?.name ?? 'the group'}</strong>’s admins.
             </>
           )}{' '}
-          This invitation works until {new Date(info.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.
+          This invitation works until {expiry(info.expiresAt)}.
         </p>
       </div>
 
