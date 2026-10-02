@@ -186,7 +186,9 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
             return (
               <tr key={g.id}>
                 <td>
-                  <span className="list-name">{g.name}</span>
+                  <Link to={`/admin/groups/${g.id}/edit`} className="list-name">
+                    {g.name}
+                  </Link>
                   <div className="list-sub">{[g.subregion, g.country].filter(Boolean).join(', ') || 'No location listed'}</div>
                 </td>
                 <td>{ROLE_LABELS[g.networkRole]}</td>
@@ -252,6 +254,9 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                 <td>{relays ? `${facilities} ${facilities === 1 ? 'facility' : 'facilities'}` : '—'}</td>
                 <td>{g.lettersCounted ?? '—'}</td>
                 <td className="actions">
+                  <Link to={`/admin/groups/${g.id}/edit`} className="a-btn a-btn-sm">
+                    Edit
+                  </Link>
                   {g.recordStatus === 'published' && (
                     <Link to={`/groups/${g.id}`} className="a-btn a-btn-sm">
                       View

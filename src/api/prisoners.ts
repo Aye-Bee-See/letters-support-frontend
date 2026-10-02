@@ -60,3 +60,10 @@ export const updatePrisoner = (id: number, fields: PrisonerFields) =>
 
 /** Superadmin only. Refused while letter threads point at the prisoner (a 400, SequelizeForeignKeyConstraintError). */
 export const deletePrisoner = (id: number) => del<number>('/prisoner/prisoner', { id })
+
+/** Link a support group to a prisoner, or change the link's description (the same pair again). Takes effect at once. */
+export const linkSupportGroup = (prisoner: number, chapter: number, description: string | null) =>
+  put<unknown>('/prisoner/support', { prisoner, chapter, description })
+
+/** Remove a support link. A 404 if there was none. */
+export const unlinkSupportGroup = (prisoner: number, chapter: number) => del<number>('/prisoner/support', { prisoner, chapter })

@@ -135,7 +135,7 @@ export default function GroupProfile() {
           {(isOwnGroup || isAdmin) && (
             <>
               <div className="sidebar-section">
-                <Link to={isOwnGroup ? '/settings' : '/admin/groups'} className="sidebar-org-link">
+                <Link to={isOwnGroup ? '/settings' : `/admin/groups/${g.id}/edit`} className="sidebar-org-link">
                   ⚙ Group settings &amp; announcement
                 </Link>
               </div>
