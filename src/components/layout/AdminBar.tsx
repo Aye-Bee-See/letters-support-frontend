@@ -10,11 +10,11 @@ export default function AdminBar() {
   const group = useMatch('/groups/:id')
 
   if (!isAdmin) return null
-  // Facilities and groups have list pages only in the admin area so far.
+  // Groups have a list page only in the admin area so far.
   const edit = prisoner
     ? `/admin/prisoners/${prisoner.params.id}/edit`
     : facility
-      ? '/admin/facilities'
+      ? `/admin/facilities/${facility.params.id}/edit`
       : group
         ? '/admin/groups'
         : null
