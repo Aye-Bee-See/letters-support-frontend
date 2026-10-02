@@ -387,6 +387,10 @@ export interface Invitation extends Timestamps {
   acceptedAt: string | null
   acceptedUser: number | null
   createdChapter: number | null
+  /** Worked out by the API: `status`, except a pending one past expiresAt is `expired`. */
+  state?: 'pending' | 'expired' | 'accepted' | 'revoked'
+  /** Only in the create and renew answers: the one time the token is ever shown. */
+  token?: string
 }
 
 /** A proposed directory edit (moderation). */

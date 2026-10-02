@@ -718,3 +718,24 @@ a:hover { text-decoration: underline; }
 .audit-chip button { background: none; border: none; cursor: pointer; font-size: 0.9rem; line-height: 1; color: var(--a-mid); }
 /* Wide enough to read: the table scrolls sideways on a narrow screen rather than wrapping details a word a line. */
 .audit-details { min-width: 280px; }
+
+/* ============================================================
+   INVITATIONS
+   ============================================================ */
+.invite-form { margin-bottom: 1.5rem; }
+.invite-kind { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.invite-list-toolbar .admin-table-toolbar-title { margin-right: auto; }
+.token-notice { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+.token-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.token-code {
+  font-family: var(--a-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--a-text);
+  background: var(--a-white);
+  border: 1px solid var(--a-border);
+  padding: 0.35rem 0.7rem;
+}
+/* One click selects the whole code, for copying by hand when the clipboard isn't allowed. */
+.token-code { user-select: all; }

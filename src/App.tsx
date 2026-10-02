@@ -39,6 +39,7 @@ import EditGroup from './pages/admin/EditGroup'
 import EditPrisoner from './pages/admin/EditPrisoner'
 import FacilitiesList from './pages/admin/FacilitiesList'
 import GroupsList from './pages/admin/GroupsList'
+import Invitations from './pages/admin/Invitations'
 import Queue from './pages/admin/Queue'
 
 /** /inbox shows the writer or the group view by role; superadmins have no inbox. */
@@ -101,6 +102,7 @@ export default function App() {
                 <Route path="groups/:id/edit" element={<EditGroup />} />
                 <Route path="queue" element={<Queue />} />
                 <Route path="audit" element={<AuditLog />} />
+                <Route path="invite" element={<Invitations />} />
               </Route>
             </Route>
           </Route>
