@@ -160,7 +160,7 @@ function Stats({ summary }: { summary: AdminSummary }) {
     { label: 'Proposals to review', value: pending, to: '/admin/queue' },
     { label: 'Groups awaiting approval', value: summary.groups.pendingApproval, to: '/admin/groups' },
     { label: 'Block recommendations', value: summary.pendingBanRecommendations },
-    { label: 'Addresses in doubt', value: summary.addressInDoubt.prisoner, to: '/admin/prisoners?attention=address' },
+    { label: 'Addresses in doubt', value: summary.addressInDoubt.prisoner, to: '/admin/prisoners?addressInDoubt=true' },
     { label: 'Need re-verifying', value: stale },
     { label: 'Suspended groups', value: summary.groups.suspended, to: '/admin/groups' },
   ]

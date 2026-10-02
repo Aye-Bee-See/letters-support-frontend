@@ -7,8 +7,9 @@ import { isStale } from '../../utils/facilities'
 import { displayName, heldAt, shortDate, STATUS_LABELS } from '../../utils/prisoners'
 
 // Every prisoner record, drafts and pending included (superadmins are staff, so
-// GET /prisoner/prisoners returns all record statuses). Filters live in the URL,
-// so the dashboard can link straight to "addresses in doubt" or "needs re-verifying".
+// GET /prisoner/prisoners returns all record statuses). Filters live in the URL
+// under the API's own names (recordStatus, stale=true, addressInDoubt=true), so
+// the dashboard can link straight to "addresses in doubt" or "needs re-verifying".
 
 const PAGE_SIZE = 25
 /** Wait this long after typing before searching. */
@@ -16,7 +17,8 @@ const SEARCH_DELAY_MS = 300
 
 const RECORD_STATUSES: RecordStatus[] = ['published', 'pending', 'draft']
 const PRISONER_STATUSES: PrisonerStatus[] = ['incarcerated', 'pretrial', 'free']
-const ATTENTION = { stale: 'Needs re-verifying', address: 'Address in doubt' } as const
+/** One select for two of the API's flags; each is its own URL parameter, set to "true". */
+const ATTENTION = { stale: 'Needs re-verifying', addressInDoubt: 'Address in doubt' } as const
 type Attention = keyof typeof ATTENTION
 const SORTS = { name: 'Name', newest: 'Newest', oldest: 'Oldest' } as const
 type Sort = keyof typeof SORTS
@@ -27,9 +29,11 @@ const oneOf = <T extends string>(values: readonly T[], v: string | null): T | un
 export default function PrisonersList() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
-  const record = oneOf(RECORD_STATUSES, params.get('record'))
+  const record = oneOf(RECORD_STATUSES, params.get('recordStatus'))
   const status = oneOf(PRISONER_STATUSES, params.get('status'))
-  const attention = oneOf(Object.keys(ATTENTION) as Attention[], params.get('attention'))
+  const stale = params.get('stale') === 'true'
+  const addressInDoubt = params.get('addressInDoubt') === 'true'
+  const attention: Attention | undefined = stale ? 'stale' : addressInDoubt ? 'addressInDoubt' : undefined
   const sort = oneOf(Object.keys(SORTS) as Sort[], params.get('sort')) ?? 'name'
   const page = Math.max(1, Number(params.get('page')) || 1)
 
@@ -37,13 +41,13 @@ export default function PrisonersList() {
     q: q || undefined,
     recordStatus: record,
     status,
-    ...(attention === 'stale' ? { stale: true as const } : {}),
-    ...(attention === 'address' ? { addressInDoubt: true as const } : {}),
+    ...(stale ? { stale: true as const } : {}),
+    ...(addressInDoubt ? { addressInDoubt: true as const } : {}),
     sort,
     page,
     page_size: PAGE_SIZE,
   }
-  const list = useApi(() => getPrisoners(query), [q, record, status, attention, sort, page])
+  const list = useApi(() => getPrisoners(query), [q, record, status, stale, addressInDoubt, sort, page])
 
   const setParam = (key: string, value: string | undefined) => {
     const next = new URLSearchParams(params)
@@ -52,9 +56,24 @@ export default function PrisonersList() {
     if (key !== 'page') next.delete('page')
     setParams(next, { replace: key === 'q' })
   }
+  const setAttention = (value: Attention | undefined) => {
+    const next = new URLSearchParams(params)
+    for (const key of Object.keys(ATTENTION)) next.delete(key)
+    if (value) next.set(value, 'true')
+    next.delete('page')
+    setParams(next)
+  }
 
   // The search box updates the URL once typing pauses.
   const [search, setSearch] = useState(q)
+  // And follows the URL when it changes some other way (back, forward, a link),
+  // so a stale box can't write an old query back. Adjusted during render, as
+  // React recommends for state derived from a changing prop.
+  const [syncedQ, setSyncedQ] = useState(q)
+  if (q !== syncedQ) {
+    setSyncedQ(q)
+    if (search.trim() !== q) setSearch(q)
+  }
   useEffect(() => {
     if (search.trim() === q) return
     const timer = setTimeout(() => setParam('q', search.trim() || undefined), SEARCH_DELAY_MS)
@@ -84,7 +103,7 @@ export default function PrisonersList() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select className="form-select" aria-label="Record status" value={record ?? ''} onChange={(e) => setParam('record', e.target.value || undefined)}>
+          <select className="form-select" aria-label="Record status" value={record ?? ''} onChange={(e) => setParam('recordStatus', e.target.value || undefined)}>
             <option value="">Any record status</option>
             {RECORD_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -100,7 +119,7 @@ export default function PrisonersList() {
               </option>
             ))}
           </select>
-          <select className="form-select" aria-label="Needs attention" value={attention ?? ''} onChange={(e) => setParam('attention', e.target.value || undefined)}>
+          <select className="form-select" aria-label="Needs attention" value={attention ?? ''} onChange={(e) => setAttention((e.target.value || undefined) as Attention | undefined)}>
             <option value="">All records</option>
             {(Object.keys(ATTENTION) as Attention[]).map((a) => (
               <option key={a} value={a}>
@@ -198,6 +217,7 @@ function PrisonerTable({ prisoners }: { prisoners: Prisoner[] }) {
               <td>{p.recordStatus && <span className={`badge ${RECORD_BADGES[p.recordStatus]}`}>{p.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
                 {shortDate(p.verifiedAt) ?? 'Never'}
+                {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">
                 <Link to={`/admin/prisoners/${p.id}/edit`} className="a-btn a-btn-sm">
