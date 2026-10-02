@@ -55,6 +55,8 @@ export default function SiteSettings() {
                 allGroups={policy.data.allGroups}
                 groups={policy.data.groups}
                 ownOn={mine.data?.enabled ?? null}
+                ownError={mine.error}
+                onRetryOwn={mine.reload}
                 onChanged={policy.reload}
               />
             )}
@@ -79,12 +81,14 @@ interface PolicyProps {
   superadmins: boolean
   allGroups: boolean
   groups: { id: number; name: string }[]
-  /** Whether this superadmin has their own on; null while loading. */
+  /** Whether this superadmin has their own on; null while loading or if it couldn't be read. */
   ownOn: boolean | null
+  ownError: ApiError | null
+  onRetryOwn: () => void
   onChanged: () => void
 }
 
-function PolicyForm({ superadmins, allGroups, groups, ownOn, onChanged }: PolicyProps) {
+function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOwn, onChanged }: PolicyProps) {
   const allGroupList = useApi(() => getAllGroups({ sort: 'name' }), [])
   const [choice, setChoice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -109,7 +113,9 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, onChanged }: Policy
   }
 
   const available = (allGroupList.data ?? []).filter((g) => !groups.some((r) => r.id === g.id))
-  const superadminsBlocked = !superadmins && ownOn === false
+  // Requiring it of superadmins is offered only once your own is known to be on:
+  // not while that's loading, or if it couldn't be read.
+  const superadminsBlocked = !superadmins && ownOn !== true
 
   return (
     <>
@@ -130,10 +136,19 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, onChanged }: Policy
           <strong>Every superadmin</strong>
         </span>
       </label>
-      {superadminsBlocked && (
+      {superadminsBlocked && ownOn === false && (
         <p className="form-hint">
           Your own isn’t on yet. <Link to="/account/security">Switch it on for your account</Link> first; requiring it of superadmins before that
           would lock you out.
+        </p>
+      )}
+      {superadminsBlocked && ownOn === null && !ownError && <p className="form-hint">Checking your own two-factor sign-in…</p>}
+      {superadminsBlocked && ownError && (
+        <p className="form-hint list-stale">
+          Couldn’t check whether your own two-factor sign-in is on ({ownError.message}), so this can’t be switched on yet.{' '}
+          <button type="button" className="link-button" onClick={onRetryOwn}>
+            Try again
+          </button>
         </p>
       )}
 
@@ -157,7 +172,11 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, onChanged }: Policy
 
       <div className="form-group">
         <span className="form-label">Groups that require it of their admins</span>
-        {allGroups && <p className="form-hint">Every group’s admins already have to; these also require it if that’s switched off.</p>}
+        {allGroups && (
+          <p className="form-hint">
+            While “every group’s admins” is on, all of them have to anyway: removing a group here changes nothing until that’s switched off.
+          </p>
+        )}
         {groups.length === 0 ? (
           <p className="form-static">None.</p>
         ) : (
@@ -170,10 +189,13 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, onChanged }: Policy
                   className="a-btn a-btn-sm"
                   disabled={busy}
                   onClick={() => {
-                    if (window.confirm(`Stop requiring two-factor sign-in of ${g.name}’s admins?`)) void run(() => setGroupTwoFactor(g.id, false))
+                    const question = allGroups
+                      ? `Remove ${g.name} from this list? Its admins still have to use two-factor sign-in while it’s required of every group’s admins.`
+                      : `Stop requiring two-factor sign-in of ${g.name}’s admins? Those who have it on keep it.`
+                    if (window.confirm(question)) void run(() => setGroupTwoFactor(g.id, false))
                   }}
                 >
-                  Stop requiring
+                  {allGroups ? 'Remove from list' : 'Stop requiring'}
                 </button>
               </li>
             ))}
