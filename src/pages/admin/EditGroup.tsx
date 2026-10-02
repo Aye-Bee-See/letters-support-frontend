@@ -84,7 +84,10 @@ const buildSocial = (v: FormValues) => Object.fromEntries(SOCIAL_KEYS.filter((k)
 function problems(v: FormValues): string[] {
   const out: string[] = []
   if (!v.name.trim()) out.push('The group needs a name.')
-  if (v.website.trim() && !/^https?:\/\/\S+\.\S+/.test(v.website.trim())) out.push('The website must be a full address, starting with https://.')
+  // http:// is accepted on purpose: the API takes any URL, and requiring https would
+  // block every other edit to a group whose stored website is http.
+  if (v.website.trim() && !/^https?:\/\/\S+\.\S+/.test(v.website.trim()))
+    out.push('The website must be a full address, starting with https:// (or http://).')
   if (v.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) out.push('The email address doesn’t look right.')
   const before = v.lettersSentBefore.trim()
   if (before && !(/^\d+$/.test(before) && Number.isSafeInteger(Number(before)))) out.push('Letters sent before joining must be a whole number, 0 or more.')
