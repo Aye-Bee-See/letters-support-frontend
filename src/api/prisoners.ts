@@ -1,5 +1,5 @@
 import { getAllPages, getList, getOne } from './client'
-import type { FilterValues, ListParams, Prisoner, PrisonerStatus } from '../types'
+import type { FilterValues, ListParams, Prisoner, PrisonerStatus, RecordStatus } from '../types'
 
 export interface PrisonerListParams extends ListParams {
   status?: PrisonerStatus
@@ -7,7 +7,12 @@ export interface PrisonerListParams extends ListParams {
   featured?: boolean
   /** Only prisoners held at this prison id. */
   prison?: number
-  stale?: boolean
+  /** `true` only: never verified, or verified more than six months ago. Sending `false` is a 400. */
+  stale?: true
+  /** Staff only: draft, pending or published. Ignored for everyone else. */
+  recordStatus?: RecordStatus
+  /** Staff only: mail came back as transferred, released or undeliverable, and the record is unedited since. */
+  addressInDoubt?: true
 }
 
 export const getPrisoners = (params?: PrisonerListParams) =>
