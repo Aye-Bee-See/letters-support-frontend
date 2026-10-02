@@ -19,6 +19,7 @@ import Login from './pages/auth/Login'
 import Security from './pages/account/Security'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import Claim from './pages/auth/Claim'
+import AcceptInvitation from './pages/auth/AcceptInvitation'
 import Join from './pages/auth/Join'
 
 import InboxWriter from './pages/inbox/InboxWriter'
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="claim" element={<Claim />} />
             <Route path="join" element={<Join />} />
+            <Route path="invitation" element={<AcceptInvitation />} />
 
             <Route element={<RequireAuth roles={['user', 'chapter']} />}>
               <Route path="inbox" element={<InboxRoute />} />

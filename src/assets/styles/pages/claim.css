@@ -361,3 +361,7 @@
 .security-secret { font-family: var(--mono); font-size: 0.95rem; letter-spacing: 0.05em; word-break: break-all; user-select: all; }
 .security-codes { columns: 2; list-style: none; padding: 0; margin: 0.5rem 0; text-align: center; user-select: all; }
 .security-codes code { font-family: var(--mono); font-size: 0.95rem; line-height: 1.9; }
+
+/* Accepting an invitation (pages/auth/AcceptInvitation.tsx). */
+.invitation-section { margin-top: 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border); }
+.invitation-services { border: none; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }

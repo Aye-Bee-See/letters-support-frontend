@@ -15,7 +15,7 @@ import type { ApiError, Chapter, Invitation, InvitationKind, InvitationStatus } 
 // superadmin invites it directly. The token appears once, in the answer to
 // create or renew. The API never sends it: the admin hands it over.
 //
-// The website can't accept an invitation yet; the Android and iOS apps can.
+// The invitee accepts it at /invitation (pages/auth/AcceptInvitation.tsx), or in the Android or iOS app.
 
 const PAGE_SIZE = 25
 const STATUSES: InvitationStatus[] = ['pending', 'accepted', 'revoked']
@@ -241,16 +241,18 @@ function InviteForm({ groups, groupsError, onRetryGroups, onCreated }: InviteFor
 
 /** The token, once: what to hand over, how, and until when. */
 function TokenNotice({ invitation, renewed, group, onDone }: { invitation: Invitation; renewed: boolean; group?: Chapter; onDone: () => void }) {
-  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [copy, setCopy] = useState<'idle' | 'code' | 'link' | 'failed'>('idle')
   const code = formatCode(invitation.token ?? '')
+  // The acceptance page on this site, with the code in it: what most invitees need.
+  const link = `${window.location.origin}/invitation?token=${encodeURIComponent(code)}`
 
-  async function copyCode() {
+  async function copyText(text: string, what: 'code' | 'link') {
     try {
       // Undefined outside a secure context (e.g. the dev server over the LAN), and
       // refused without permission: either way the code on screen still works.
       if (!navigator.clipboard) throw new Error('No clipboard')
-      await navigator.clipboard.writeText(code)
-      setCopy('copied')
+      await navigator.clipboard.writeText(text)
+      setCopy(what)
     } catch {
       setCopy('failed')
     }
@@ -266,16 +268,22 @@ function TokenNotice({ invitation, renewed, group, onDone }: { invitation: Invit
       </div>
       <div className="token-row">
         <code className="token-code">{code}</code>
-        <button type="button" className="a-btn a-btn-sm" onClick={() => void copyCode()}>
-          {copy === 'copied' ? 'Copied' : 'Copy'}
+        <button type="button" className="a-btn a-btn-sm" onClick={() => void copyText(code, 'code')}>
+          {copy === 'code' ? 'Copied' : 'Copy code'}
+        </button>
+      </div>
+      <div className="token-row">
+        <code className="token-link">{link}</code>
+        <button type="button" className="a-btn a-btn-sm" onClick={() => void copyText(link, 'link')}>
+          {copy === 'link' ? 'Copied' : 'Copy link'}
         </button>
       </div>
       {copy === 'failed' && (
-        <div className="admin-alert admin-alert-warn">This browser didn’t allow copying. Select the code above and copy it by hand, or write it down.</div>
+        <div className="admin-alert admin-alert-warn">This browser didn’t allow copying. Select the code or link above and copy it by hand, or write it down.</div>
       )}
       <div className="form-hint">
         Valid until {dateTime(invitation.expiresAt)}. Nothing is sent by email: give it to them in person or through a channel you both already trust.
-        They accept it in the letters.support app for Android or iOS (the website can’t accept invitations yet).
+        The link opens the page where they accept it; with just the code, they can type it in there or in the Android or iOS app.
       </div>
       <div>
         <button type="button" className="a-btn a-btn-sm" onClick={onDone}>
