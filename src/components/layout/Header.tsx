@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { startTransition, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -23,8 +23,13 @@ export default function Header() {
   }, [open])
 
   const signOut = () => {
-    endSession()
-    navigate('/')
+    // One transition for both: React Router navigates in a transition, so ending
+    // the session on its own would render first, at the old address, and that
+    // page's guard would send the signed-out visitor to /login instead of home.
+    startTransition(() => {
+      endSession()
+      navigate('/')
+    })
   }
 
   return (

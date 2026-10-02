@@ -43,7 +43,8 @@ export default function Login() {
       return
     }
     const home = signedIn.result.user.role === 'admin' ? '/admin' : '/inbox'
-    navigate(from?.pathname ?? home, { replace: true })
+    // Back where they were going, filters and all (a refresh on an admin list signs out).
+    navigate(from ? `${from.pathname}${from.search}${from.hash}` : home, { replace: true })
   }
 
   function startAgain(message: string | null = null) {
@@ -87,13 +88,7 @@ export default function Login() {
       <div>
         <div className="login-box">
           <h1 className="login-heading">Sign in</h1>
-          <p className="login-subheading">
-            Writers and support groups sign in here.
-            <br />
-            <Link to="/admin/login" style={{ color: 'var(--mid)', fontSize: '0.72rem' }}>
-              Network admins sign in separately →
-            </Link>
-          </p>
+          <p className="login-subheading">Writers, support groups and network admins all sign in here.</p>
 
           <form className="login-form" onSubmit={onSubmit} noValidate>
             {pending ? (
