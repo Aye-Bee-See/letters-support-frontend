@@ -5,6 +5,7 @@ import type { ApiEnvelope, ApiError, ApiListEnvelope, ListParams, ListResult } f
 // session and pushes the token here so requests made outside React can use it.
 let authToken: string | null = null
 let onUnauthorized: (() => void) | null = null
+let onTwoFactorSetupRequired: (() => void) | null = null
 
 export const setAuthToken = (token: string | null) => {
   authToken = token
@@ -13,6 +14,15 @@ export const setAuthToken = (token: string | null) => {
 /** AuthContext registers this so an expired or revoked token ends the session. */
 export const setUnauthorizedHandler = (handler: (() => void) | null) => {
   onUnauthorized = handler
+}
+
+/**
+ * AuthContext registers this so a session that must set up two-factor sign-in
+ * enters the setup flow, whenever the API first says so: a requirement switched
+ * on after this session began applies to it too (README "Two-factor sign-in").
+ */
+export const setTwoFactorSetupRequiredHandler = (handler: (() => void) | null) => {
+  onTwoFactorSetupRequired = handler
 }
 
 const client = axios.create({
@@ -35,6 +45,14 @@ client.interceptors.response.use(
     // Only a request that carried a token can mean "your session is over".
     // A 401 from sign-in itself is a wrong password, handled by the form.
     if (apiError.status === 401 && authToken && onUnauthorized) onUnauthorized()
+    if (
+      apiError.status === 403 &&
+      apiError.name === 'TwoFactorRequiredError' &&
+      apiError.condition === 'setup_required' &&
+      authToken &&
+      onTwoFactorSetupRequired
+    )
+      onTwoFactorSetupRequired()
     return Promise.reject(apiError)
   },
 )

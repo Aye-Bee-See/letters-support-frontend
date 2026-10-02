@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { setAuthToken, setUnauthorizedHandler } from '../api/client'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { setAuthToken, setTwoFactorSetupRequiredHandler, setUnauthorizedHandler } from '../api/client'
+import { getTwoFactor } from '../api/twoFactor'
 import type { SignedIn } from '../auth/signIn'
 import type { Keypair } from '../crypto'
 import { AuthContext, type AuthState } from './auth-context'
@@ -51,6 +52,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnauthorizedHandler(endSession)
     return () => setUnauthorizedHandler(null)
   }, [endSession])
+
+  // A refusal saying two-factor sign-in must be set up first, from any request:
+  // the requirement may have been switched on after this session began. The 403
+  // doesn't say why, so ask (GET /auth/two-factor still works during set-up).
+  const flaggedRef = useRef(false)
+  useEffect(() => {
+    flaggedRef.current = Boolean(session?.twoFactorSetupRequired)
+  }, [session])
+  useEffect(() => {
+    setTwoFactorSetupRequiredHandler(() => {
+      if (flaggedRef.current) return
+      flaggedRef.current = true
+      const flag = (because: TwoFactorReason[]) => setSession((s) => (s ? { ...s, twoFactorSetupRequired: because } : s))
+      getTwoFactor()
+        .then((status) => flag(status.requiredBecause))
+        .catch(() => flag([]))
+    })
+    return () => setTwoFactorSetupRequiredHandler(null)
+  }, [])
 
   // Tokens last a week; end the session when this one runs out.
   useEffect(() => {
