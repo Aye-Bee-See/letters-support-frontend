@@ -660,3 +660,14 @@ a:hover { text-decoration: underline; }
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ============================================================
+   EDIT FORMS (prisoner, and later facility and group)
+   ============================================================ */
+.admin-form section + section .admin-form-header { border-top: 1px solid var(--a-border); }
+.form-textarea.short { min-height: 0; }
+.form-static { font-size: 0.82rem; }
+.form-error { margin: 0 1.25rem 1rem; }
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+}
