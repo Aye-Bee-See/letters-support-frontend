@@ -406,6 +406,81 @@ export interface Submission extends Timestamps {
   appliedChanges: Record<string, unknown> | null
   /** GET /moderation/submission: the target's present values of the proposed fields. */
   current?: Record<string, unknown> | null
+  submitter?: AccountBrief | null
+  reviewer?: AccountBrief | null
+}
+
+/** Who did something, as embedded in submissions and audit entries. */
+export interface AccountBrief {
+  id: number
+  username: string
+  name: string | null
+  role: UserRole
+}
+
+// ---------------------------------------------------------------------------
+// Superadmin overview
+// ---------------------------------------------------------------------------
+
+type ByResource<T> = Record<SubmissionResource, T>
+
+/** GET /moderation/summary (admin): the dashboard counts. */
+export interface AdminSummary {
+  pendingSubmissions: ByResource<number>
+  pendingBanRecommendations: number
+  records: ByResource<Record<RecordStatus, number>>
+  groups: { pendingApproval: number; suspended: number }
+  staleVerification: { prisoner: number; prison: number }
+  addressInDoubt: { prisoner: number }
+  backups: {
+    /** BACKUP_PUBLIC_KEY is set. Without it no backups are made. */
+    configured: boolean
+    count: number
+    newest: { name: string; at: string; bytes: number } | null
+    ageHours: number | null
+  }
+}
+
+interface ReadinessGroup {
+  id: number
+  name: string
+  networkRole: NetworkRole
+  relayFacilities: number
+  members: number
+  membersWithKeys: number
+}
+
+/** GET /auth/encryption-readiness (admin): who still has to set up keys. */
+export interface EncryptionReadiness {
+  mode: 'server' | 'e2e'
+  /** Accounts that can sign in, by how they sign in. `plain` still sends its password. */
+  authSchemes: { split: number; plain: number }
+  serverKeyConfigured: boolean
+  /** Every active group that relays mail has a group key. */
+  ready: boolean
+  blockers: string[]
+  groups: {
+    active: number
+    withKey: number
+    withoutKey: (ReadinessGroup & { blocksTheSwitch: boolean })[]
+    membersWaitingForGroupKey: (ReadinessGroup & { holders: number })[]
+    unclaimedWritersWithoutKeys: { id: number; name: string; writers: number }[]
+  }
+  writers: { total: number; withKeys: number; withoutKeys: number; withoutKeysWithLetters: number }
+  letters: { serverHeld: number; waitingForWriters: number; waitingForGroups: number }
+}
+
+/** GET /moderation/audit (admin): one entry, newest first. */
+export interface AuditEntry {
+  id: number
+  actor: number | null
+  /** e.g. `submission.approve`, `prisoner.update`, `user.update`. */
+  action: string
+  resource: string
+  targetId: number | null
+  details: Record<string, unknown> | null
+  createdAt: string
+  actor_details: AccountBrief | null
 }
 
 export interface Notification extends Timestamps {

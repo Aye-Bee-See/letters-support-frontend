@@ -591,3 +591,21 @@ a:hover { text-decoration: underline; }
 .diff-new { background: #f8fff8; }
 .diff-del { background: #fce8e8; text-decoration: line-through; color: var(--a-alert); }
 .diff-add { background: #e8fce8; color: var(--a-success); }
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+.dash-stats { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.dash-stat-link { color: inherit; display: block; }
+.dash-stat-link:hover { border-color: #aaa; text-decoration: none; }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.dash-note { padding: 0.75rem 1rem; font-size: 0.8rem; color: var(--a-mid); }
+.dash-nowrap { white-space: nowrap; }
+.dash-code { font-family: var(--a-mono); font-size: 0.75rem; }
