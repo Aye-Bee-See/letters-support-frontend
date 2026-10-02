@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 // URL-held filters for the admin directory lists (prisoners, facilities, groups).
@@ -46,6 +46,13 @@ export function useListParams() {
  */
 export function useSearchBox(q: string, onSearch: (q: string | undefined) => void) {
   const [search, setSearch] = useState(q)
+  // The timer calls the latest onSearch, not the one from the render that started
+  // it: that one closes over the URL as it was, and would drop a filter chosen
+  // while typing. (setSearchParams' own updater form passes that same old URL.)
+  const onSearchRef = useRef(onSearch)
+  useEffect(() => {
+    onSearchRef.current = onSearch
+  })
   // Adjusted during render, as React recommends for state derived from a changing prop.
   const [syncedQ, setSyncedQ] = useState(q)
   if (q !== syncedQ) {
@@ -54,9 +61,9 @@ export function useSearchBox(q: string, onSearch: (q: string | undefined) => voi
   }
   useEffect(() => {
     if (search.trim() === q) return
-    const timer = setTimeout(() => onSearch(search.trim() || undefined), SEARCH_DELAY_MS)
+    const timer = setTimeout(() => onSearchRef.current(search.trim() || undefined), SEARCH_DELAY_MS)
     return () => clearTimeout(timer)
-    // Only typing starts a search; `q` and `onSearch` change with every URL update.
+    // Only typing starts a search; `q` changes with every URL update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
   return [search, setSearch] as const

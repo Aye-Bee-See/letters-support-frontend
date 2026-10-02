@@ -144,13 +144,14 @@ export default function FacilitiesList() {
               </button>
             </p>
           )}
-          {list.data && list.data.items.length === 0 && (
+          {/* Nothing matches at all; an empty page past the end is the pager's to explain. */}
+          {list.data && list.data.total === 0 && (
             <p className="dash-note">{filtered ? 'No facilities match these filters.' : 'There are no facilities in the directory yet.'}</p>
           )}
           {list.data && list.data.items.length > 0 && <FacilityTable facilities={list.data.items} />}
         </div>
 
-        <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />
+        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )
