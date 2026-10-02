@@ -1,11 +1,14 @@
 // The UI says "facility"; the API says "prison" (/prison).
 import { getAllPages, getList, getOne } from './client'
-import type { FilterValues, ListParams, MailRuleList, Prison, RoutingMethod } from '../types'
+import type { FilterValues, ListParams, MailRuleList, Prison, RecordStatus, RoutingMethod } from '../types'
 
 export interface FacilityListParams extends ListParams {
   country?: string
   routing?: RoutingMethod
-  stale?: boolean
+  /** `true` only: never verified, or verified more than six months ago. Sending `false` is a 400. */
+  stale?: true
+  /** Staff only: draft, pending or published. Ignored for everyone else. */
+  recordStatus?: RecordStatus
   /** true: facilities with at least one active relay group. */
   relay?: boolean
   /** One mail rule tag. */
