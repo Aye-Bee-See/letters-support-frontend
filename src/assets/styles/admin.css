@@ -685,3 +685,36 @@ a:hover { text-decoration: underline; }
 .list-action:empty { display: none; }
 .social-row { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
 .relay-add .form-input { width: auto; min-width: 220px; flex: 1; }
+
+/* ============================================================
+   AUDIT LOG
+   ============================================================ */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--a-accent);
+  cursor: pointer;
+  text-align: left;
+}
+.link-button:hover { text-decoration: underline; }
+.audit-table td { vertical-align: top; }
+.audit-details { font-size: 0.75rem; display: grid; gap: 0.15rem; }
+.audit-details div { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.audit-details dt { color: var(--a-mid); font-weight: 600; }
+.audit-details dt::after { content: ':'; }
+.audit-details dd { word-break: break-word; }
+.audit-details .diff-del, .audit-details .diff-add { padding: 0 0.2rem; }
+.audit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.55rem;
+  border: 1px solid var(--a-border);
+  background: var(--a-bg);
+}
+.audit-chip button { background: none; border: none; cursor: pointer; font-size: 0.9rem; line-height: 1; color: var(--a-mid); }
+/* Wide enough to read: the table scrolls sideways on a narrow screen rather than wrapping details a word a line. */
+.audit-details { min-width: 280px; }

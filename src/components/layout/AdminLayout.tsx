@@ -62,7 +62,7 @@ export default function AdminLayout() {
           <ul className="sidebar-nav">
             {/* TODO: no pages for these yet (prototype links are placeholders too) */}
             <li><a href="#">Invite a group</a></li>
-            <li><a href="#">Audit log</a></li>
+            <li><NavLink to="/admin/audit">Audit log</NavLink></li>
             <li><a href="#">Site settings</a></li>
           </ul>
         </div>
