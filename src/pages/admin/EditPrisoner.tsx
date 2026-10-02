@@ -40,7 +40,11 @@ interface FormValues {
 }
 
 /** A date input holds YYYY-MM-DD; the API stores a timestamp. Read it in UTC, as the public pages show it. */
-const dateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
+function dateInput(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
+}
 const lines = (list: string[] | null) => (list ?? []).join('\n')
 const toList = (text: string) =>
   text
@@ -198,8 +202,7 @@ function PrisonerForm({ prisoner, facilities, facilitiesError, onSaved, onEdit }
     onChange: (e: { target: { value: string } }) => set(key, e.target.value),
   })
 
-  const moving = 'prison' in diff && initial.prison !== ''
-  const freeing = diff.status === 'free'
+  const warnings = mailWarnings(initial, diff)
 
   // A facility that isn't in the list (e.g. one deleted since) still shows as itself.
   const facilityOptions = facilities ?? []
@@ -297,13 +300,11 @@ function PrisonerForm({ prisoner, facilities, facilitiesError, onSaved, onEdit }
             </select>
           </Field>
         </div>
-        {(moving || freeing) && (
-          <div className="admin-alert admin-alert-warn">
-            {moving
-              ? 'Saving moves them to another facility: queued letters are re-routed to that facility’s relay group, or held if it has none, and their writers are told.'
-              : 'Saving marks them released: letters not yet mailed are held, and their writers are told.'}
+        {warnings.map((text) => (
+          <div key={text} className="admin-alert admin-alert-warn">
+            {text}
           </div>
-        )}
+        ))}
         <div className="form-row">
           <Field label="Country" htmlFor="f-country">
             <input className="form-input" {...field('country')} />
@@ -405,6 +406,31 @@ function PrisonerForm({ prisoner, facilities, facilitiesError, onSaved, onEdit }
       </div>
     </form>
   )
+}
+
+/**
+ * What saving will do to the prisoner's mail, as the API decides it
+ * (afterPrisonerChange): any change of facility is a move, including giving
+ * one to someone who had none or taking it away; becoming "free" holds their
+ * queued letters, and leaving "free" lets those go again.
+ */
+function mailWarnings(initial: FormValues, diff: PrisonerFields): string[] {
+  const out: string[] = []
+  if ('prison' in diff) {
+    out.push(
+      diff.prison === null
+        ? 'Saving removes their facility: their queued letters are held, and their writers are told.'
+        : // A queued letter keeps its group if that group also mails to the new
+          // facility. Otherwise the server re-routes it where it can (server mode)
+          // or holds it until the writer sends it again (end-to-end mode, where it
+          // can't re-seal a letter to another group).
+          'Saving changes their facility: queued letters go ahead where their group also mails to the new facility; the rest are re-routed or held until the writer sends them again. Their writers are told.',
+    )
+  }
+  if (diff.status === 'free') out.push('Saving marks them released: letters not yet mailed are held, and their writers are told.')
+  else if (initial.status === 'free' && 'status' in diff)
+    out.push('Saving undoes their release: letters held because they were released can go ahead again.')
+  return out
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
