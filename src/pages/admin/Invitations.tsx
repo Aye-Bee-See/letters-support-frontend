@@ -58,6 +58,8 @@ export default function Invitations() {
 
         <InviteForm
           groups={groups.data}
+          groupsError={groups.error}
+          onRetryGroups={groups.reload}
           onCreated={(invitation) => {
             setIssued({ invitation, renewed: false })
             list.reload()
@@ -109,7 +111,14 @@ export default function Invitations() {
   )
 }
 
-function InviteForm({ groups, onCreated }: { groups: Chapter[] | null; onCreated: (invitation: Invitation) => void }) {
+interface InviteFormProps {
+  groups: Chapter[] | null
+  groupsError: ApiError | null
+  onRetryGroups: () => void
+  onCreated: (invitation: Invitation) => void
+}
+
+function InviteForm({ groups, groupsError, onRetryGroups, onCreated }: InviteFormProps) {
   const [kind, setKind] = useState<InvitationKind>('group')
   const [name, setName] = useState('')
   const [chapter, setChapter] = useState('')
@@ -187,13 +196,21 @@ function InviteForm({ groups, onCreated }: { groups: Chapter[] | null; onCreated
             }
           >
             <select id="i-chapter" className="form-select" value={chapter} disabled={busy || !groups} onChange={(e) => setChapter(e.target.value)}>
-              <option value="">{!groups ? 'Loading groups…' : kind === 'group' ? 'Nobody' : 'Choose a group…'}</option>
+              <option value="">{groupsError ? 'Couldn’t load the groups' : !groups ? 'Loading groups…' : kind === 'group' ? 'Nobody' : 'Choose a group…'}</option>
               {active.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name}
                 </option>
               ))}
             </select>
+            {groupsError && (
+              <span className="form-hint list-stale">
+                Couldn’t load the groups ({groupsError.message}).{' '}
+                <button type="button" className="link-button" onClick={onRetryGroups}>
+                  Try again
+                </button>
+              </span>
+            )}
           </Field>
         </div>
         <div className="form-row">
@@ -224,8 +241,20 @@ function InviteForm({ groups, onCreated }: { groups: Chapter[] | null; onCreated
 
 /** The token, once: what to hand over, how, and until when. */
 function TokenNotice({ invitation, renewed, group, onDone }: { invitation: Invitation; renewed: boolean; group?: Chapter; onDone: () => void }) {
-  const [copied, setCopied] = useState(false)
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle')
   const code = formatCode(invitation.token ?? '')
+
+  async function copyCode() {
+    try {
+      // Undefined outside a secure context (e.g. the dev server over the LAN), and
+      // refused without permission: either way the code on screen still works.
+      if (!navigator.clipboard) throw new Error('No clipboard')
+      await navigator.clipboard.writeText(code)
+      setCopy('copied')
+    } catch {
+      setCopy('failed')
+    }
+  }
   const what = invitation.kind === 'group' ? `${invitation.inviteeName} to join the network` : `${invitation.inviteeName} to join ${group?.name ?? 'the group'}`
 
   return (
@@ -237,16 +266,13 @@ function TokenNotice({ invitation, renewed, group, onDone }: { invitation: Invit
       </div>
       <div className="token-row">
         <code className="token-code">{code}</code>
-        <button
-          type="button"
-          className="a-btn a-btn-sm"
-          onClick={() => {
-            void navigator.clipboard?.writeText(code).then(() => setCopied(true))
-          }}
-        >
-          {copied ? 'Copied' : 'Copy'}
+        <button type="button" className="a-btn a-btn-sm" onClick={() => void copyCode()}>
+          {copy === 'copied' ? 'Copied' : 'Copy'}
         </button>
       </div>
+      {copy === 'failed' && (
+        <div className="admin-alert admin-alert-warn">This browser didn’t allow copying. Select the code above and copy it by hand, or write it down.</div>
+      )}
       <div className="form-hint">
         Valid until {dateTime(invitation.expiresAt)}. Nothing is sent by email: give it to them in person or through a channel you both already trust.
         They accept it in the letters.support app for Android or iOS (the website can’t accept invitations yet).
