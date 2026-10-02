@@ -3,7 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import AdminLayout, { AdminStyles } from './components/layout/AdminLayout'
-import { RequireAdmin, RequireAuth } from './components/layout/RouteGuards'
+import { RequireAdmin, RequireAuth, TwoFactorSetupLock } from './components/layout/RouteGuards'
 import ScrollToTop from './components/layout/ScrollToTop'
 
 import Index from './pages/public/Index'
@@ -55,6 +55,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <TwoFactorSetupLock />
         <Routes>
           {/* Public directory: header and footer */}
           <Route element={<SiteLayout />}>

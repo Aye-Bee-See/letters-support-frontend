@@ -56,8 +56,9 @@ export default function Security() {
               {twoFactorSetupRequired && step.name !== 'codes' && (
                 <div className="claim-encryption-note security-required">
                   <p>
-                    <strong>Set this up to continue.</strong> Two-factor sign-in is required for your account because{' '}
-                    {twoFactorSetupRequired.map((r) => BECAUSE[r]).join(' and ')}. Nothing else works until it’s on.
+                    <strong>Set this up to continue.</strong> Two-factor sign-in is required for your account
+                    {twoFactorSetupRequired.length > 0 && <> because {twoFactorSetupRequired.map((r) => BECAUSE[r]).join(' and ')}</>}. Nothing else
+                    works until it’s on.
                   </p>
                 </div>
               )}
