@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getPrisoners, type PrisonerListParams } from '../../api/prisoners'
+import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
+import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, heldAt, shortDate, STATUS_LABELS } from '../../utils/prisoners'
@@ -12,8 +13,6 @@ import { displayName, heldAt, shortDate, STATUS_LABELS } from '../../utils/priso
 // the dashboard can link straight to "addresses in doubt" or "needs re-verifying".
 
 const PAGE_SIZE = 25
-/** Wait this long after typing before searching. */
-const SEARCH_DELAY_MS = 300
 
 const RECORD_STATUSES: RecordStatus[] = ['published', 'pending', 'draft']
 const PRISONER_STATUSES: PrisonerStatus[] = ['incarcerated', 'pretrial', 'free']
@@ -27,7 +26,7 @@ const oneOf = <T extends string>(values: readonly T[], v: string | null): T | un
   values.includes(v as T) ? (v as T) : undefined
 
 export default function PrisonersList() {
-  const [params, setParams] = useSearchParams()
+  const { params, page, update, clear } = useListParams()
   const q = params.get('q') ?? ''
   const record = oneOf(RECORD_STATUSES, params.get('recordStatus'))
   const status = oneOf(PRISONER_STATUSES, params.get('status'))
@@ -35,7 +34,6 @@ export default function PrisonersList() {
   const addressInDoubt = params.get('addressInDoubt') === 'true'
   const attention: Attention | undefined = stale ? 'stale' : addressInDoubt ? 'addressInDoubt' : undefined
   const sort = oneOf(Object.keys(SORTS) as Sort[], params.get('sort')) ?? 'name'
-  const page = Math.max(1, Number(params.get('page')) || 1)
 
   const query: PrisonerListParams = {
     q: q || undefined,
@@ -49,37 +47,10 @@ export default function PrisonersList() {
   }
   const list = useApi(() => getPrisoners(query), [q, record, status, stale, addressInDoubt, sort, page])
 
-  const setParam = (key: string, value: string | undefined) => {
-    const next = new URLSearchParams(params)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    if (key !== 'page') next.delete('page')
-    setParams(next, { replace: key === 'q' })
-  }
-  const setAttention = (value: Attention | undefined) => {
-    const next = new URLSearchParams(params)
-    for (const key of Object.keys(ATTENTION)) next.delete(key)
-    if (value) next.set(value, 'true')
-    next.delete('page')
-    setParams(next)
-  }
-
-  // The search box updates the URL once typing pauses.
-  const [search, setSearch] = useState(q)
-  // And follows the URL when it changes some other way (back, forward, a link),
-  // so a stale box can't write an old query back. Adjusted during render, as
-  // React recommends for state derived from a changing prop.
-  const [syncedQ, setSyncedQ] = useState(q)
-  if (q !== syncedQ) {
-    setSyncedQ(q)
-    if (search.trim() !== q) setSearch(q)
-  }
-  useEffect(() => {
-    if (search.trim() === q) return
-    const timer = setTimeout(() => setParam('q', search.trim() || undefined), SEARCH_DELAY_MS)
-    return () => clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
+  const setParam = (key: string, value: string | undefined) => update({ [key]: value })
+  const setAttention = (value: Attention | undefined) =>
+    update(Object.fromEntries(Object.keys(ATTENTION).map((key) => [key, key === value ? 'true' : undefined])))
+  const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
   const filtered = Boolean(q || record || status || attention)
   const total = list.data?.total ?? 0
@@ -140,7 +111,7 @@ export default function PrisonersList() {
               className="a-btn a-btn-sm"
               onClick={() => {
                 setSearch('')
-                setParams(sort === 'name' ? {} : { sort })
+                clear(['sort'])
               }}
             >
               Clear filters
@@ -164,19 +135,7 @@ export default function PrisonersList() {
           {list.data && list.data.items.length > 0 && <PrisonerTable prisoners={list.data.items} />}
         </div>
 
-        {pages > 1 && (
-          <div className="queue-pager">
-            <button type="button" className="a-btn a-btn-sm" disabled={page <= 1} onClick={() => setParam('page', page - 1 > 1 ? String(page - 1) : undefined)}>
-              ← Previous
-            </button>
-            <span>
-              Page {page} of {pages}
-            </span>
-            <button type="button" className="a-btn a-btn-sm" disabled={page >= pages} onClick={() => setParam('page', String(page + 1))}>
-              Next →
-            </button>
-          </div>
-        )}
+        <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />
       </div>
     </>
   )
