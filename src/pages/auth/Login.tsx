@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, type Location } from 'react-router-dom'
-import { signIn, SignInError } from '../../auth/signIn'
+import { signIn, SignInError, type CodeNeeded, type SignedIn } from '../../auth/signIn'
+import { SECURITY_PATH } from '../../components/layout/RouteGuards'
 import { useAuth } from '../../hooks/useAuth'
 
 function failureMessage(err: unknown): string {
@@ -27,24 +28,57 @@ export default function Login() {
   const [missing, setMissing] = useState({ username: false, password: false })
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Two-factor sign-in: the password was right, and a code is needed. The
+  // password stays in this form's state until then, to derive the keys again.
+  const [pending, setPending] = useState<CodeNeeded | null>(null)
+  const [code, setCode] = useState('')
+  const [useRecovery, setUseRecovery] = useState(false)
+
+  function finish(signedIn: SignedIn) {
+    setPassword('')
+    startSession(signedIn)
+    // Required and not set up: only setting it up works until it is.
+    if (signedIn.result.twoFactor?.setupRequired) {
+      navigate(SECURITY_PATH, { replace: true })
+      return
+    }
+    const home = signedIn.result.user.role === 'admin' ? '/admin' : '/inbox'
+    navigate(from?.pathname ?? home, { replace: true })
+  }
+
+  function startAgain(message: string | null = null) {
+    setPending(null)
+    setCode('')
+    setUseRecovery(false)
+    setPassword('')
+    setError(message)
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    const check = { username: !username.trim(), password: !password }
-    setMissing(check)
     setError(null)
-    if (check.username || check.password) return
+    if (pending) {
+      if (!code.trim()) return setError(useRecovery ? 'Enter one of your recovery codes.' : 'Enter the code from your authenticator app.')
+    } else {
+      const check = { username: !username.trim(), password: !password }
+      setMissing(check)
+      if (check.username || check.password) return
+    }
 
     setBusy(true)
     try {
-      const signedIn = await signIn(username, password)
-      setPassword('')
-      startSession(signedIn)
-      const home = signedIn.result.user.role === 'admin' ? '/admin' : '/inbox'
-      navigate(from?.pathname ?? home, { replace: true })
+      const factor = useRecovery ? { recoveryCode: code.trim() } : { code: code.replace(/\s/g, '') }
+      const outcome = await signIn(username, password, pending ? { challenge: pending.challenge, factor } : undefined)
+      if ('codeNeeded' in outcome) {
+        setPending(outcome)
+        setBusy(false)
+        return
+      }
+      finish(outcome)
     } catch (err) {
-      setError(failureMessage(err))
       setBusy(false)
+      if (err instanceof SignInError && err.kind === 'challenge_expired') return startAgain(err.message)
+      setError(failureMessage(err))
     }
   }
 
@@ -62,52 +96,99 @@ export default function Login() {
           </p>
 
           <form className="login-form" onSubmit={onSubmit} noValidate>
-            <div className="login-field">
-              <label className="login-label" htmlFor="username">
-                Username
-              </label>
-              <input
-                className={missing.username ? 'login-input error' : 'login-input'}
-                type="text"
-                id="username"
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={busy}
-              />
-              <span className={missing.username ? 'login-error is-visible' : 'login-error'}>Please enter your username.</span>
-            </div>
-
-            <div className="login-field">
-              <label className="login-label" htmlFor="password">
-                Password
-              </label>
-              <div className="login-password-wrap">
+            {pending ? (
+              <div className="login-field">
+                <p className="login-subheading">
+                  Your account uses two-factor sign-in.{' '}
+                  {useRecovery ? 'Enter one of your recovery codes.' : 'Enter the six-digit code from your authenticator app.'}
+                </p>
+                <label className="login-label" htmlFor="code">
+                  {useRecovery ? 'Recovery code' : 'Code'}
+                </label>
                 <input
-                  className={missing.password ? 'login-input error' : 'login-input'}
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  className="login-input"
+                  type="text"
+                  id="code"
+                  autoComplete="one-time-code"
+                  inputMode={useRecovery ? 'text' : 'numeric'}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  autoFocus
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
                   disabled={busy}
                 />
-                <button type="button" className="login-show-pw" onClick={() => setShowPassword((s) => !s)}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
+                <span className={error ? 'login-error is-visible' : 'login-error'} role="alert">
+                  {error}
+                </span>
+                <p className="login-footer-note">
+                  <button
+                    type="button"
+                    className="login-show-pw login-text-button"
+                    onClick={() => {
+                      setUseRecovery((r) => !r)
+                      setCode('')
+                      setError(null)
+                    }}
+                  >
+                    {useRecovery ? 'Use a code from my app instead' : 'I don’t have my phone: use a recovery code'}
+                  </button>
+                  {' · '}
+                  <button type="button" className="login-show-pw login-text-button" onClick={() => startAgain()}>
+                    Start again
+                  </button>
+                </p>
               </div>
-              <span className={missing.password ? 'login-error is-visible' : 'login-error'}>Please enter your password.</span>
-              <span className={error ? 'login-error is-visible' : 'login-error'} role="alert">
-                {error}
-              </span>
-            </div>
+            ) : (
+              <>
+              <div className="login-field">
+                <label className="login-label" htmlFor="username">
+                  Username
+                </label>
+                <input
+                  className={missing.username ? 'login-input error' : 'login-input'}
+                  type="text"
+                  id="username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={busy}
+                />
+                <span className={missing.username ? 'login-error is-visible' : 'login-error'}>Please enter your username.</span>
+              </div>
+
+              <div className="login-field">
+                <label className="login-label" htmlFor="password">
+                  Password
+                </label>
+                <div className="login-password-wrap">
+                  <input
+                    className={missing.password ? 'login-input error' : 'login-input'}
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={busy}
+                  />
+                  <button type="button" className="login-show-pw" onClick={() => setShowPassword((s) => !s)}>
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <span className={missing.password ? 'login-error is-visible' : 'login-error'}>Please enter your password.</span>
+                <span className={error ? 'login-error is-visible' : 'login-error'} role="alert">
+                  {error}
+                </span>
+              </div>
+              </>
+            )}
 
             <button type="submit" className="login-submit" disabled={busy}>
               {/* Unlocking runs Argon2id on the device: a second or two on slower phones. */}
-              {busy ? 'Signing in…' : 'Sign in'}
+              {busy ? 'Signing in…' : pending ? 'Continue' : 'Sign in'}
             </button>
           </form>
 

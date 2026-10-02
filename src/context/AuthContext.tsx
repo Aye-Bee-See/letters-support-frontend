@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { setAuthToken, setUnauthorizedHandler } from '../api/client'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { setAuthToken, setTwoFactorSetupRequiredHandler, setUnauthorizedHandler } from '../api/client'
+import { getTwoFactor } from '../api/twoFactor'
 import type { SignedIn } from '../auth/signIn'
 import type { Keypair } from '../crypto'
 import { AuthContext, type AuthState } from './auth-context'
-import type { KeyBundle, User } from '../types'
+import type { KeyBundle, TwoFactorReason, User } from '../types'
 
 interface Session {
   user: User
@@ -12,6 +13,7 @@ interface Session {
   keys: KeyBundle | null
   keypair: Keypair | null
   groupKeypair: Keypair | null
+  twoFactorSetupRequired: TwoFactorReason[] | null
 }
 
 // The session, including unlocked private keys, lives in React state only:
@@ -30,7 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       keys: signedIn.bundle,
       keypair: signedIn.keypair,
       groupKeypair: signedIn.groupKeypair,
+      twoFactorSetupRequired: result.twoFactor?.setupRequired ? result.twoFactor.because : null,
     })
+  }, [])
+
+  const twoFactorSetUp = useCallback(() => {
+    setSession((s) => (s ? { ...s, twoFactorSetupRequired: null } : s))
   }, [])
 
   const endSession = useCallback(() => {
@@ -45,6 +52,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnauthorizedHandler(endSession)
     return () => setUnauthorizedHandler(null)
   }, [endSession])
+
+  // A refusal saying two-factor sign-in must be set up first, from any request:
+  // the requirement may have been switched on after this session began. The 403
+  // doesn't say why, so ask (GET /auth/two-factor still works during set-up).
+  const flaggedRef = useRef(false)
+  useEffect(() => {
+    flaggedRef.current = Boolean(session?.twoFactorSetupRequired)
+  }, [session])
+  useEffect(() => {
+    setTwoFactorSetupRequiredHandler(() => {
+      if (flaggedRef.current) return
+      flaggedRef.current = true
+      const flag = (because: TwoFactorReason[]) => setSession((s) => (s ? { ...s, twoFactorSetupRequired: because } : s))
+      getTwoFactor()
+        .then((status) => flag(status.requiredBecause))
+        .catch(() => flag([]))
+    })
+    return () => setTwoFactorSetupRequiredHandler(null)
+  }, [])
 
   // Tokens last a week; end the session when this one runs out.
   useEffect(() => {
@@ -65,6 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       keys: session?.keys ?? null,
       keypair: session?.keypair ?? null,
       groupKeypair: session?.groupKeypair ?? null,
+      twoFactorSetupRequired: session?.twoFactorSetupRequired ?? null,
+      twoFactorSetUp,
       isAuthenticated: session !== null,
       isAdmin: role === 'admin',
       isChapter: role === 'chapter',
@@ -72,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       startSession,
       endSession,
     }
-  }, [session, startSession, endSession])
+  }, [session, startSession, endSession, twoFactorSetUp])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -1,4 +1,4 @@
-import { claimAccount, getKeys, login, type ClaimInfo } from '../api/auth'
+import { claimAccount, getKeys, loginNewAccount, type ClaimInfo } from '../api/auth'
 import { lockKeys, unlockWithClaimToken } from '../crypto'
 import type { Joined } from './join'
 
@@ -43,7 +43,7 @@ export async function claim(
     authKey: locked.authKey,
     keyFields: locked.keyFields,
   })
-  const result = await login(username, locked.authKey)
+  const result = await loginNewAccount(username, locked.authKey)
   const bundle = result.keys ?? (await getKeys(result.token.token))
   return { signedIn: { result, bundle, keypair, groupKeypair: null }, recoveryCode: locked.recoveryCode }
 }

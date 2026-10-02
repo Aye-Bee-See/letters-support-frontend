@@ -1046,7 +1046,22 @@ img { display: block; max-width: 100%; }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+/* The signed-in account's own settings, beside Inbox and Sign out: plain text, so the row fits. */
+.nav-auth-link {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #aaa;
+}
+.nav-auth-link:hover { color: var(--white); }
+
 @media (max-width: 860px) {
+  /* Tighter, so the links and the signed-in buttons stay on one line until the menu takes over. */
+  .site-nav { gap: 1.1rem; }
+  .nav-auth { margin-left: 0.25rem; padding-left: 1rem; }
   .prisoner-grid { grid-template-columns: repeat(2, 1fr); }
   .cta-grid { grid-template-columns: 1fr; }
   .profile-layout { grid-template-columns: 1fr; }

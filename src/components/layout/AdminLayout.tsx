@@ -70,6 +70,7 @@ export default function AdminLayout() {
         <div className="sidebar-footer">
           Signed in as <strong style={{ color: 'var(--a-sidebar-t)' }}>{user?.username}</strong>
           <br />
+          <Link to="/account/security">Two-factor sign-in</Link>
           <Link to="/">View public site</Link>
           <a href="#" onClick={(e) => { e.preventDefault(); signOut() }}>Sign out</a>
         </div>

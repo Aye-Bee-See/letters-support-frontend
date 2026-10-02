@@ -519,10 +519,39 @@ export interface LoginParams {
 }
 
 /** POST /auth/login -> data */
+/** Why two-factor sign-in is required of an account (GET /auth/two-factor, and sign-in). */
+export type TwoFactorReason = 'superadmins' | 'all_groups' | 'group'
+
 export interface LoginResult {
   user: User
   token: { token: string; expires: number }
   keys?: KeyBundle
+  /** Required of this account and not set up yet: only set-up (and sign-out) works until it is. */
+  twoFactor?: { setupRequired: true; because: TwoFactorReason[] }
+}
+
+/** POST /auth/login for an account with two-factor sign-in on: no session yet, only the second step. */
+export interface TwoFactorChallenge {
+  twoFactor: { challenge: string; expiresAt: string }
+}
+
+/** GET /auth/two-factor */
+export interface TwoFactorStatus {
+  enabled: boolean
+  enabledAt: string | null
+  /** A secret was handed out and not confirmed yet. */
+  settingUp: boolean
+  recoveryCodesLeft: number
+  required: boolean
+  requiredBecause: TwoFactorReason[]
+}
+
+/** GET /auth/two-factor/policy (superadmin) */
+export interface TwoFactorPolicy {
+  superadmins: boolean
+  allGroups: boolean
+  /** Groups that require it of their own admins. */
+  groups: { id: number; name: string }[]
 }
 
 // ---------------------------------------------------------------------------

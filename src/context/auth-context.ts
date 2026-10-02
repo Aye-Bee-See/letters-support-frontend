@@ -1,7 +1,7 @@
 import { createContext } from 'react'
 import type { SignedIn } from '../auth/signIn'
 import type { Keypair } from '../crypto'
-import type { KeyBundle, User } from '../types'
+import type { KeyBundle, TwoFactorReason, User } from '../types'
 
 // Kept apart from AuthContext.tsx so that file exports only a component
 // (React Fast Refresh requirement).
@@ -17,6 +17,14 @@ export interface AuthState {
   keypair: Keypair | null
   /** The group's unlocked keypair (group admins who hold the group key). Memory only. */
   groupKeypair: Keypair | null
+  /**
+   * Two-factor sign-in is required of this account and not set up yet. Until it
+   * is, the API refuses everything but setting it up, so the app sends the person
+   * to the security page. Lists why (superadmins, all_groups, group).
+   */
+  twoFactorSetupRequired: TwoFactorReason[] | null
+  /** Call once two-factor sign-in is switched on. */
+  twoFactorSetUp: () => void
   isAuthenticated: boolean
   isAdmin: boolean
   isChapter: boolean

@@ -352,3 +352,12 @@
 }
 
 .claim-back:hover { color: var(--text); }
+
+/* Sign-in security (pages/account/Security.tsx), on the claim page's layout. */
+.security-required { border-color: var(--alert); }
+.security-link { position: static; transform: none; padding: 0; text-decoration: underline; }
+.security-qr { width: 200px; max-width: 100%; margin: 0.5rem auto; background: #fff; }
+.security-qr svg { display: block; width: 100%; height: auto; }
+.security-secret { font-family: var(--mono); font-size: 0.95rem; letter-spacing: 0.05em; word-break: break-all; user-select: all; }
+.security-codes { columns: 2; list-style: none; padding: 0; margin: 0.5rem 0; text-align: center; user-select: all; }
+.security-codes code { font-family: var(--mono); font-size: 0.95rem; line-height: 1.9; }

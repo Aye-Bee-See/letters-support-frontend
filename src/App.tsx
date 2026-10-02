@@ -3,7 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import AdminLayout, { AdminStyles } from './components/layout/AdminLayout'
-import { RequireAdmin, RequireAuth } from './components/layout/RouteGuards'
+import { RequireAdmin, RequireAuth, TwoFactorSetupLock } from './components/layout/RouteGuards'
 import ScrollToTop from './components/layout/ScrollToTop'
 
 import Index from './pages/public/Index'
@@ -16,6 +16,7 @@ import GroupProfile from './pages/public/GroupProfile'
 import About from './pages/public/About'
 
 import Login from './pages/auth/Login'
+import Security from './pages/account/Security'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import Claim from './pages/auth/Claim'
 import Join from './pages/auth/Join'
@@ -54,6 +55,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <TwoFactorSetupLock />
         <Routes>
           {/* Public directory: header and footer */}
           <Route element={<SiteLayout />}>
@@ -78,6 +80,11 @@ export default function App() {
               <Route path="inbox" element={<InboxRoute />} />
               <Route path="threads/:id" element={<Thread />} />
               <Route path="letters/new" element={<NewLetter />} />
+            </Route>
+
+            {/* Every signed-in account, superadmins included: two-factor sign-in. */}
+            <Route element={<RequireAuth />}>
+              <Route path="account/security" element={<Security />} />
             </Route>
 
             <Route element={<RequireAuth roles={['chapter']} />}>

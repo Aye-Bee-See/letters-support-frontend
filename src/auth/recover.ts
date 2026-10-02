@@ -1,4 +1,4 @@
-import { finishRecovery, getKeys, login, startRecovery } from '../api/auth'
+import { finishRecovery, getKeys, isTwoFactorChallenge, login, startRecovery } from '../api/auth'
 import { toApiError } from '../api/client'
 import { lockKeys, openChallenge, unlockGroupKey, unlockWithRecoveryCode, type Keypair } from '../crypto'
 import type { Joined } from './join'
@@ -49,7 +49,11 @@ export async function completeRecovery(opened: OpenedRecovery, newPassword: stri
     const fresh = await startRecovery(opened.username)
     await send(await openChallenge(fresh.sealedChallenge, opened.keypair))
   }
-  const result = await login(opened.username, locked.authKey)
+  const answer = await login(opened.username, locked.authKey)
+  // Recovery leaves two-factor sign-in as it was. With it on, signing in needs a
+  // code too; the new recovery code must still be shown (the old one is used up).
+  if (isTwoFactorChallenge(answer)) return { signedIn: null, recoveryCode: locked.recoveryCode }
+  const result = answer
   const bundle = result.keys ?? (await getKeys(result.token.token))
   // A group admin's group key opens with their (unchanged) keypair, as at sign-in.
   const org = bundle.orgKey
