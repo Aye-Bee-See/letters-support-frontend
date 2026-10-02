@@ -182,7 +182,9 @@ function FacilityTable({ facilities }: { facilities: Prison[] }) {
           return (
             <tr key={f.id}>
               <td>
-                <span className="list-name">{f.prisonName}</span>
+                <Link to={`/admin/facilities/${f.id}/edit`} className="list-name">
+                  {f.prisonName}
+                </Link>
                 <div className="list-sub">{[city, f.country].filter(Boolean).join(', ') || 'No location listed'}</div>
               </td>
               <td>{f.routing ? ROUTING_LABELS[f.routing] : '—'}</td>
@@ -196,6 +198,9 @@ function FacilityTable({ facilities }: { facilities: Prison[] }) {
                 {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">
+                <Link to={`/admin/facilities/${f.id}/edit`} className="a-btn a-btn-sm">
+                  Edit
+                </Link>
                 {f.recordStatus === 'published' && (
                   <Link to={`/facilities/${f.id}`} className="a-btn a-btn-sm">
                     View

@@ -1,5 +1,5 @@
 // The UI says "facility"; the API says "prison" (/prison).
-import { getAllPages, getList, getOne } from './client'
+import { del, getAllPages, getList, getOne, put } from './client'
 import type { FilterValues, ListParams, MailRuleList, Prison, RecordStatus, RoutingMethod } from '../types'
 
 export interface FacilityListParams extends ListParams {
@@ -31,5 +31,35 @@ export const getFacilityFilters = () => getOne<FilterValues<'country' | 'routing
 export const getFacility = (id: number, full = true) =>
   getOne<Prison>('/prison/prison', { id, full })
 
-/** The master list of mail rules. Fetch it; admins can add rules, so never compile it in. */
-export const getMailRules = () => getOne<MailRuleList>('/prison/mail-rules')
+/**
+ * The master list of mail rules. Fetch it; admins can add rules, so never compile it in.
+ * `retired` (staff only) includes retired rules, flagged `retired: true`.
+ */
+export const getMailRules = (retired = false) => getOne<MailRuleList>('/prison/mail-rules', retired ? { retired: true } : undefined)
+
+// Directory writes are superadmin-only (22 Sept); group admins propose edits
+// through corrections.ts. Unlike a prisoner's, a facility's edits and relay
+// links don't touch queued letters.
+
+/** The fields PUT /prison/prison accepts (PRISON_FIELDS in the API). */
+export type FacilityFields = Partial<
+  Pick<
+    Prison,
+    | 'prisonName' | 'address' | 'country' | 'routing' | 'scanService' | 'mailRules' | 'pageLimit' | 'photoLimit'
+    | 'mailLanguages' | 'notes' | 'verifiedBy' | 'verifiedAt' | 'verificationNotes' | 'recordStatus'
+  >
+>
+
+/** Superadmin only. Send just the fields that changed: the audit log records what was sent. `address` replaces the whole object. */
+export const updateFacility = (id: number, fields: FacilityFields) =>
+  put<{ updatedRows: number }>('/prison/prison', { id, ...fields })
+
+/** Superadmin only. Refused while prisoners are listed there (a 400, SequelizeForeignKeyConstraintError). */
+export const deleteFacility = (id: number) => del<number>('/prison/prison', { id })
+
+/** Attach a group that prints and mails for this facility. Idempotent; takes effect at once. Answers with the facility (full), relay groups included. */
+export const linkRelayGroup = (prison: number, chapter: number) =>
+  put<{ updatedRows: Prison; chapter: number; prison: number }>('/prison/relay', { prison, chapter })
+
+/** Detach a relay group. A 404 if there was no link. */
+export const unlinkRelayGroup = (prison: number, chapter: number) => del<number>('/prison/relay', { prison, chapter })

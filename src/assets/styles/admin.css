@@ -671,3 +671,13 @@ a:hover { text-decoration: underline; }
 @media (max-width: 640px) {
   .form-row { grid-template-columns: 1fr; }
 }
+
+/* Facility edit: mail rule checkboxes and the relay group panel. */
+.rule-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 0.9rem 1.25rem; }
+.rule-group { border: none; display: flex; flex-direction: column; gap: 0.3rem; }
+.rule-group legend { text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 0.2rem; }
+.relay-panel { margin-top: 1.25rem; }
+.relay-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem; }
+.relay-list li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.relay-add { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.relay-add .form-select { width: auto; min-width: 220px; }

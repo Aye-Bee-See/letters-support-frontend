@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getAllFacilities } from '../../api/facilities'
 import { deletePrisoner, getPrisoner, updatePrisoner, type PrisonerFields, type PrisonerMailChange } from '../../api/prisoners'
+import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
@@ -431,25 +432,4 @@ function mailWarnings(initial: FormValues, diff: PrisonerFields): string[] {
   else if (initial.status === 'free' && 'status' in diff)
     out.push('Saving undoes their release: letters held because they were released can go ahead again.')
   return out
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <h2 className="admin-form-header">{title}</h2>
-      <div className="admin-form-body">{children}</div>
-    </section>
-  )
-}
-
-function Field({ label, htmlFor, hint, children }: { label: string; htmlFor: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="form-group">
-      <label className="form-label" htmlFor={htmlFor}>
-        {label}
-      </label>
-      {children}
-      {hint && <span className="form-hint">{hint}</span>}
-    </div>
-  )
 }

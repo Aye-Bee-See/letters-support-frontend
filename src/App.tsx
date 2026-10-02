@@ -33,6 +33,7 @@ import OrgSettings from './pages/org/OrgSettings'
 import AdminLogin from './pages/admin/AdminLogin'
 import Dashboard from './pages/admin/Dashboard'
 import PrisonersList from './pages/admin/PrisonersList'
+import EditFacility from './pages/admin/EditFacility'
 import EditPrisoner from './pages/admin/EditPrisoner'
 import FacilitiesList from './pages/admin/FacilitiesList'
 import GroupsList from './pages/admin/GroupsList'
@@ -93,6 +94,7 @@ export default function App() {
                 <Route path="prisoners" element={<PrisonersList />} />
                 <Route path="prisoners/:id/edit" element={<EditPrisoner />} />
                 <Route path="facilities" element={<FacilitiesList />} />
+                <Route path="facilities/:id/edit" element={<EditFacility />} />
                 <Route path="groups" element={<GroupsList />} />
                 <Route path="queue" element={<Queue />} />
               </Route>
