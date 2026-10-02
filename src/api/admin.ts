@@ -1,7 +1,7 @@
 // Superadmin-only calls: the dashboard counts and the moderation decisions. Every
 // call here is a 403 for anyone else; the /admin routes are behind RequireAdmin.
 import { getList, getOne, put } from './client'
-import type { AdminSummary, AuditEntry, EncryptionReadiness, ListParams, Submission } from '../types'
+import type { AdminSummary, AuditEntry, EncryptionReadiness, ListParams, Submission, User, UserRole } from '../types'
 
 export const getAdminSummary = () => getOne<AdminSummary>('/moderation/summary')
 
@@ -23,3 +23,7 @@ export const approveSubmission = (input: ApproveInput) => put<Submission>('/mode
 
 /** The note is required: the submitter is told why. */
 export const rejectSubmission = (id: number, decisionNote: string) => put<Submission>('/moderation/reject', { id, decisionNote })
+
+/** Superadmin: accounts by username, email or name (GET /auth/users). */
+export const searchAccounts = (q: string, params?: ListParams & { role?: UserRole }) =>
+  getList<User>('/auth/users', { q, page_size: 10, ...params })

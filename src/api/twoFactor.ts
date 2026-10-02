@@ -37,3 +37,6 @@ export const setTwoFactorPolicy = (changes: Partial<Pick<TwoFactorPolicy, 'super
 /** Require it of one group's admins. */
 export const setGroupTwoFactor = (chapter: number, required: boolean) =>
   put<{ chapter: number; required: boolean }>('/auth/two-factor/group', { chapter, required })
+
+/** Superadmin: switch it off for someone who lost their phone and their recovery codes. They sign in with their password, and set it up again if it's required. A 409 if it isn't on. */
+export const resetTwoFactor = (user: number) => del<{ user: number; enabled: false }>('/auth/two-factor/user', { user })
