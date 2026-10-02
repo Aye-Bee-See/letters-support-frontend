@@ -97,7 +97,10 @@ function problems(v: FormValues, rules: Set<string>, list: MailRuleList | null):
   if (toLines(v.lines).length > MAX_PRINT_LINES) out.push(`An envelope takes at most ${MAX_PRINT_LINES} print lines.`)
   for (const [key, label] of [['pageLimit', 'Page limit'], ['photoLimit', 'Photo limit']] as const) {
     const raw = v[key].trim()
-    if (raw && !(/^\d+$/.test(raw) && Number(raw) >= 1)) out.push(`${label} must be a whole number of at least 1, or blank for no limit.`)
+    // isSafeInteger, not just digits: a long enough digit string is Infinity (sent as
+    // null, i.e. "no limit") or loses precision on the way to JSON.
+    if (raw && !(/^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) && Number(raw) >= 1))
+      out.push(`${label} must be a whole number of at least 1, or blank for no limit.`)
   }
   const codes = toCodes(v.mailLanguages)
   const bad = codes.filter((c) => !/^[a-z]{2}$/.test(c))
