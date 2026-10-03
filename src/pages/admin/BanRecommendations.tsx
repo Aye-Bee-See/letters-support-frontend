@@ -33,6 +33,8 @@ export default function BanRecommendations() {
   const { params, update } = useListParams()
   const status = (STATUSES.find((s) => s.value === params.get('status'))?.value ?? 'pending') as BanRecommendationStatus
   const list = useApi(() => getBanRecommendations(status), [status])
+  // Kept here, not in a card: a reload after a decision unmounts the card it came from.
+  const [notice, setNotice] = useState<string | null>(null)
 
   // Waiting ones, one card per writer: several groups may recommend the same
   // writer, and a ban settles them all.
@@ -68,6 +70,14 @@ export default function BanRecommendations() {
           </label>
         </div>
 
+        {notice && (
+          <div className="admin-alert admin-alert-warn">
+            {notice}
+            <button type="button" className="a-btn a-btn-sm" onClick={() => setNotice(null)}>
+              OK
+            </button>
+          </div>
+        )}
         {list.loading && <p className="dash-note">Loading…</p>}
         {list.error && (
           <div className="admin-alert admin-alert-err">
@@ -82,7 +92,16 @@ export default function BanRecommendations() {
         )}
 
         {status === 'pending'
-          ? byWriter.map((recs) => <WriterCard key={recs[0].userId} recs={recs} onDecided={list.reload} />)
+          ? byWriter.map((recs) => (
+              <WriterCard
+                key={recs[0].userId}
+                recs={recs}
+                onDecided={(message) => {
+                  setNotice(message ?? null)
+                  list.reload()
+                }}
+              />
+            ))
           : list.data?.map((r) => <DecidedCard key={r.id} rec={r} />)}
       </div>
     </>
@@ -90,13 +109,15 @@ export default function BanRecommendations() {
 }
 
 /** One writer, every group's waiting recommendation for them, and the two decisions. */
-function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided: () => void }) {
+function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided: (message?: string) => void }) {
   const first = recs[0]
   const name = writerName(first)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // The note for each recommendation's group, by recommendation id.
-  const [notes, setNotes] = useState<Record<number, string>>({})
+  // A dismissal's note goes to that one group; a ban's goes to every group it
+  // settles (the API stores the one note on each), so it has its own field.
+  const [dismissNotes, setDismissNotes] = useState<Record<number, string>>({})
+  const [banNote, setBanNote] = useState('')
 
   async function decide(r: BanRecommendation, decision: 'ban' | 'dismiss') {
     const question =
@@ -108,11 +129,13 @@ function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided:
     setBusy(true)
     setError(null)
     try {
-      await decideBanRecommendation(r.id, decision, notes[r.id]?.trim() || undefined)
+      const note = (decision === 'ban' ? banNote : dismissNotes[r.id])?.trim() || undefined
+      await decideBanRecommendation(r.id, decision, note)
       onDecided()
     } catch (err) {
+      // Decided by someone else meanwhile: the list reloads (and this card may go), so the page says it.
+      if ((err as ApiError).condition === 'decided') return onDecided(errorText(err))
       setError(errorText(err))
-      if ((err as ApiError).condition === 'decided') onDecided()
       setBusy(false)
     }
   }
@@ -141,12 +164,12 @@ function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided:
           <div className="ban-rec-actions">
             <input
               className="form-input"
-              aria-label={`Note to ${r.chapter_details?.name ?? 'the group'}`}
-              placeholder={`Optional note to ${r.chapter_details?.name ?? 'the group'}`}
+              aria-label={`Note to ${r.chapter_details?.name ?? 'the group'} if you dismiss`}
+              placeholder={`If you dismiss: optional note to ${r.chapter_details?.name ?? 'the group'}`}
               maxLength={NOTE_MAX}
-              value={notes[r.id] ?? ''}
+              value={dismissNotes[r.id] ?? ''}
               disabled={busy}
-              onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+              onChange={(e) => setDismissNotes((n) => ({ ...n, [r.id]: e.target.value }))}
             />
             <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => void decide(r, 'dismiss')}>
               Dismiss
@@ -156,8 +179,17 @@ function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided:
       ))}
 
       {error && <div className="admin-alert admin-alert-err">{error}</div>}
-      <div className="queue-item-actions">
-        {/* A ban settles every group's recommendation; the note above the first one goes to its group. */}
+      <div className="ban-rec-actions ban-decision">
+        <input
+          className="form-input"
+          aria-label="Note with the ban"
+          placeholder={recs.length > 1 ? `If you ban: optional note to all ${recs.length} groups` : `If you ban: optional note to ${first.chapter_details?.name ?? 'the group'}`}
+          maxLength={NOTE_MAX}
+          value={banNote}
+          disabled={busy}
+          onChange={(e) => setBanNote(e.target.value)}
+        />
+        {/* Any of the writer's recommendations will do: a ban settles them all. */}
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void decide(first, 'ban')}>
           Ban {name}
         </button>

@@ -749,3 +749,4 @@ a:hover { text-decoration: underline; }
 .ban-rec { border-top: 1px solid var(--a-border); padding-top: 0.75rem; margin-top: 0.5rem; }
 .ban-rec-actions { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .ban-rec-actions .form-input { flex: 1; min-width: 200px; }
+.ban-decision { border-top: 1px solid var(--a-border); padding-top: 0.75rem; margin: 0.25rem 0 0; }
