@@ -3,9 +3,15 @@ import { displayName } from './prisoners'
 
 // Display helpers for threads and letters (no decryption here).
 
-/** The last letter's direction and state, as the inbox shows it: "→ mailed", "← received". */
-export function directionLabel(sender: Sender, status: LetterStatus): { inbound: boolean; text: string } {
+/**
+ * The last letter's direction and state, as the inbox shows it: "→ mailed", "← received".
+ * `threadHasHeld`: the thread has held letters. The inbox can't tell whether the
+ * newest one is among them (last_message carries no heldReason: API #177), so a
+ * queued one is just "queued" then, true either way, rather than "waiting to print".
+ */
+export function directionLabel(sender: Sender, status: LetterStatus, threadHasHeld = false): { inbound: boolean; text: string } {
   if (sender === 'prisoner') return { inbound: true, text: 'received' }
+  if (status === 'queued' && threadHasHeld) return { inbound: false, text: 'queued' }
   const words: Record<LetterStatus, string> = {
     queued: 'waiting to print',
     printed: 'printed',

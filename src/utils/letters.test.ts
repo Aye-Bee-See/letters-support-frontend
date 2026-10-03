@@ -11,6 +11,12 @@ describe('directionLabel', () => {
     expect(directionLabel('user', 'mailed')).toEqual({ inbound: false, text: 'mailed' })
     expect(directionLabel('user', 'returned')).toEqual({ inbound: false, text: 'returned' })
   })
+
+  it('doesn’t claim a queued letter is waiting to print when the thread has held letters', () => {
+    expect(directionLabel('user', 'queued', true)).toEqual({ inbound: false, text: 'queued' })
+    expect(directionLabel('user', 'mailed', true)).toEqual({ inbound: false, text: 'mailed' })
+    expect(directionLabel('prisoner', 'queued', true)).toEqual({ inbound: true, text: 'received' })
+  })
 })
 
 describe('needsWriter', () => {

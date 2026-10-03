@@ -24,7 +24,7 @@ async function loadInbox() {
 function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
   const navigate = useNavigate()
   const last = chat.last_message
-  const direction = last ? directionLabel(last.sender, last.status) : null
+  const direction = last ? directionLabel(last.sender, last.status, chat.heldCount > 0) : null
   const prisoner = chat.prisoner_details
   const facility = heldAt((prisoner?.prison_details ?? null) as PrisonSummary | null)
   const open = () => navigate(`/threads/${chat.id}`)
