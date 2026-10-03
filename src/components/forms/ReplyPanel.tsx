@@ -31,11 +31,15 @@ export default function ReplyPanel({
     if (message) onSent(message)
   }
 
-  if (facility.data && draft.groups.length === 0) {
+  if (facility.data && (draft.groups.length === 0 || draft.allBlocked)) {
     return (
       <div className="reply-panel">
         <div className="reply-panel-body">
-          <p className="reply-notes-hint">No group mails to {facility.data.prisonName} any more, so a reply can't be sent through this site right now.</p>
+          <p className="reply-notes-hint">
+            {draft.allBlocked
+              ? `No group that mails to ${facility.data.prisonName} is taking your letters right now, so a reply can't be sent through this site.`
+              : `No group mails to ${facility.data.prisonName} any more, so a reply can't be sent through this site right now.`}
+          </p>
         </div>
       </div>
     )
@@ -116,8 +120,9 @@ export default function ReplyPanel({
                 aria-label="Group that mails this letter"
               >
                 {draft.groups.map((g) => (
-                  <option key={g.id} value={g.id}>
+                  <option key={g.id} value={g.id} disabled={draft.blocked.has(g.id)}>
                     {g.name}
+                    {draft.blocked.has(g.id) ? ' (not mailing your letters)' : ''}
                   </option>
                 ))}
               </select>

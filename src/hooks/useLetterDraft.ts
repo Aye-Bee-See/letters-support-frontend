@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
+import { getMyBlocks } from '../api/auth'
+import { useApi } from './useApi'
 import { useAuth } from './useAuth'
 import { draftHasContent, newIdempotencyKey, sendLetter, type LetterDraft } from '../letters/send'
 import { toApiError } from '../api/client'
-import type { Chapter, Message, Prison } from '../types'
+import type { Chapter, Message, Prison, WriterBlock } from '../types'
 
 /** The prototype's page estimate (new-letter.html updateCount). */
 const CHARS_PER_PAGE = 2800
@@ -25,8 +27,15 @@ export function useLetterDraft(prisonerId: number | null, facility: Prison | nul
 
   /** Groups that print and mail for this facility, active ones only. */
   const groups: Chapter[] = useMemo(() => (facility?.relay_groups ?? []).filter((g) => g.accountStatus === 'active'), [facility])
+  /** Groups not mailing this writer's letters (API #179), by group id, with the reason they gave. */
+  const blocksState = useApi(getMyBlocks, [])
+  const blocked = useMemo(() => new Map<number, WriterBlock>((blocksState.data ?? []).map((b) => [b.chapter.id, b])), [blocksState.data])
+  // The chosen group, else the thread's own, else the first; never one that has blocked this writer.
+  const open = groups.filter((g) => !blocked.has(g.id))
   const relayChapterId =
-    groups.find((g) => g.id === chosenGroup)?.id ?? groups.find((g) => g.id === preferredGroup)?.id ?? groups[0]?.id ?? null
+    open.find((g) => g.id === chosenGroup)?.id ?? open.find((g) => g.id === preferredGroup)?.id ?? open[0]?.id ?? null
+  /** Every group that mails to this facility has blocked this writer. */
+  const allBlocked = groups.length > 0 && open.length === 0
 
   const pages = Math.max(1, Math.ceil(text.length / CHARS_PER_PAGE))
   const overPageLimit = !paper && facility?.pageLimit != null && pages > facility.pageLimit
@@ -66,7 +75,7 @@ export function useLetterDraft(prisonerId: number | null, facility: Prison | nul
 
   return {
     text, setText, relayNote, setRelayNote, paper, setPaper, file, setFile,
-    groups, relayChapterId, setChosenGroup,
+    groups, blocked, allBlocked, relayChapterId, setChosenGroup,
     pages, overPageLimit, canSend, sending, error, send,
   }
 }

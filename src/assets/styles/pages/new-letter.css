@@ -524,3 +524,7 @@
   }
   .addr-tile { flex: 1 1 220px; }
 }
+
+/* A group that has blocked this writer (API #179): shown, with its reason, but not choosable. */
+.relay-option.is-blocked { opacity: 0.55; cursor: not-allowed; }
+.relay-option.is-blocked:hover { opacity: 0.55; }

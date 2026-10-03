@@ -1,6 +1,6 @@
 import client, { getOne, post, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
-import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFactorChallenge, User } from '../types'
+import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFactorChallenge, User, WriterBlock } from '../types'
 
 // Sign-in is split (README "Signing in without sending the password"):
 //   1. getLoginParams(username) -> { scheme, kdfSalt, kdfParams }
@@ -63,6 +63,13 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
     kdfSalt: creds.kdfSalt,
     kdfParams: creds.kdfParams,
   })
+
+/**
+ * The groups not mailing the signed-in writer's letters, newest first, with the
+ * reason each gave them (API #179). Empty for anyone else, and for a writer
+ * nobody has blocked.
+ */
+export const getMyBlocks = () => getOne<WriterBlock[]>('/auth/blocks')
 
 /** GET /auth/pen-name-available (public, rate limited). `name` is the cleaned form the API would store. */
 export const checkPenName = (name: string) =>
