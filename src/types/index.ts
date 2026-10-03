@@ -48,6 +48,13 @@ export type ReturnReason =
   | 'released'
   | 'bad_address'
   | 'unknown'
+/** GET /auth/blocks: a group that isn't mailing this writer's letters, and the reason it gave them (API #179). */
+export interface WriterBlock {
+  chapter: { id: number; name: string | null }
+  reason: string
+  blockedAt: string
+}
+
 /** Why a queued letter is held. `writer_blocked`: the group that would mail it blocked its writer (API #171). */
 export type HeldReason = 'prisoner_free' | 'choose_relay' | 'reseal_needed' | 'writer_blocked'
 export type ReaderType = 'server' | 'user' | 'chapter'
@@ -271,7 +278,7 @@ export interface Chat extends Timestamps {
   user: number
   prisoner: number
   lastMessageAt: string | null
-  last_message: Pick<Message, 'id' | 'sender' | 'status' | 'createdAt'> & {
+  last_message: Pick<Message, 'id' | 'sender' | 'status' | 'heldReason' | 'createdAt'> & {
     messageText?: string
     ciphertext?: string
     nonce?: string

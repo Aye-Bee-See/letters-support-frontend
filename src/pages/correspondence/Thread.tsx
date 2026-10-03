@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import ReplyPanel from '../../components/forms/ReplyPanel'
@@ -7,7 +8,7 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
-import type { Attachment, Chat, Message, Prison, Prisoner } from '../../types'
+import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
@@ -67,7 +68,7 @@ function statusOf(m: Message): { text: string; className: string; short: string 
 }
 
 /** Why a queued letter is held, for its writer. */
-function heldText(m: Message, prisonerName: string): string | null {
+function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>): string | null {
   switch (m.heldReason) {
     case 'choose_relay':
       return `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now.`
@@ -75,8 +76,14 @@ function heldText(m: Message, prisonerName: string): string | null {
       return `${prisonerName} has been moved. This letter is waiting to be shared with the group that now serves their facility.`
     case 'prisoner_free':
       return `${prisonerName} has been released. The group will decide whether this letter can still be sent.`
-    case 'writer_blocked':
-      return `${m.relay_group?.name ?? 'The group that mails this letter'} has stopped mailing your letters, so this one won’t be printed. They told you why in a message when they did.`
+    case 'writer_blocked': {
+      const group = m.relay_group?.name ?? 'The group that mails this letter'
+      // The reason they gave, from GET /auth/blocks (API #179); the notification may be long read.
+      const block = m.relayChapter !== null ? blocks.get(m.relayChapter) : undefined
+      return block
+        ? `${group} has stopped mailing your letters, so this one won’t be printed. Their reason: “${block.reason}”`
+        : `${group} has stopped mailing your letters, so this one won’t be printed.`
+    }
     default:
       // A reason this client doesn't know yet: still held, never "on its way".
       return m.heldReason ? 'This letter is on hold and won’t be printed for now.' : null
@@ -144,12 +151,24 @@ function LetterAttachments({ message, contentKey }: { message: Message; contentK
   )
 }
 
-function LetterItem({ item, initiallyOpen, prisonerName, writerName }: { item: OpenedMessage; initiallyOpen: boolean; prisonerName: string; writerName: string }) {
+function LetterItem({
+  item,
+  initiallyOpen,
+  prisonerName,
+  writerName,
+  blocks,
+}: {
+  item: OpenedMessage
+  initiallyOpen: boolean
+  prisonerName: string
+  writerName: string
+  blocks: Map<number, WriterBlock>
+}) {
   const [open, setOpen] = useState(initiallyOpen)
   const { message: m, opened } = item
   const outbound = m.sender === 'user'
   const status = statusOf(m)
-  const held = heldText(m, prisonerName)
+  const held = heldText(m, prisonerName, blocks)
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
@@ -300,6 +319,9 @@ export default function Thread() {
     () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair }),
     [id, user?.id],
   )
+  // Groups not mailing this writer's letters, and why (empty for anyone else).
+  const blocksState = useApi(getMyBlocks, [])
+  const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
 
   if (!page.data) {
     return (
@@ -352,6 +374,7 @@ export default function Thread() {
                 initiallyOpen={i === letters.length - 1}
                 prisonerName={prisonerName}
                 writerName={writerName}
+                blocks={blocks}
               />
             ))}
           </div>

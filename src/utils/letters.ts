@@ -5,13 +5,11 @@ import { displayName } from './prisoners'
 
 /**
  * The last letter's direction and state, as the inbox shows it: "→ mailed", "← received".
- * `threadHasHeld`: the thread has held letters. The inbox can't tell whether the
- * newest one is among them (last_message carries no heldReason: API #177), so a
- * queued one is just "queued" then, true either way, rather than "waiting to print".
+ * A held letter (last_message.heldReason, API #178) is "on hold", never "waiting to print".
  */
-export function directionLabel(sender: Sender, status: LetterStatus, threadHasHeld = false): { inbound: boolean; text: string } {
+export function directionLabel(sender: Sender, status: LetterStatus, heldReason?: HeldReason | null): { inbound: boolean; text: string } {
   if (sender === 'prisoner') return { inbound: true, text: 'received' }
-  if (status === 'queued' && threadHasHeld) return { inbound: false, text: 'queued' }
+  if (status === 'queued' && heldReason) return { inbound: false, text: 'on hold' }
   const words: Record<LetterStatus, string> = {
     queued: 'waiting to print',
     printed: 'printed',

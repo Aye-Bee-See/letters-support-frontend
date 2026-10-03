@@ -201,26 +201,39 @@ export default function NewLetter() {
                 ) : (
                   <>
                     <div className="relay-tiles">
-                      {draft.groups.map((g) => (
-                        <div
-                          key={g.id}
-                          className={g.id === draft.relayChapterId ? 'relay-option selected' : 'relay-option'}
-                          role="radio"
-                          aria-checked={g.id === draft.relayChapterId}
-                          tabIndex={0}
-                          onClick={() => draft.setChosenGroup(g.id)}
-                          onKeyDown={(e) => e.key === 'Enter' && draft.setChosenGroup(g.id)}
-                        >
-                          <div>
-                            <div className="relay-option-name">{g.name}</div>
-                            <div className="relay-option-location">{[g.subregion, g.country].filter(Boolean).join(', ')}</div>
+                      {draft.groups.map((g) => {
+                        // A group that has blocked this writer (API #179) can't be chosen; say so, with their reason.
+                        const block = draft.blocked.get(g.id)
+                        return (
+                          <div
+                            key={g.id}
+                            className={block ? 'relay-option is-blocked' : g.id === draft.relayChapterId ? 'relay-option selected' : 'relay-option'}
+                            role="radio"
+                            aria-checked={g.id === draft.relayChapterId}
+                            aria-disabled={Boolean(block)}
+                            tabIndex={block ? -1 : 0}
+                            onClick={() => !block && draft.setChosenGroup(g.id)}
+                            onKeyDown={(e) => !block && e.key === 'Enter' && draft.setChosenGroup(g.id)}
+                          >
+                            <div>
+                              <div className="relay-option-name">{g.name}</div>
+                              <div className="relay-option-location">
+                                {block ? `Not mailing your letters: “${block.reason}”` : [g.subregion, g.country].filter(Boolean).join(', ')}
+                              </div>
+                            </div>
+                            <span className="relay-checkmark">{g.id === draft.relayChapterId ? '✓' : ''}</span>
                           </div>
-                          <span className="relay-checkmark">{g.id === draft.relayChapterId ? '✓' : ''}</span>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
-                    {draft.groups.length > 1 && (
-                      <p className="relay-select-hint">These groups all mail to this facility. Choose who prints and mails your letter.</p>
+                    {draft.allBlocked ? (
+                      <p className="relay-select-hint">
+                        No group that mails to {facility.prisonName} is taking your letters right now, so this one can’t be sent through this site.
+                      </p>
+                    ) : (
+                      draft.groups.length > 1 && (
+                        <p className="relay-select-hint">These groups all mail to this facility. Choose who prints and mails your letter.</p>
+                      )
                     )}
                   </>
                 )}
