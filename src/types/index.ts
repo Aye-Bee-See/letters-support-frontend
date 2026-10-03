@@ -349,6 +349,8 @@ export interface Message extends Timestamps {
   /** Declined by its group (API #170): why, the facility rule for a facility_rule decline, and the group's note (never encrypted). */
   declineReason?: DeclineReason | null
   declineRule?: string | null
+  /** The rule's label as it read when the letter was declined (API #184); kept through renames and retirement. Null if no rule is cited, or it was deleted first. */
+  declineRuleLabel?: string | null
   declineNote?: string | null
   heldReason: HeldReason | null
   resendOf: number | null
