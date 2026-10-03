@@ -25,6 +25,8 @@ export interface AuthState {
   twoFactorSetupRequired: TwoFactorReason[] | null
   /** Call once two-factor sign-in is switched on. */
   twoFactorSetUp: () => void
+  /** Call once the account has chosen a pen name (the name as the API stored it). */
+  penNameChosen: (penName: string) => void
   isAuthenticated: boolean
   isAdmin: boolean
   isChapter: boolean

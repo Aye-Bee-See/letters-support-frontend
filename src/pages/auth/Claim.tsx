@@ -178,9 +178,10 @@ function ClaimForm({
   onCodeRefused: (error: ApiError) => void
 }) {
   const [busy, setBusy] = useState(false)
-  const [values, setValues] = useState(emptyAccountValues)
+  // The pen name the group gave, if any: kept unless the writer changes it.
+  const [values, setValues] = useState({ ...emptyAccountValues, penName: info.writer.penName ?? '' })
   const [errors, setErrors] = useState<string[]>([])
-  const ready = accountValuesReady(values, { penNameRequired: false })
+  const ready = accountValuesReady(values, { penNameRequired: true })
   const group = info.chapter?.name ?? 'Your group'
 
   async function onSubmit(e: FormEvent) {
@@ -247,7 +248,12 @@ function ClaimForm({
           values={values}
           onChange={setValues}
           idPrefix="claim"
-          penNameHint={`Your letters are signed with this. If ${group} already chose one for you, leave this empty to keep it.`}
+          ownPenName={info.writer.penName}
+          penNameHint={
+            info.writer.penName
+              ? `Your letters are signed with this. ${group} chose it for you; keep it, or choose your own.`
+              : 'Your letters are signed with this, and replies are addressed to it. You can change it later.'
+          }
         />
 
         <button type="submit" className="claim-submit" disabled={!ready}>

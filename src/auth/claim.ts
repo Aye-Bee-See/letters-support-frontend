@@ -1,5 +1,6 @@
 import { claimAccount, getKeys, loginNewAccount, type ClaimInfo } from '../api/auth'
 import { lockKeys, unlockWithClaimToken } from '../crypto'
+import { samePenName } from '../utils/penName'
 import type { Joined } from './join'
 
 // Claiming a managed account (README "Managed writers and claiming", end-to-end
@@ -39,7 +40,8 @@ export async function claim(
   await claimAccount({
     token: input.token,
     username,
-    penName: input.penName.trim() || undefined,
+    // Left out to keep the one the group gave (the API requires one when there's none).
+    penName: input.penName.trim() && !(info.writer.penName && samePenName(input.penName, info.writer.penName)) ? input.penName.trim() : undefined,
     authKey: locked.authKey,
     keyFields: locked.keyFields,
   })
