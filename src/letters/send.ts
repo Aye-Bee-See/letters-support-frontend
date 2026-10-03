@@ -27,6 +27,8 @@ export interface LetterDraft {
   file: File | null
   /** Made once per letter and reused on every retry, so it is never mailed twice. */
   idempotencyKey: string
+  /** Sent again in place of this returned or declined letter of the writer's, to the same prisoner. */
+  resendOf?: number | null
 }
 
 /**
@@ -56,7 +58,14 @@ async function encryptAndPost(draft: LetterDraft, writer: { userId: number; keyp
     const { contentKey, fields } = await encryptLetter(draft.paper ? '' : draft.text, readers, draft.relayNote.trim() || undefined)
     try {
       const message = await postLetter(
-        { sender: 'user', prisoner: draft.prisonerId, relayChapter: draft.relayChapterId, ...(draft.paper ? { paper: true } : {}), ...fields },
+        {
+          sender: 'user',
+          prisoner: draft.prisonerId,
+          relayChapter: draft.relayChapterId,
+          ...(draft.paper ? { paper: true } : {}),
+          ...(draft.resendOf ? { resendOf: draft.resendOf } : {}),
+          ...fields,
+        },
         draft.idempotencyKey,
       )
       return { message, contentKey }

@@ -13,9 +13,16 @@ const CHARS_PER_PAGE = 2800
  * A letter being written to one prisoner at one facility: the state shared by
  * New Letter and the thread's reply panel, and the send.
  */
-export function useLetterDraft(prisonerId: number | null, facility: Prison | null, preferredGroup?: number) {
+export function useLetterDraft(
+  prisonerId: number | null,
+  facility: Prison | null,
+  preferredGroup?: number,
+  /** Writing a returned or declined letter again: its text, and its id to send as resendOf. */
+  initial?: { text: string; resendOf: number },
+) {
   const { user, keypair } = useAuth()
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initial?.text ?? '')
+  const [resendOf, setResendOf] = useState<number | null>(initial?.resendOf ?? null)
   const [relayNote, setRelayNote] = useState('')
   const [paper, setPaper] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -45,13 +52,14 @@ export function useLetterDraft(prisonerId: number | null, facility: Prison | nul
     if (!canSend || !prisonerId || !relayChapterId || !user || !keypair) return null
     setSending(true)
     setError(null)
-    const draft: LetterDraft = { prisonerId, relayChapterId, text, relayNote, paper, file, idempotencyKey }
+    const draft: LetterDraft = { prisonerId, relayChapterId, text, relayNote, paper, file, idempotencyKey, resendOf }
     try {
       const message = await sendLetter(draft, { userId: user.id, keypair })
       setText('')
       setRelayNote('')
       setPaper(false)
       setFile(null)
+      setResendOf(null)
       setIdempotencyKey(newIdempotencyKey())
       return message
     } catch (err) {
@@ -75,7 +83,7 @@ export function useLetterDraft(prisonerId: number | null, facility: Prison | nul
 
   return {
     text, setText, relayNote, setRelayNote, paper, setPaper, file, setFile,
-    groups, blocked, allBlocked, relayChapterId, setChosenGroup,
+    groups, blocked, allBlocked, relayChapterId, setChosenGroup, resendOf,
     pages, overPageLimit, canSend, sending, error, send,
   }
 }

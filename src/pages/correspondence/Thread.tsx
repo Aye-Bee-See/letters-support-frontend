@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
+import { getMailRules } from '../../api/facilities'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import ReplyPanel from '../../components/forms/ReplyPanel'
@@ -8,7 +9,7 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
-import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
+import type { Attachment, Chat, DeclineReason, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
@@ -17,6 +18,13 @@ import { displayName } from '../../utils/prisoners'
 // reply panel is built with New Letter (Step 5, next). Every letter is opened
 // when the page loads (collapsed rows show a preview); attachments are fetched
 // and decrypted only when a letter is expanded.
+
+/** A returned or declined letter being written again: sent with resendOf, its text to start from. */
+interface Resend {
+  id: number
+  date: string
+  text: string
+}
 
 interface OpenedMessage {
   message: Message
@@ -64,7 +72,29 @@ function statusOf(m: Message): { text: string; className: string; short: string 
       return { short: 'Returned', className: 'status-pending', text: 'Returned' }
     case 'received':
       return { short: 'Received', className: 'status-received', text: 'Received' }
+    case 'declined':
+      return { short: 'Not sent', className: 'status-pending', text: group ? `Not sent · ${group}` : 'Not sent' }
   }
+}
+
+/** Why the group didn't send it, as the writer reads it (API #170: three codes, worded here). */
+const DECLINE_REASONS: Record<DeclineReason, string> = {
+  facility_rule: 'it would break one of the facility’s mail rules',
+  content: 'it was judged inappropriate or unsafe to send',
+  other: 'of something else',
+}
+
+/** A declined letter: the reason, the rule it would break (by its label), and the group's note. */
+function DeclinedNote({ m, ruleLabels }: { m: Message; ruleLabels: Map<string, string> }) {
+  const label = m.declineRule ? (ruleLabels.get(m.declineRule) ?? null) : null
+  const group = m.relay_group?.name ?? 'The group'
+  const reason = DECLINE_REASONS[m.declineReason ?? 'other'] ?? DECLINE_REASONS.other
+  return (
+    <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+      {group} didn’t send this letter, because {reason}
+      {label ? `: “${label}”` : ''}.{m.declineNote ? ` They wrote: “${m.declineNote}”` : ''}
+    </p>
+  )
 }
 
 /** Why a queued letter is held, for its writer. */
@@ -157,12 +187,18 @@ function LetterItem({
   prisonerName,
   writerName,
   blocks,
+  ruleLabels,
+  onWriteAgain,
 }: {
   item: OpenedMessage
   initiallyOpen: boolean
   prisonerName: string
   writerName: string
   blocks: Map<number, WriterBlock>
+  /** Mail-rule labels by tag, for declines that cite a rule. */
+  ruleLabels: Map<string, string>
+  /** Offered on the writer's own returned and declined letters, when a reply can be sent. */
+  onWriteAgain?: (resend: Resend) => void
 }) {
   const [open, setOpen] = useState(initiallyOpen)
   const { message: m, opened } = item
@@ -195,6 +231,18 @@ function LetterItem({
           {m.status === 'returned' && (
             <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
               This letter came back: {RETURN_REASONS[m.returnReason ?? 'unknown']}.{m.returnNote ? ` The envelope said: “${m.returnNote}”.` : ''}
+            </p>
+          )}
+          {m.status === 'declined' && <DeclinedNote m={m} ruleLabels={ruleLabels} />}
+          {outbound && (m.status === 'returned' || m.status === 'declined') && onWriteAgain && (
+            <p style={{ marginBottom: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => onWriteAgain({ id: m.id, date: m.createdAt, text: opened.state === 'open' ? (opened.text ?? '') : '' })}
+              >
+                Write it again
+              </button>
             </p>
           )}
 
@@ -319,9 +367,16 @@ export default function Thread() {
     () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair }),
     [id, user?.id],
   )
+  // A returned or declined letter being written again in the reply panel below.
+  const [resend, setResend] = useState<Resend | null>(null)
   // Groups not mailing this writer's letters, and why (empty for anyone else).
   const blocksState = useApi(getMyBlocks, [])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
+  // The master list names the rule a decline cites: fetched once per thread, and only
+  // when a decline cites one. (Writers aren't shown retired rules; a retired one goes unnamed.)
+  const citesRule = Boolean(page.data?.letters.some((l) => l.message.status === 'declined' && l.message.declineRule))
+  const rulesState = useApi(() => (citesRule ? getMailRules() : Promise.resolve(null)), [citesRule])
+  const ruleLabels = new Map((rulesState.data?.rules ?? []).map((r) => [r.tag, r.label]))
 
   if (!page.data) {
     return (
@@ -375,17 +430,34 @@ export default function Thread() {
                 prisonerName={prisonerName}
                 writerName={writerName}
                 blocks={blocks}
+                ruleLabels={ruleLabels}
+                onWriteAgain={
+                  !isChapter && prisoner?.prison
+                    ? (r) => {
+                        setResend(r)
+                        // The reply panel is below the letters.
+                        window.setTimeout(() => document.querySelector('.reply-panel')?.scrollIntoView({ behavior: 'smooth' }), 0)
+                      }
+                    : undefined
+                }
               />
             ))}
           </div>
           {/* The writer's reply. Group admins record replies and write for their
               writers from the group inbox (Step 5, later). */}
           {!isChapter && prisoner?.prison && (
+            // Keyed on the letter being written again, so the draft starts from its text.
             <ReplyPanel
+              key={resend?.id ?? 'reply'}
               prisonerId={prisoner.id}
               prisonId={prisoner.prison}
               preferredGroup={lastRelayId}
-              onSent={() => page.reload()}
+              resend={resend ?? undefined}
+              onCancelResend={() => setResend(null)}
+              onSent={() => {
+                setResend(null)
+                page.reload()
+              }}
             />
           )}
           {!isChapter && !prisoner && (

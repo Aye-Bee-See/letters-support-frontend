@@ -13,15 +13,20 @@ export default function ReplyPanel({
   prisonerId,
   prisonId,
   preferredGroup,
+  resend,
+  onCancelResend,
   onSent,
 }: {
   prisonerId: number
   prisonId: number
   preferredGroup?: number
+  /** Writing a returned or declined letter again (the panel is keyed on it, so this is read once). */
+  resend?: { id: number; date: string; text: string }
+  onCancelResend?: () => void
   onSent: (message: Message) => void
 }) {
   const facility = useApi(() => getFacility(prisonId, true), [prisonId])
-  const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup)
+  const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup, resend ? { text: resend.text, resendOf: resend.id } : undefined)
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility.data ? mailRuleLines(facility.data) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
@@ -74,6 +79,18 @@ export default function ReplyPanel({
       </div>
 
       <div className="reply-panel-body">
+        {/* Writing a returned or declined letter again: it goes out as a new letter, marked as replacing that one. */}
+        {draft.resendOf && resend && (
+          <p className="reply-notes-hint reply-resend">
+            Writing again your letter of {new Date(resend.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Change
+            anything you need to; it goes out as a new letter.{' '}
+            {onCancelResend && (
+              <button type="button" className="reply-notes-toggle" onClick={onCancelResend}>
+                Cancel
+              </button>
+            )}
+          </p>
+        )}
         {draft.paper ? (
           <p className="reply-notes-hint">Nothing to type: you are handing this letter to {group?.name ?? 'the group'} on paper.</p>
         ) : (
