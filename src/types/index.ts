@@ -40,7 +40,9 @@ export type MailRuleCategory =
 
 export type Sender = 'user' | 'prisoner'
 /** queued -> printed -> mailed for letters; received for replies; returned when it comes back. */
-export type LetterStatus = 'queued' | 'printed' | 'mailed' | 'received' | 'returned'
+export type LetterStatus = 'queued' | 'printed' | 'mailed' | 'received' | 'returned' | 'declined'
+/** Why a group declined to mail a letter (API #170). */
+export type DeclineReason = 'facility_rule' | 'content' | 'other'
 export type ReturnReason =
   | 'refused'
   | 'rule_violation'
@@ -344,6 +346,10 @@ export interface Message extends Timestamps {
   keep: boolean
   returnReason: ReturnReason | null
   returnNote: string | null
+  /** Declined by its group (API #170): why, the facility rule for a facility_rule decline, and the group's note (never encrypted). */
+  declineReason?: DeclineReason | null
+  declineRule?: string | null
+  declineNote?: string | null
   heldReason: HeldReason | null
   resendOf: number | null
   /** full=true, outgoing letters: what the printed footer says. */

@@ -16,6 +16,7 @@ export function directionLabel(sender: Sender, status: LetterStatus, heldReason?
     mailed: 'mailed',
     received: 'received',
     returned: 'returned',
+    declined: 'not sent',
   }
   return { inbound: false, text: words[status] }
 }

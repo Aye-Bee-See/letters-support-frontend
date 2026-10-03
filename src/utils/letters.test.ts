@@ -10,6 +10,7 @@ describe('directionLabel', () => {
     expect(directionLabel('user', 'queued')).toEqual({ inbound: false, text: 'waiting to print' })
     expect(directionLabel('user', 'mailed')).toEqual({ inbound: false, text: 'mailed' })
     expect(directionLabel('user', 'returned')).toEqual({ inbound: false, text: 'returned' })
+    expect(directionLabel('user', 'declined')).toEqual({ inbound: false, text: 'not sent' })
   })
 
   it('says a held letter is on hold, not waiting to print', () => {
