@@ -48,6 +48,11 @@ describe('claim', () => {
     expect(posted[0].penName).toBeUndefined()
   })
 
+  it('leaves it out too when retyped in another case or spacing (the API counts it as the same name)', async () => {
+    await claim({ ...base, writer: { ...base.writer, penName: 'James Hollow' } }, input(' james  HOLLOW '))
+    expect(posted[0].penName).toBeUndefined()
+  })
+
   it('sends a pen name the writer chose instead of the group’s', async () => {
     await claim({ ...base, writer: { ...base.writer, penName: 'James Hollow' } }, input('Sam Rivers'))
     expect(posted[0]).toMatchObject({ penName: 'Sam Rivers' })

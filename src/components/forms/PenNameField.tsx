@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { checkPenName } from '../../api/auth'
+import { samePenName } from '../../utils/penName'
 
 // The pen name field, checked with the API when it loses focus. Used by
 // AccountFields (Join, Claim, accepting an invitation) and the pen-name prompt.
@@ -11,6 +12,7 @@ export default function PenNameField({
   onChange,
   idPrefix,
   hint,
+  ownName,
 }: {
   value: string
   /** The API said this name is not available. */
@@ -18,12 +20,17 @@ export default function PenNameField({
   onChange: (penName: string, refused: boolean) => void
   idPrefix: string
   hint: string
+  /**
+   * A name already this account's (on Claim, the one the group gave). Not checked:
+   * the public check can't tell it's theirs, and would call it taken.
+   */
+  ownName?: string | null
 }) {
   const [note, setNote] = useState<string | null>(null)
 
   async function check() {
     const name = value.trim()
-    if (name.length < 3) return setNote(null)
+    if (name.length < 3 || (ownName && samePenName(name, ownName))) return setNote(null)
     try {
       const r = await checkPenName(name)
       if (!r.available) {

@@ -11,11 +11,14 @@ export default function AccountFields({
   onChange,
   idPrefix,
   penNameHint,
+  ownPenName,
 }: {
   values: AccountValues
   onChange: (next: AccountValues) => void
   idPrefix: string
   penNameHint: string
+  /** A pen name already this account's, not checked for availability (PenNameField). */
+  ownPenName?: string | null
 }) {
   const set = (patch: Partial<AccountValues>) => onChange({ ...values, ...patch })
 
@@ -47,6 +50,7 @@ export default function AccountFields({
         onChange={(penName, penNameRefused) => set({ penName, penNameRefused })}
         idPrefix={idPrefix}
         hint={penNameHint}
+        ownName={ownPenName}
       />
 
       <NewPasswordFields

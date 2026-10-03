@@ -248,6 +248,7 @@ function ClaimForm({
           values={values}
           onChange={setValues}
           idPrefix="claim"
+          ownPenName={info.writer.penName}
           penNameHint={
             info.writer.penName
               ? `Your letters are signed with this. ${group} chose it for you; keep it, or choose your own.`
