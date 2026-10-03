@@ -85,10 +85,8 @@ const DECLINE_REASONS: Record<DeclineReason, string> = {
 }
 
 /** A declined letter: the reason, the rule it would break (by its label), and the group's note. */
-function DeclinedNote({ m }: { m: Message }) {
-  // The master list names the rule; fetched only for a decline that cites one.
-  const rules = useApi(() => (m.declineRule ? getMailRules() : Promise.resolve(null)), [m.declineRule ?? null])
-  const label = m.declineRule ? (rules.data?.rules.find((r) => r.tag === m.declineRule)?.label ?? null) : null
+function DeclinedNote({ m, ruleLabels }: { m: Message; ruleLabels: Map<string, string> }) {
+  const label = m.declineRule ? (ruleLabels.get(m.declineRule) ?? null) : null
   const group = m.relay_group?.name ?? 'The group'
   const reason = DECLINE_REASONS[m.declineReason ?? 'other'] ?? DECLINE_REASONS.other
   return (
@@ -189,6 +187,7 @@ function LetterItem({
   prisonerName,
   writerName,
   blocks,
+  ruleLabels,
   onWriteAgain,
 }: {
   item: OpenedMessage
@@ -196,6 +195,8 @@ function LetterItem({
   prisonerName: string
   writerName: string
   blocks: Map<number, WriterBlock>
+  /** Mail-rule labels by tag, for declines that cite a rule. */
+  ruleLabels: Map<string, string>
   /** Offered on the writer's own returned and declined letters, when a reply can be sent. */
   onWriteAgain?: (resend: Resend) => void
 }) {
@@ -232,7 +233,7 @@ function LetterItem({
               This letter came back: {RETURN_REASONS[m.returnReason ?? 'unknown']}.{m.returnNote ? ` The envelope said: “${m.returnNote}”.` : ''}
             </p>
           )}
-          {m.status === 'declined' && <DeclinedNote m={m} />}
+          {m.status === 'declined' && <DeclinedNote m={m} ruleLabels={ruleLabels} />}
           {outbound && (m.status === 'returned' || m.status === 'declined') && onWriteAgain && (
             <p style={{ marginBottom: '0.75rem' }}>
               <button
@@ -371,6 +372,11 @@ export default function Thread() {
   // Groups not mailing this writer's letters, and why (empty for anyone else).
   const blocksState = useApi(getMyBlocks, [])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
+  // The master list names the rule a decline cites: fetched once per thread, and only
+  // when a decline cites one. (Writers aren't shown retired rules; a retired one goes unnamed.)
+  const citesRule = Boolean(page.data?.letters.some((l) => l.message.status === 'declined' && l.message.declineRule))
+  const rulesState = useApi(() => (citesRule ? getMailRules() : Promise.resolve(null)), [citesRule])
+  const ruleLabels = new Map((rulesState.data?.rules ?? []).map((r) => [r.tag, r.label]))
 
   if (!page.data) {
     return (
@@ -424,6 +430,7 @@ export default function Thread() {
                 prisonerName={prisonerName}
                 writerName={writerName}
                 blocks={blocks}
+                ruleLabels={ruleLabels}
                 onWriteAgain={
                   !isChapter && prisoner?.prison
                     ? (r) => {

@@ -39,7 +39,7 @@ export type MailRuleCategory =
   | 'handling'
 
 export type Sender = 'user' | 'prisoner'
-/** queued -> printed -> mailed for letters; received for replies; returned when it comes back. */
+/** queued -> printed -> mailed for letters; received for replies; returned when it comes back; declined when the group won't mail it (final, before printing). */
 export type LetterStatus = 'queued' | 'printed' | 'mailed' | 'received' | 'returned' | 'declined'
 /** Why a group declined to mail a letter (API #170). */
 export type DeclineReason = 'facility_rule' | 'content' | 'other'
