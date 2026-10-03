@@ -1,12 +1,12 @@
-import { startTransition, useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useSignOut } from '../../hooks/useSignOut'
 
 // Markup and classes from solidarity-site/index.html and inbox-writer.html.
 // The hamburger behaviour replaces solidarity-site/site.js.
 export default function Header() {
-  const { isAuthenticated, isAdmin, endSession } = useAuth()
-  const navigate = useNavigate()
+  const { isAuthenticated, isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -22,15 +22,7 @@ export default function Header() {
     return () => document.removeEventListener('click', onClick)
   }, [open])
 
-  const signOut = () => {
-    // One transition for both: React Router navigates in a transition, so ending
-    // the session on its own would render first, at the old address, and that
-    // page's guard would send the signed-out visitor to /login instead of home.
-    startTransition(() => {
-      endSession()
-      navigate('/')
-    })
-  }
+  const signOut = useSignOut()
 
   return (
     <header className="site-header">

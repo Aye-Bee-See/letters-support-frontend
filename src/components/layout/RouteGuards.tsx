@@ -33,7 +33,11 @@ export function RequireAdmin() {
 }
 
 function homeFor(role: UserRole): string {
-  return role === 'admin' ? '/admin' : '/inbox'
+  if (role === 'admin') return '/admin'
+  // A banned account can't sign in (the API refuses it, and ends its sessions),
+  // so this shouldn't arise; but /inbox would refuse it in turn, so not there.
+  if (role === 'banned') return '/'
+  return '/inbox'
 }
 
 /**

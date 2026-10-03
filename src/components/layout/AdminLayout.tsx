@@ -1,7 +1,8 @@
-import { startTransition, useLayoutEffect } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useLayoutEffect } from 'react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import adminCss from '../../assets/styles/admin.css?inline'
 import { useAuth } from '../../hooks/useAuth'
+import { useSignOut } from '../../hooks/useSignOut'
 
 /**
  * admin.css sets global html/body/a rules (font, 14px base, grey background).
@@ -21,18 +22,9 @@ export function AdminStyles() {
 
 // Sidebar markup and classes from solidarity-site/admin/dashboard.html.
 export default function AdminLayout() {
-  const { user, endSession } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
 
-  const signOut = () => {
-    // One transition for both: React Router navigates in a transition, so ending
-    // the session on its own would render first, at the old address, and that
-    // page's guard would send the signed-out visitor to /login instead of home.
-    startTransition(() => {
-      endSession()
-      navigate('/')
-    })
-  }
+  const signOut = useSignOut()
 
   return (
     <div className="admin-layout">
