@@ -1113,3 +1113,15 @@ img { display: block; max-width: 100%; }
     padding: 0.75rem 1.25rem;
   }
 }
+
+/* A letter sent without its file (components/forms/AttachmentRetry.tsx). */
+.attachment-retry {
+  border-left: 3px solid var(--alert);
+  background: var(--alert-bg);
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.attachment-retry p + p { margin-top: 0.4rem; }
+.attachment-retry-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }

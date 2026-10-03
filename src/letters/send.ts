@@ -1,6 +1,6 @@
 import { getGroupPublicKey, postLetter, uploadAttachment } from '../api/letters'
 import { toApiError } from '../api/client'
-import { encryptFile, encryptLetter, forgetContentKey, type Keypair, type Reader } from '../crypto'
+import { encryptFile, encryptLetter, forgetContentKey, openEnvelope, type Keypair, type Reader } from '../crypto'
 import type { Message } from '../types'
 
 // Sending a letter (README "End-to-end mode: Sending and reading letters",
@@ -11,7 +11,31 @@ import type { Message } from '../types'
 
 /** Files the API accepts for a scan or a photo of a paper letter. */
 export const ACCEPTED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
-export const MAX_FILE_BYTES = 20 * 1024 * 1024
+/** The API's upload limit (UPLOAD_MAX_BYTES), which applies to the encrypted file. */
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+/** What encryption adds to a file: XChaCha20-Poly1305's 16-byte tag. */
+const FILE_OVERHEAD_BYTES = 16
+/** The largest file that still fits under the upload limit once encrypted. */
+export const MAX_FILE_BYTES = MAX_UPLOAD_BYTES - FILE_OVERHEAD_BYTES
+
+/**
+ * The letter was sent, but its file didn't upload. The draft is spent (sending
+ * it again would only get this letter back); retry the file alone with
+ * uploadLetterFile, using this letter and its content key. Whoever catches this
+ * owns `contentKey`, and forgets it when done.
+ */
+export class AttachmentNotUploaded extends Error {
+  readonly letter: Message
+  readonly contentKey: Uint8Array
+  readonly cause: unknown
+  constructor(letter: Message, contentKey: Uint8Array, cause: unknown) {
+    super('The letter was sent, but its attachment didn’t upload.')
+    this.name = 'AttachmentNotUploaded'
+    this.letter = letter
+    this.contentKey = contentKey
+    this.cause = cause
+  }
+}
 
 export interface LetterDraft {
   prisonerId: number
@@ -68,7 +92,13 @@ async function encryptAndPost(draft: LetterDraft, writer: { userId: number; keyp
         },
         draft.idempotencyKey,
       )
-      return { message, contentKey }
+      // The key the stored letter was sealed with. Normally this attempt's; but a
+      // retry of a letter already made gets that letter back (the Idempotency-Key),
+      // sealed with the first attempt's key, which only its envelope still holds.
+      const mine = message.envelopes?.find((e) => e.readerType === 'user' && e.readerId === writer.userId)
+      if (!mine) return { message, contentKey }
+      await forgetContentKey(contentKey)
+      return { message, contentKey: await openEnvelope(mine, writer.keypair) }
     } catch (err) {
       await forgetContentKey(contentKey)
       const e = toApiError(err)
@@ -82,28 +112,42 @@ async function encryptAndPost(draft: LetterDraft, writer: { userId: number; keyp
   }
 }
 
-/** Send a letter; returns the stored letter (its `chat` is the thread). */
+/**
+ * Encrypt a letter's file with the letter's content key and upload it. The
+ * Idempotency-Key is the letter's own plus "-file", so a retry after a lost
+ * answer gets the stored file back, not a second copy.
+ */
+export async function uploadLetterFile(letter: Message, file: File, contentKey: Uint8Array, idempotencyKey: string) {
+  const plain = new Uint8Array(await file.arrayBuffer())
+  const sealed = await encryptFile(plain, contentKey)
+  await uploadAttachment({
+    message: letter.id,
+    bytes: sealed.bytes,
+    nonce: sealed.nonce,
+    type: file.type,
+    name: file.name,
+    idempotencyKey: `${idempotencyKey}-file`,
+  })
+}
+
+/**
+ * Send a letter; returns the stored letter (its `chat` is the thread). Throws
+ * AttachmentNotUploaded if the letter went but its file didn't.
+ */
 export async function sendLetter(draft: LetterDraft, writer: { userId: number; keypair: Keypair }): Promise<Message> {
   if (draft.file) {
     if (!ACCEPTED_FILE_TYPES.includes(draft.file.type)) throw new Error('Only PDF, JPG and PNG files can be sent.')
-    if (draft.file.size > MAX_FILE_BYTES) throw new Error('That file is larger than 20 MB.')
+    if (draft.file.size > MAX_FILE_BYTES) throw new Error('That file is too large: files can be up to 20 MB.')
   }
   const { message, contentKey } = await encryptAndPost(draft, writer)
-  try {
-    if (draft.file) {
-      const plain = new Uint8Array(await draft.file.arrayBuffer())
-      const sealed = await encryptFile(plain, contentKey)
-      await uploadAttachment({
-        message: message.id,
-        bytes: sealed.bytes,
-        nonce: sealed.nonce,
-        type: draft.file.type,
-        name: draft.file.name,
-        idempotencyKey: `${draft.idempotencyKey}-file`,
-      })
+  if (draft.file) {
+    try {
+      await uploadLetterFile(message, draft.file, contentKey, draft.idempotencyKey)
+    } catch (err) {
+      // The key goes with the error, for the retry.
+      throw new AttachmentNotUploaded(message, contentKey, err)
     }
-  } finally {
-    await forgetContentKey(contentKey)
   }
+  await forgetContentKey(contentKey)
   return message
 }

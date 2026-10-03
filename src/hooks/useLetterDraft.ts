@@ -1,13 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getMyBlocks } from '../api/auth'
 import { useApi } from './useApi'
 import { useAuth } from './useAuth'
-import { draftHasContent, newIdempotencyKey, sendLetter, type LetterDraft } from '../letters/send'
+import { forgetContentKey } from '../crypto'
+import { AttachmentNotUploaded, draftHasContent, newIdempotencyKey, sendLetter, uploadLetterFile, type LetterDraft } from '../letters/send'
 import { toApiError } from '../api/client'
 import type { Chapter, Message, Prison, WriterBlock } from '../types'
 
 /** The prototype's page estimate (new-letter.html updateCount). */
 const CHARS_PER_PAGE = 2800
+
+/** What to tell the writer about a failed request. */
+function describe(err: unknown): string {
+  const e = toApiError(err)
+  return e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'Something went wrong.'
+}
+
+/** A letter that went without its file: what retrying the file needs. The content key stays in memory only. */
+interface FileToRetry {
+  letter: Message
+  file: File
+  contentKey: Uint8Array
+  idempotencyKey: string
+}
 
 /**
  * A letter being written to one prisoner at one facility: the state shared by
@@ -31,6 +46,16 @@ export function useLetterDraft(
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Sent, but the file didn't upload: the letter, the file's name, and why (see AttachmentNotUploaded).
+  const retryRef = useRef<FileToRetry | null>(null)
+  const [attachmentFailed, setAttachmentFailed] = useState<{ letter: Message; fileName: string; error: string } | null>(null)
+  // Leaving the page without retrying: drop the key.
+  useEffect(
+    () => () => {
+      if (retryRef.current) void forgetContentKey(retryRef.current.contentKey)
+    },
+    [],
+  )
 
   /** Groups that print and mail for this facility, active ones only. */
   const groups: Chapter[] = useMemo(() => (facility?.relay_groups ?? []).filter((g) => g.accountStatus === 'active'), [facility])
@@ -46,7 +71,7 @@ export function useLetterDraft(
 
   const pages = Math.max(1, Math.ceil(text.length / CHARS_PER_PAGE))
   const overPageLimit = !paper && facility?.pageLimit != null && pages > facility.pageLimit
-  const canSend = Boolean(prisonerId && relayChapterId && user && keypair && draftHasContent({ text, paper, file })) && !sending
+  const canSend = Boolean(prisonerId && relayChapterId && user && keypair && draftHasContent({ text, paper, file })) && !sending && !attachmentFailed
 
   async function send(): Promise<Message | null> {
     if (!canSend || !prisonerId || !relayChapterId || !user || !keypair) return null
@@ -55,14 +80,16 @@ export function useLetterDraft(
     const draft: LetterDraft = { prisonerId, relayChapterId, text, relayNote, paper, file, idempotencyKey, resendOf }
     try {
       const message = await sendLetter(draft, { userId: user.id, keypair })
-      setText('')
-      setRelayNote('')
-      setPaper(false)
-      setFile(null)
-      setResendOf(null)
-      setIdempotencyKey(newIdempotencyKey())
+      clearDraft()
       return message
     } catch (err) {
+      if (err instanceof AttachmentNotUploaded && file) {
+        // The letter is sent: the draft is spent, and only the file is left to retry.
+        retryRef.current = { letter: err.letter, file, contentKey: err.contentKey, idempotencyKey }
+        setAttachmentFailed({ letter: err.letter, fileName: file.name, error: describe(err.cause) })
+        clearDraft()
+        return null
+      }
       const e = toApiError(err)
       if (e.name === 'GroupBlockError') {
         // The group that would mail it has blocked this writer (API #171); other groups are unaffected.
@@ -74,16 +101,55 @@ export function useLetterDraft(
         )
         return null
       }
-      setError(e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'The letter could not be sent.')
+      setError(describe(err))
       return null
     } finally {
       setSending(false)
     }
   }
 
+  function clearDraft() {
+    setText('')
+    setRelayNote('')
+    setPaper(false)
+    setFile(null)
+    setResendOf(null)
+    setIdempotencyKey(newIdempotencyKey())
+  }
+
+  /** Done with a letter whose file failed: forget its key; returns the letter. */
+  function finishAttachment(): Message | null {
+    const pending = retryRef.current
+    if (!pending) return null
+    retryRef.current = null
+    void forgetContentKey(pending.contentKey)
+    setAttachmentFailed(null)
+    return pending.letter
+  }
+
+  /** Upload the file again, with the letter's own key. Returns the letter once it's there. */
+  async function retryAttachment(): Promise<Message | null> {
+    const pending = retryRef.current
+    if (!pending || sending) return null
+    setSending(true)
+    try {
+      await uploadLetterFile(pending.letter, pending.file, pending.contentKey, pending.idempotencyKey)
+      return finishAttachment()
+    } catch (err) {
+      setAttachmentFailed({ letter: pending.letter, fileName: pending.file.name, error: describe(err) })
+      return null
+    } finally {
+      setSending(false)
+    }
+  }
+
+  /** Go on without the file; the letter stays sent. Returns the letter. */
+  const skipAttachment = () => finishAttachment()
+
   return {
     text, setText, relayNote, setRelayNote, paper, setPaper, file, setFile,
     groups, blocked, allBlocked, relayChapterId, setChosenGroup, resendOf,
     pages, overPageLimit, canSend, sending, error, send,
+    attachmentFailed, retryAttachment, skipAttachment,
   }
 }
