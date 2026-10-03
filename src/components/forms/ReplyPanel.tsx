@@ -4,6 +4,7 @@ import { useApi } from '../../hooks/useApi'
 import { useLetterDraft } from '../../hooks/useLetterDraft'
 import type { Message } from '../../types'
 import { mailRuleLines } from '../../utils/facilities'
+import AttachmentRetry from './AttachmentRetry'
 import UploadZone from './UploadZone'
 
 // The inline reply panel from solidarity-site/thread.html (pages/thread.css):
@@ -116,6 +117,21 @@ export default function ReplyPanel({
             I'm handing this letter to the group on paper
           </label>
         </div>
+        {draft.attachmentFailed && (
+          <AttachmentRetry
+            fileName={draft.attachmentFailed.fileName}
+            error={draft.attachmentFailed.error}
+            busy={draft.sending}
+            onRetry={async () => {
+              const message = await draft.retryAttachment()
+              if (message) onSent(message)
+            }}
+            onSkip={() => {
+              const message = draft.skipAttachment()
+              if (message) onSent(message)
+            }}
+          />
+        )}
         {draft.error && (
           <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
             <strong>Not sent.</strong> {draft.error}

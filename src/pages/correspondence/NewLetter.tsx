@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getFacility } from '../../api/facilities'
 import { getAllPrisoners } from '../../api/prisoners'
 import AddressSearch from '../../components/forms/AddressSearch'
+import AttachmentRetry from '../../components/forms/AttachmentRetry'
 import UploadZone from '../../components/forms/UploadZone'
 import { useApi } from '../../hooks/useApi'
 import { useLetterDraft } from '../../hooks/useLetterDraft'
@@ -124,6 +125,21 @@ export default function NewLetter() {
               {draft.sending ? 'Sending…' : 'Send letter'}
             </button>
             <div className="submit-notes">
+              {draft.attachmentFailed && (
+                <AttachmentRetry
+                  fileName={draft.attachmentFailed.fileName}
+                  error={draft.attachmentFailed.error}
+                  busy={draft.sending}
+                  onRetry={async () => {
+                    const message = await draft.retryAttachment()
+                    if (message) navigate(`/threads/${message.chat}`)
+                  }}
+                  onSkip={() => {
+                    const message = draft.skipAttachment()
+                    if (message) navigate(`/threads/${message.chat}`)
+                  }}
+                />
+              )}
               {draft.error && (
                 <p style={{ color: 'var(--alert)' }}>
                   <strong>Not sent.</strong> {draft.error}
