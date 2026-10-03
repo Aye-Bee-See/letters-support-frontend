@@ -8,6 +8,14 @@ import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFa
 //   3. login(username, authKey)
 // The web client never sends a password; src/auth/signIn.ts refuses `plain`.
 
+/**
+ * POST /auth/logout: revoke a session's token on the server, so it can't be
+ * used again even if it was copied. Takes the token itself: signing out clears
+ * the session's own before this answers. (`{ everywhere: true }` would end every
+ * session of the account; not used yet.)
+ */
+export const logout = (token: string) => post('/auth/logout', {}, { Authorization: `Bearer ${token}` })
+
 export const getLoginParams = (username: string) =>
   getOne<LoginParams>('/auth/login-params', { username })
 
