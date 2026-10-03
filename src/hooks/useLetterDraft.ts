@@ -49,13 +49,21 @@ export function useLetterDraft(
   // Sent, but the file didn't upload: the letter, the file's name, and why (see AttachmentNotUploaded).
   const retryRef = useRef<FileToRetry | null>(null)
   const [attachmentFailed, setAttachmentFailed] = useState<{ letter: Message; fileName: string; error: string } | null>(null)
-  // Leaving the page without retrying: drop the key.
-  useEffect(
-    () => () => {
-      if (retryRef.current) void forgetContentKey(retryRef.current.contentKey)
-    },
-    [],
-  )
+  // The key must be forgotten exactly once, and never while a retry is using it:
+  // on leaving the page (unless a retry is under way, which then forgets it), and
+  // for a failure that only arrives after the page has gone.
+  const mountedRef = useRef(false)
+  const retryingRef = useRef(false)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      if (retryRef.current && !retryingRef.current) {
+        void forgetContentKey(retryRef.current.contentKey)
+        retryRef.current = null
+      }
+    }
+  }, [])
 
   /** Groups that print and mail for this facility, active ones only. */
   const groups: Chapter[] = useMemo(() => (facility?.relay_groups ?? []).filter((g) => g.accountStatus === 'active'), [facility])
@@ -83,6 +91,11 @@ export function useLetterDraft(
       clearDraft()
       return message
     } catch (err) {
+      if (err instanceof AttachmentNotUploaded && !mountedRef.current) {
+        // The page has gone: nobody is left to retry, so don't keep the key.
+        await forgetContentKey(err.contentKey)
+        return null
+      }
       if (err instanceof AttachmentNotUploaded && file) {
         // The letter is sent: the draft is spent, and only the file is left to retry.
         retryRef.current = { letter: err.letter, file, contentKey: err.contentKey, idempotencyKey }
@@ -127,19 +140,25 @@ export function useLetterDraft(
     return pending.letter
   }
 
-  /** Upload the file again, with the letter's own key. Returns the letter once it's there. */
+  /** Upload the file again, with the letter's own key. Returns the letter once it's there (null if the page has gone). */
   async function retryAttachment(): Promise<Message | null> {
     const pending = retryRef.current
-    if (!pending || sending) return null
+    if (!pending || sending || retryingRef.current) return null
+    retryingRef.current = true
     setSending(true)
     try {
       await uploadLetterFile(pending.letter, pending.file, pending.contentKey, pending.idempotencyKey)
-      return finishAttachment()
+      const letter = finishAttachment()
+      // Done after the page has gone: the writer is elsewhere now, so nothing to go on to.
+      return mountedRef.current ? letter : null
     } catch (err) {
       setAttachmentFailed({ letter: pending.letter, fileName: pending.file.name, error: describe(err) })
       return null
     } finally {
+      retryingRef.current = false
       setSending(false)
+      // The page went while the retry was under way: its cleanup left the key to this.
+      if (!mountedRef.current) finishAttachment()
     }
   }
 
