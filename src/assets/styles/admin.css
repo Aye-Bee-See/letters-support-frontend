@@ -740,3 +740,12 @@ a:hover { text-decoration: underline; }
 /* One click selects the whole code, for copying by hand when the clipboard isn't allowed. */
 .token-code { user-select: all; }
 .token-link { font-family: var(--a-mono); font-size: 0.75rem; word-break: break-all; user-select: all; background: var(--a-white); border: 1px solid var(--a-border); padding: 0.3rem 0.6rem; color: var(--a-text); }
+
+/* ============================================================
+   BLOCK RECOMMENDATIONS
+   ============================================================ */
+.ban-intro { margin-bottom: 1rem; max-width: 70ch; }
+.ban-card { border-left-color: var(--a-alert); }
+.ban-rec { border-top: 1px solid var(--a-border); padding-top: 0.75rem; margin-top: 0.5rem; }
+.ban-rec-actions { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.ban-rec-actions .form-input { flex: 1; min-width: 200px; }

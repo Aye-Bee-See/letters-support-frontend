@@ -48,6 +48,27 @@ export type ReturnReason =
   | 'released'
   | 'bad_address'
   | 'unknown'
+export type BanRecommendationStatus = 'pending' | 'banned' | 'dismissed'
+
+/** A group admin's recommendation that a writer be banned site-wide (API #172), as GET /moderation/ban-recommendations answers it. */
+export interface BanRecommendation extends Timestamps {
+  id: number
+  userId: number
+  chapterId: number | null
+  recommendedBy: number | null
+  /** For superadmins only: the writer is never told of a recommendation. */
+  reason: string
+  status: BanRecommendationStatus
+  decidedBy: number | null
+  decidedAt: string | null
+  /** Sent back to the recommending group with the decision. */
+  decisionNote: string | null
+  writer: { id: number; username: string; penName: string | null; name: string | null; role: UserRole } | null
+  chapter_details: { id: number; name: string } | null
+  recommended_by: { id: number; username: string; name: string | null } | null
+  decided_by: { id: number; username: string; name: string | null } | null
+}
+
 /** GET /auth/blocks: a group that isn't mailing this writer's letters, and the reason it gave them (API #179). */
 export interface WriterBlock {
   chapter: { id: number; name: string | null }

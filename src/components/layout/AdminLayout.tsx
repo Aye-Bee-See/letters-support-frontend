@@ -42,6 +42,7 @@ export default function AdminLayout() {
             <li><NavLink to="/admin" end>Dashboard</NavLink></li>
             {/* TODO: pending-count badge (<span className="badge">) once Queue is wired */}
             <li><NavLink to="/admin/queue">Moderation Queue</NavLink></li>
+            <li><NavLink to="/admin/bans">Block recommendations</NavLink></li>
           </ul>
         </div>
 
