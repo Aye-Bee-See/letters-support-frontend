@@ -52,6 +52,8 @@ function statusOf(m: Message): { text: string; className: string; short: string 
   const group = m.relay_group?.name
   switch (m.status) {
     case 'queued':
+      // A held letter isn't on its way: say so, whatever the reason (including ones this client doesn't know yet).
+      if (m.heldReason) return { short: 'On hold', className: 'status-pending', text: group ? `On hold · ${group}` : 'On hold' }
       return { short: 'Waiting', className: 'status-pending', text: group ? `Waiting to print · ${group}` : 'Waiting to print' }
     case 'printed':
       return { short: 'Printed', className: 'status-pending', text: group ? `Printed by ${group}` : 'Printed' }
@@ -73,8 +75,11 @@ function heldText(m: Message, prisonerName: string): string | null {
       return `${prisonerName} has been moved. This letter is waiting to be shared with the group that now serves their facility.`
     case 'prisoner_free':
       return `${prisonerName} has been released. The group will decide whether this letter can still be sent.`
+    case 'writer_blocked':
+      return `${m.relay_group?.name ?? 'The group that mails this letter'} has stopped mailing your letters, so this one won’t be printed. They told you why in a message when they did.`
     default:
-      return null
+      // A reason this client doesn't know yet: still held, never "on its way".
+      return m.heldReason ? 'This letter is on hold and won’t be printed for now.' : null
   }
 }
 

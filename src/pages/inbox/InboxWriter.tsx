@@ -48,8 +48,8 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
           <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
         )}
         {facility && <div className="convo-facility">{facility}</div>}
-        {/* Letters held until the writer acts (the prisoner moved, or the group changed). */}
-        {needsWriter(chat) && <StatusNotice text="Needs your attention" />}
+        {/* Letters held until the writer acts (the prisoner moved, or the group changed); other holds are the group's to settle. */}
+        {needsWriter(chat) ? <StatusNotice text="Needs your attention" /> : chat.heldCount > 0 && <StatusNotice text="A letter is on hold" />}
       </td>
       <td>
         {direction && (

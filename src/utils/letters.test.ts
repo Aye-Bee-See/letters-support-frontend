@@ -18,6 +18,8 @@ describe('needsWriter', () => {
     expect(needsWriter({ heldReasons: ['choose_relay'] })).toBe(true)
     expect(needsWriter({ heldReasons: ['reseal_needed'] })).toBe(true)
     expect(needsWriter({ heldReasons: ['prisoner_free'] })).toBe(false)
+    // The group settles a block (lifts it, prints or declines), not the writer.
+    expect(needsWriter({ heldReasons: ['writer_blocked'] })).toBe(false)
     expect(needsWriter({ heldReasons: [] })).toBe(false)
   })
 })

@@ -48,7 +48,8 @@ export type ReturnReason =
   | 'released'
   | 'bad_address'
   | 'unknown'
-export type HeldReason = 'prisoner_free' | 'choose_relay' | 'reseal_needed'
+/** Why a queued letter is held. `writer_blocked`: the group that would mail it blocked its writer (API #171). */
+export type HeldReason = 'prisoner_free' | 'choose_relay' | 'reseal_needed' | 'writer_blocked'
 export type ReaderType = 'server' | 'user' | 'chapter'
 
 export type SubmissionResource = 'prisoner' | 'prison' | 'chapter'
