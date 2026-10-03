@@ -47,6 +47,16 @@ export function useLetterDraft(prisonerId: number | null, facility: Prison | nul
       return message
     } catch (err) {
       const e = toApiError(err)
+      if (e.name === 'GroupBlockError') {
+        // The group that would mail it has blocked this writer (API #171); other groups are unaffected.
+        const blocked = groups.find((g) => g.id === relayChapterId)?.name ?? 'This group'
+        const others = groups.filter((g) => g.id !== relayChapterId)
+        setError(
+          `${blocked} isn’t mailing your letters any more, so it can’t take this one.` +
+            (others.length ? ' Choose another group that mails to this facility, and send it again.' : ' No other group mails to this facility yet.'),
+        )
+        return null
+      }
       setError(e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'The letter could not be sent.')
       return null
     } finally {

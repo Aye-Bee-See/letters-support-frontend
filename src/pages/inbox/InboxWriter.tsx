@@ -25,7 +25,7 @@ async function loadInbox() {
 function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
   const navigate = useNavigate()
   const last = chat.last_message
-  const direction = last ? directionLabel(last.sender, last.status) : null
+  const direction = last ? directionLabel(last.sender, last.status, chat.heldCount > 0) : null
   const prisoner = chat.prisoner_details
   const facility = heldAt((prisoner?.prison_details ?? null) as PrisonSummary | null)
   const open = () => navigate(`/threads/${chat.id}`)
@@ -49,8 +49,8 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
           <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
         )}
         {facility && <div className="convo-facility">{facility}</div>}
-        {/* Letters held until the writer acts (the prisoner moved, or the group changed). */}
-        {needsWriter(chat) && <StatusNotice text="Needs your attention" />}
+        {/* Letters held until the writer acts (the prisoner moved, or the group changed); other holds are the group's to settle. */}
+        {needsWriter(chat) ? <StatusNotice text="Needs your attention" /> : chat.heldCount > 0 && <StatusNotice text="A letter is on hold" />}
       </td>
       <td>
         {direction && (
