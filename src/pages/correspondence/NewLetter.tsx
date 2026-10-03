@@ -31,6 +31,8 @@ export default function NewLetter() {
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility ? mailRuleLines(facility) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
+  // No group can take this letter: none mails to the facility, or every one has blocked this writer.
+  const noGroup = Boolean(facility) && (draft.groups.length === 0 || draft.allBlocked)
 
   const choosePrisoner = (id: number | null) => setParams(id ? { prisoner: String(id) } : {}, { replace: true })
 
@@ -102,10 +104,12 @@ export default function NewLetter() {
             </label>
           </div>
 
-          <button type="button" className="notes-toggle" onClick={() => setNotesOpen((o) => !o)}>
-            {notesOpen ? '− Hide the note' : `+ Add a note to ${group?.name ?? 'the group'}`}
-          </button>
-          <div className={notesOpen ? 'notes-area is-open' : 'notes-area'}>
+          {!noGroup && (
+            <button type="button" className="notes-toggle" onClick={() => setNotesOpen((o) => !o)}>
+              {notesOpen ? '− Hide the note' : `+ Add a note to ${group?.name ?? 'the group'}`}
+            </button>
+          )}
+          <div className={notesOpen && !noGroup ? 'notes-area is-open' : 'notes-area'}>
             <textarea
               className="notes-textarea"
               placeholder='Optional. E.g. "poor scan quality" or "written at the Aug 3 letter night."'
@@ -125,11 +129,23 @@ export default function NewLetter() {
                   <strong>Not sent.</strong> {draft.error}
                 </p>
               )}
-              <p>
-                <strong>Your letter won't be sent immediately.</strong> It goes to {group ? group.name : 'the group'}'s
-                queue; they print it and mail it for you.
-              </p>
-              <p>Only you and {group ? group.name : 'that group'} can read it.</p>
+              {noGroup ? (
+                // Nothing to send to: say why, rather than describe a queue there isn't.
+                <p>
+                  <strong>This letter can't be sent through this site right now.</strong>{' '}
+                  {draft.allBlocked
+                    ? 'No group that mails to this facility is taking your letters.'
+                    : 'No group mails to this facility yet.'}
+                </p>
+              ) : (
+                <>
+                  <p>
+                    <strong>Your letter won't be sent immediately.</strong> It goes to {group ? group.name : 'the group'}'s
+                    queue; they print it and mail it for you.
+                  </p>
+                  <p>Only you and {group ? group.name : 'that group'} can read it.</p>
+                </>
+              )}
             </div>
           </div>
         </main>
