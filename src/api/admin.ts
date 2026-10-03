@@ -1,7 +1,7 @@
 // Superadmin-only calls: the dashboard counts and the moderation decisions. Every
 // call here is a 403 for anyone else; the /admin routes are behind RequireAdmin.
 import { getList, getOne, put } from './client'
-import type { AdminSummary, AuditEntry, EncryptionReadiness, ListParams, Submission, User, UserRole } from '../types'
+import type { AdminSummary, AuditEntry, BanRecommendation, BanRecommendationStatus, EncryptionReadiness, ListParams, Submission, User, UserRole } from '../types'
 
 export const getAdminSummary = () => getOne<AdminSummary>('/moderation/summary')
 
@@ -27,3 +27,16 @@ export const rejectSubmission = (id: number, decisionNote: string) => put<Submis
 /** Superadmin: accounts by username, email or name (GET /auth/users). */
 export const searchAccounts = (q: string, params?: ListParams & { role?: UserRole }) =>
   getList<User>('/auth/users', { q, page_size: 10, ...params })
+
+/** Site-wide ban recommendations from groups (API #172): pending by default, newest first, not paged. */
+export const getBanRecommendations = (status?: BanRecommendationStatus) =>
+  getOne<BanRecommendation[]>('/moderation/ban-recommendations', status ? { status } : undefined)
+
+/**
+ * Decide one. `ban` gives the writer the banned role (every session ends at once)
+ * and settles every recommendation still waiting for them, from any group, as
+ * banned; `dismiss` settles this one. `note` (at most 500 characters) goes back
+ * to the recommending group. A 409 (decided) if someone decided it first.
+ */
+export const decideBanRecommendation = (id: number, decision: 'ban' | 'dismiss', note?: string) =>
+  put<BanRecommendation>('/moderation/ban-recommendation', { id, decision, ...(note ? { note } : {}) })

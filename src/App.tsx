@@ -34,6 +34,7 @@ import OrgSettings from './pages/org/OrgSettings'
 
 import AdminLogin from './pages/admin/AdminLogin'
 import AuditLog from './pages/admin/AuditLog'
+import BanRecommendations from './pages/admin/BanRecommendations'
 import Dashboard from './pages/admin/Dashboard'
 import PrisonersList from './pages/admin/PrisonersList'
 import EditFacility from './pages/admin/EditFacility'
@@ -111,6 +112,7 @@ export default function App() {
                 <Route path="groups" element={<GroupsList />} />
                 <Route path="groups/:id/edit" element={<EditGroup />} />
                 <Route path="queue" element={<Queue />} />
+                <Route path="bans" element={<BanRecommendations />} />
                 <Route path="audit" element={<AuditLog />} />
                 <Route path="invite" element={<Invitations />} />
                 <Route path="settings" element={<SiteSettings />} />

@@ -160,7 +160,7 @@ function Stats({ summary }: { summary: AdminSummary }) {
   const cards: { label: string; value: number; to?: string }[] = [
     { label: 'Proposals to review', value: pending, to: '/admin/queue' },
     { label: 'Groups awaiting approval', value: summary.groups.pendingApproval, to: '/admin/groups?accountStatus=pending' },
-    { label: 'Block recommendations', value: summary.pendingBanRecommendations },
+    { label: 'Block recommendations', value: summary.pendingBanRecommendations, to: '/admin/bans' },
     { label: 'Addresses in doubt', value: summary.addressInDoubt.prisoner, to: '/admin/prisoners?addressInDoubt=true' },
     { label: 'Need re-verifying', value: stale },
     { label: 'Suspended groups', value: summary.groups.suspended, to: '/admin/groups?accountStatus=suspended' },
