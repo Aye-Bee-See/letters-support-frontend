@@ -4,6 +4,8 @@ import type { UserRole } from '../../types'
 
 /** Where two-factor sign-in is set up; while it's required and not set up, the only page that works. */
 export const SECURITY_PATH = '/account/security'
+/** Where a writer without a pen name chooses one. */
+export const PEN_NAME_PATH = '/account/pen-name'
 
 /**
  * Signed-in routes. Without a session: to /login, remembering where the user
@@ -50,5 +52,20 @@ export function TwoFactorSetupLock() {
   const { isAuthenticated, twoFactorSetupRequired } = useAuth()
   const location = useLocation()
   if (isAuthenticated && twoFactorSetupRequired && location.pathname !== SECURITY_PATH) return <Navigate to={SECURITY_PATH} replace />
+  return null
+}
+
+/**
+ * A writer's account made before pen names were required (30 September) may
+ * have none, and letters are signed with it: until they choose one, every page
+ * sends them to choose. Public pages too, since signed in they'd only lead back
+ * to writing. Setting up two-factor sign-in, when required, comes first.
+ */
+export function PenNameLock() {
+  const { user, isWriter, twoFactorSetupRequired } = useAuth()
+  const location = useLocation()
+  if (isWriter && user && !user.penName && !twoFactorSetupRequired && location.pathname !== PEN_NAME_PATH) {
+    return <Navigate to={PEN_NAME_PATH} replace state={{ from: location }} />
+  }
   return null
 }

@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { checkPenName } from '../../api/auth'
 import type { AccountValues } from './accountValues'
 import NewPasswordFields from './NewPasswordFields'
+import PenNameField from './PenNameField'
 
 // Username, pen name, password and confirmation, shared by Join and Claim.
 // Markup and classes from claim.html (pages/claim.css). Values and the
@@ -18,24 +17,7 @@ export default function AccountFields({
   idPrefix: string
   penNameHint: string
 }) {
-  const [penNote, setPenNote] = useState<string | null>(null)
   const set = (patch: Partial<AccountValues>) => onChange({ ...values, ...patch })
-
-  async function checkPen() {
-    const name = values.penName.trim()
-    if (name.length < 3) return setPenNote(null)
-    try {
-      const r = await checkPenName(name)
-      if (!r.available) {
-        setPenNote(r.reason ?? 'That pen name is not available.')
-        onChange({ ...values, penNameRefused: true })
-      } else {
-        setPenNote(r.twoParts ? 'Available.' : 'Available. A two-part name, like “James Hollow”, reads as a name to a mail room.')
-      }
-    } catch {
-      setPenNote(null) // the API checks again on submit
-    }
-  }
 
   return (
     <>
@@ -59,28 +41,13 @@ export default function AccountFields({
         <span className="pw-strength-label">3 to 16 characters. You sign in with this; it is never printed.</span>
       </div>
 
-      <div className="claim-field">
-        <label className="claim-label" htmlFor={`${idPrefix}PenName`}>
-          Pen name
-        </label>
-        <input
-          className={values.penNameRefused ? 'claim-input error' : 'claim-input'}
-          type="text"
-          id={`${idPrefix}PenName`}
-          maxLength={40}
-          placeholder="e.g. James Hollow"
-          value={values.penName}
-          onChange={(e) => {
-            setPenNote(null)
-            set({ penName: e.target.value, penNameRefused: false })
-          }}
-          onBlur={checkPen}
-        />
-        <span className="pw-strength-label" style={values.penNameRefused ? { color: 'var(--alert)' } : undefined}>
-          {penNote ?? penNameHint}
-        </span>
-      </div>
-
+      <PenNameField
+        value={values.penName}
+        refused={values.penNameRefused}
+        onChange={(penName, penNameRefused) => set({ penName, penNameRefused })}
+        idPrefix={idPrefix}
+        hint={penNameHint}
+      />
 
       <NewPasswordFields
         password={values.password}

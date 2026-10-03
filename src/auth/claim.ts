@@ -39,7 +39,8 @@ export async function claim(
   await claimAccount({
     token: input.token,
     username,
-    penName: input.penName.trim() || undefined,
+    // Left out to keep the one the group gave (the API requires one when there's none).
+    penName: input.penName.trim() && input.penName.trim() !== info.writer.penName ? input.penName.trim() : undefined,
     authKey: locked.authKey,
     keyFields: locked.keyFields,
   })

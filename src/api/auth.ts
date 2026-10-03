@@ -71,6 +71,12 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
  */
 export const getMyBlocks = () => getOne<WriterBlock[]>('/auth/blocks')
 
+/** GET /auth/pen-name: the caller's current pen name (as the API stored it) and every name they have used. */
+export const getMyPenName = () => getOne<{ penName: string | null; names: { name: string; current: boolean; since: string }[] }>('/auth/pen-name')
+
+/** A pen name for the caller's own account (PUT /auth/user). 400 if it is taken, the wrong shape, or over the change limits. */
+export const setMyPenName = (id: number, penName: string) => put('/auth/user', { id, penName })
+
 /** GET /auth/pen-name-available (public, rate limited). `name` is the cleaned form the API would store. */
 export const checkPenName = (name: string) =>
   getOne<{ available: boolean; name: string; reason: string | null; twoParts: boolean }>('/auth/pen-name-available', { name })
@@ -122,7 +128,8 @@ export const finishRecovery = (req: {
  * revoked code; 410 with a `condition` of used or expired.
  */
 export interface ClaimInfo {
-  writer: { id: number; name: string }
+  /** penName: the one the group gave the writer, which they keep unless they choose another; null when the claim must choose one. */
+  writer: { id: number; name: string; penName: string | null }
   chapter: { id: number; name: string } | null
   expiresAt: string
   publicKey?: string | null
@@ -136,7 +143,7 @@ export const getClaimInfo = (token: string) => getOne<ClaimInfo>('/auth/claim', 
 export interface ClaimRequest {
   token: string
   username: string
-  /** Optional: a group may already have given the writer one. */
+  /** Required unless the group already gave the writer one (ClaimInfo.writer.penName), which they keep when this is left out. */
   penName?: string
   authKey: string
   keyFields: PasswordKeyFields & RecoveryKeyFields
