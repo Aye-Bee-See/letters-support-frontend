@@ -231,6 +231,27 @@ function Scan({ secret, otpauthUri, onConfirmed, onCancel }: { secret: string; o
   )
 }
 
+/** Save the recovery codes as a text file, made here: they never leave this device another way. */
+function downloadCodes(codes: string[]) {
+  const text = [
+    'letters.support: two-factor sign-in recovery codes',
+    `Saved ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+    '',
+    'Each code signs you in once, in place of a code from your authenticator app.',
+    'Making new codes stops these from working.',
+    '',
+    ...codes,
+    '',
+  ].join('\n')
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'letters-support-recovery-codes.txt'
+  a.click()
+  // After the click has started the download.
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
 /** The recovery codes, shown once; the person confirms they saved them. */
 function RecoveryCodes({ codes, title, onDone }: { codes: string[]; title: string; onDone: () => void }) {
   const [saved, setSaved] = useState(false)
@@ -266,6 +287,10 @@ function RecoveryCodes({ codes, title, onDone }: { codes: string[]; title: strin
           }}
         >
           {copy === 'copied' ? 'Copied' : 'Copy them all'}
+        </button>
+        {' · '}
+        <button type="button" className="claim-show-pw security-link" onClick={() => downloadCodes(codes)}>
+          Download them
         </button>
       </p>
       {copy === 'failed' && <p className="claim-org-note">This browser didn’t allow copying. Select the codes and copy them, or write them down.</p>}

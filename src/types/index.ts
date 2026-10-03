@@ -289,6 +289,8 @@ export interface Chapter extends Timestamps {
   /** Staff only. */
   lettersSentBefore?: number
   lettersCounted?: number
+  /** Staff only: this group's admins must use two-factor sign-in (API #175; set with PUT /auth/two-factor/group). */
+  requireTwoFactor?: boolean
   recordStatus?: RecordStatus
   /** full=true */
   supported_prisoners?: (Prisoner & { PrisonerSupport?: { description: string | null } })[]
