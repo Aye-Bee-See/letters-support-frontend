@@ -6,6 +6,7 @@ import LoadState from '../../components/ui/LoadState'
 import StatusNotice from '../../components/ui/StatusNotice'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
+import { useSignOut } from '../../hooks/useSignOut'
 import type { Chat, PrisonSummary } from '../../types'
 import { directionLabel, inboxDate, needsWriter, threadPrisonerName } from '../../utils/letters'
 import { heldAt } from '../../utils/prisoners'
@@ -66,8 +67,8 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
 }
 
 export default function InboxWriter() {
-  const { user, endSession } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
+  const signOut = useSignOut()
   const inbox = useApi(loadInbox, [])
   const chats = { ...inbox, data: inbox.data?.chats ?? null }
 
@@ -101,8 +102,7 @@ export default function InboxWriter() {
           href="/"
           onClick={(e) => {
             e.preventDefault()
-            endSession()
-            navigate('/')
+            signOut()
           }}
         >
           Sign out

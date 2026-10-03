@@ -18,17 +18,26 @@ export function RequireAuth({ roles }: { roles?: UserRole[] }) {
   return <Outlet />
 }
 
-/** Superadmin routes: anyone else goes to /admin/login. */
+/**
+ * Superadmin routes. Without a session: to the one sign-in page, remembering
+ * where they were going (a refresh signs out, so this is common). Signed in as
+ * anyone else: to their own home.
+ */
 export function RequireAdmin() {
   const { user, isAuthenticated } = useAuth()
   const location = useLocation()
 
-  if (!isAuthenticated || user?.role !== 'admin') return <Navigate to="/admin/login" replace state={{ from: location }} />
+  if (!isAuthenticated || !user) return <Navigate to="/login" replace state={{ from: location }} />
+  if (user.role !== 'admin') return <Navigate to={homeFor(user.role)} replace />
   return <Outlet />
 }
 
 function homeFor(role: UserRole): string {
-  return role === 'admin' ? '/admin' : '/inbox'
+  if (role === 'admin') return '/admin'
+  // A banned account can't sign in (the API refuses it, and ends its sessions),
+  // so this shouldn't arise; but /inbox would refuse it in turn, so not there.
+  if (role === 'banned') return '/'
+  return '/inbox'
 }
 
 /**

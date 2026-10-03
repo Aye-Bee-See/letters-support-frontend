@@ -1,8 +1,8 @@
-// TODO: Step 7. Prototype: solidarity-site/admin/login.html
+import { Navigate, useLocation } from 'react-router-dom'
+
+// There is one sign-in page for everyone (superadmins land in /admin after it).
+// /admin/login stays as a redirect for old links and bookmarks, passing on where
+// the person was going.
 export default function AdminLogin() {
-  return (
-    <div className="wrap">
-      <h1>Admin sign in</h1>
-    </div>
-  )
+  return <Navigate to="/login" replace state={useLocation().state} />
 }

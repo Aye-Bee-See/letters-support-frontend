@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useSignOut } from '../../hooks/useSignOut'
 
 // Markup and classes from solidarity-site/index.html and inbox-writer.html.
 // The hamburger behaviour replaces solidarity-site/site.js.
 export default function Header() {
-  const { isAuthenticated, isAdmin, endSession } = useAuth()
-  const navigate = useNavigate()
+  const { isAuthenticated, isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -22,10 +22,7 @@ export default function Header() {
     return () => document.removeEventListener('click', onClick)
   }, [open])
 
-  const signOut = () => {
-    endSession()
-    navigate('/')
-  }
+  const signOut = useSignOut()
 
   return (
     <header className="site-header">
