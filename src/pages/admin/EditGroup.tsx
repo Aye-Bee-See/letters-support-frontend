@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getAllFacilities, linkRelayGroup, unlinkRelayGroup } from '../../api/facilities'
 import { deleteGroup, getAllGroups, getGroup, updateGroup, type GroupFields } from '../../api/groups'
 import { getAllPrisoners, linkSupportGroup, unlinkSupportGroup } from '../../api/prisoners'
+import { getTwoFactorPolicy, setGroupTwoFactor } from '../../api/twoFactor'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, Prison, Prisoner, RecordStatus, SocialLinkKey } from '../../types'
@@ -165,6 +166,7 @@ export default function EditGroup() {
             {/* Keyed on id only: a link change mustn't reload the record and drop unsaved form edits. */}
             <RelayFacilities key={`relay-${group.data.id}`} group={group.data} onCount={setRelayCount} />
             <SupportedPrisoners key={`support-${group.data.id}`} group={group.data} />
+            <GroupTwoFactor key={`2fa-${group.data.id}`} group={group.data} />
           </>
         )}
       </div>
@@ -457,6 +459,50 @@ function useLinkAction() {
     }
   }
   return { busy, error, run }
+}
+
+/**
+ * Whether this group's admins must use two-factor sign-in (PUT /auth/two-factor/group).
+ * Applies at once, like the link panels, and keeps its own state, so unsaved
+ * edits in the form above survive. The site-wide switches are on Site settings.
+ */
+function GroupTwoFactor({ group: g }: { group: Chapter }) {
+  const [required, setRequired] = useState(Boolean(g.requireTwoFactor))
+  // "Every group's admins" overrides this group's own setting while it's on.
+  const policy = useApi(getTwoFactorPolicy, [])
+  const { busy, error, run } = useLinkAction()
+
+  function toggle(on: boolean) {
+    const question = on
+      ? `Require two-factor sign-in of ${g.name}’s admins? Any who haven’t set it up must do so before anything else works, from their next request.`
+      : `Stop requiring two-factor sign-in of ${g.name}’s admins? Those who have it on keep it.`
+    if (!window.confirm(question)) return
+    void run(async () => {
+      const answer = await setGroupTwoFactor(g.id, on)
+      setRequired(answer.required)
+    })
+  }
+
+  return (
+    <div className="admin-form relay-panel">
+      <Section title="Two-factor sign-in">
+        <p className="form-hint">
+          Require this group’s admins to use a code from an authenticator app when they sign in. This applies straight away, without Save. The
+          site-wide switches are on <Link to="/admin/settings">Site settings</Link>.
+        </p>
+        <label className="queue-check">
+          <input type="checkbox" checked={required} disabled={busy} onChange={(e) => toggle(e.target.checked)} />
+          Require it of this group’s admins
+        </label>
+        {policy.data?.allGroups && (
+          <p className="form-hint">
+            It’s required of every group’s admins at the moment, so this group’s admins must use it whatever this says.
+          </p>
+        )}
+        {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      </Section>
+    </div>
+  )
 }
 
 /** The facilities this group prints and mails for. Changes apply at once. */
