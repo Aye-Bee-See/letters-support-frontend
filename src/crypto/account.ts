@@ -249,3 +249,17 @@ export async function sealPrivateKeyTo(privateKey: string, recipientPublicKey: s
     await wipe(raw)
   }
 }
+
+/**
+ * Rotating a group key (README "Rotating a group key"): open something sealed to
+ * the old group key (a letter's envelope, or a managed writer's private key) and
+ * seal the same bytes to the new group public key. The opened bytes are wiped.
+ */
+export async function resealTo(sealed: string, oldKeypair: Keypair, newPublicKey: string): Promise<string> {
+  const raw = await openSealed(sealed, oldKeypair)
+  try {
+    return await sealTo(newPublicKey, raw)
+  } finally {
+    await wipe(raw)
+  }
+}
