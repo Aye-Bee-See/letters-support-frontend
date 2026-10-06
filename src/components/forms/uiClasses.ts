@@ -51,6 +51,17 @@ export interface UiClasses {
   badgeGood: string
   badgeWait: string
   badgeBad: string
+  /** The invite form's panel, and its row of kind radios. */
+  invitePanel: string
+  kindGroup: string
+  /** A token shown once: the notice around it, a row of value and copy button, the code and the link. */
+  tokenNotice: string
+  tokenRow: string
+  tokenCode: string
+  tokenLink: string
+  copyButton: string
+  /** A button that reads as a link, inside a hint. */
+  linkButton: string
 }
 
 export const ADMIN_UI: UiClasses = {
@@ -86,6 +97,14 @@ export const ADMIN_UI: UiClasses = {
   badgeGood: 'badge-published',
   badgeWait: 'badge-draft',
   badgeBad: 'badge-pending',
+  invitePanel: 'admin-form invite-form',
+  kindGroup: 'invite-kind',
+  tokenNotice: 'admin-alert admin-alert-ok token-notice',
+  tokenRow: 'token-row',
+  tokenCode: 'token-code',
+  tokenLink: 'token-link',
+  copyButton: 'a-btn a-btn-sm',
+  linkButton: 'link-button',
 }
 
 export const GROUP_UI: UiClasses = {
@@ -121,4 +140,13 @@ export const GROUP_UI: UiClasses = {
   badgeGood: 'settings-badge-good',
   badgeWait: 'settings-badge-wait',
   badgeBad: 'settings-badge-bad',
+  invitePanel: 'settings-section',
+  kindGroup: 'settings-kind',
+  // The dark code box of pages/handoff.css, where a claim token is shown once.
+  tokenNotice: 'settings-token-notice',
+  tokenRow: 'token-box',
+  tokenCode: 'token-value',
+  tokenLink: 'token-value settings-token-link',
+  copyButton: 'token-copy-btn',
+  linkButton: 'settings-link-button',
 }
