@@ -51,6 +51,18 @@ const STATUS_WORDS: Record<LetterStatus, string> = {
   declined: 'Not sent',
 }
 
+/** One step of the letter's history. */
+const HISTORY_WORDS: Record<LetterStatus, string> = {
+  queued: 'written',
+  printed: 'printed',
+  mailed: 'mailed',
+  received: 'recorded',
+  returned: 'came back',
+  declined: 'not sent',
+}
+
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
+
 /** The queue filter this letter sits under, for the way back. */
 const filterOf = (m: Message): QueueFilter => (m.status === 'queued' ? (m.heldReason ? 'held' : 'queued') : m.status === 'received' ? 'queued' : m.status)
 
@@ -137,7 +149,7 @@ function Sidebar({ page, mine, rules, canRead, onDone }: { page: Page; mine: boo
           <ul className="letter-history">
             {history.map((h) => (
               <li key={h.id}>
-                {inboxDate(h.createdAt)}: {h.toStatus === 'declined' ? 'not sent' : h.toStatus}
+                {inboxDate(h.createdAt)}: {HISTORY_WORDS[h.toStatus]}
               </li>
             ))}
           </ul>
@@ -293,12 +305,12 @@ export default function PrintLetter() {
           {held && <div className="group-message is-error no-print">{held}. Printing it has to be confirmed.</div>}
           {m.status === 'returned' && (
             <div className="group-message no-print">
-              Came back: {returnReasonText(m.returnReason)}.{m.returnNote ? ` The note says: “${m.returnNote}”` : ''}
+              Came back: {lowerFirst(returnReasonText(m.returnReason))}.{m.returnNote ? ` The note says: “${m.returnNote}”` : ''}
             </div>
           )}
           {m.status === 'declined' && (
             <div className="group-message no-print">
-              Not sent: {declineText(m)}.{m.declineNote ? ` The note says: “${m.declineNote}”` : ''}
+              Not sent: {lowerFirst(declineText(m))}.{m.declineNote ? ` The note says: “${m.declineNote}”` : ''}
             </div>
           )}
 
@@ -313,12 +325,20 @@ export default function PrintLetter() {
                 </div>
               )}
 
-              <div className="print-toolbar no-print">
-                <button type="button" className="btn btn-sm btn-primary" onClick={() => window.print()}>
-                  Print
-                </button>
-                <span>{m.paper ? 'Prints the footer only, to copy onto the paper letter or enclose.' : 'Prints the letter and its footer, nothing else.'}</span>
-              </div>
+              {m.status !== 'declined' && (
+                <div className="print-toolbar no-print">
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => window.print()}>
+                    Print
+                  </button>
+                  <span>
+                    {m.paper
+                      ? 'Prints the footer only, to copy onto the paper letter or enclose.'
+                      : images.length > 0
+                        ? 'Prints the letter, its footer and the enclosed images, nothing else.'
+                        : 'Prints the letter and its footer, nothing else.'}
+                  </span>
+                </div>
+              )}
               {m.footer?.replySheetAllowed && (
                 <p className="print-note no-print">
                   This facility allows a reply sheet: you may enclose a blank page with your group’s address

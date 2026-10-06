@@ -48,7 +48,7 @@ export default function MarkLetter({ message, canPrint, onDone }: { message: Mes
       {confirming && (
         <div className="letter-action-form" role="alert">
           <p>
-            <strong>This letter is on hold.</strong> {heldReasonText(message.heldReason)}.
+            <strong>{heldReasonText(message.heldReason)}.</strong>
           </p>
           <p className="letter-action-hint">Print it anyway? Only do this if you know it can still reach the person.</p>
           <div className="letter-action-buttons">

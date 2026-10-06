@@ -177,6 +177,21 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
       {notice && (
         <div className={notice.kind === 'error' ? 'group-message is-error' : 'group-message is-done'} role={notice.kind === 'error' ? 'alert' : 'status'}>
           {notice.text}
+          {notice.kind === 'error' && (
+            <div>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => {
+                  setSelected(new Set())
+                  setNotice(null)
+                  list.reload()
+                }}
+              >
+                Reload the list
+              </button>
+            </div>
+          )}
         </div>
       )}
 
