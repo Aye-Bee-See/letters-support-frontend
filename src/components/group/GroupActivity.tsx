@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getNotifications } from '../../api/notifications'
+import { getNotifications, getUnreadNotifications } from '../../api/notifications'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useApi } from '../../hooks/useApi'
 import type { Notification } from '../../types'
@@ -13,7 +13,8 @@ import { wordEvent } from '../../utils/notifications'
 // An unread `group.key` entry means the key was set up, handed, taken back or
 // rotated since this session opened it (README "Group keys"): the session reads
 // its group key again, so the inbox works with the new one without a visit to
-// the keys page or a new sign-in.
+// the keys page or a new sign-in. That is decided from the whole unread feed,
+// not the few entries shown: a busy group's key entry may sit below them.
 
 const SHOWN = 8
 
@@ -28,8 +29,9 @@ function linkOf(n: Notification): string | null {
 
 export default function GroupActivity() {
   const feed = useApi(() => getNotifications(SHOWN), [])
+  const unread = useApi(() => getUnreadNotifications(), [])
   const refreshKey = useGroupKeyRefresh()
-  const keyChanged = (feed.data ?? []).some((n) => n.event === 'group.key' && !n.readAt)
+  const keyChanged = (unread.data ?? []).some((n) => n.event === 'group.key')
   useEffect(() => {
     // Quiet: on a failure the session keeps the key it has, and the next visit tries again.
     if (keyChanged) void refreshKey().catch(() => null)
