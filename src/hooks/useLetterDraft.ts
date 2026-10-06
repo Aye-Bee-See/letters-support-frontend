@@ -3,9 +3,18 @@ import { getMyBlocks } from '../api/auth'
 import { useApi } from './useApi'
 import { useAuth } from './useAuth'
 import { forgetContentKey } from '../crypto'
-import { AttachmentNotUploaded, draftHasContent, newIdempotencyKey, sendLetter, uploadLetterFile, type LetterDraft } from '../letters/send'
+import { AttachmentNotUploaded, draftHasContent, newIdempotencyKey, sendLetter, uploadLetterFile, type LetterDraft, type Sender } from '../letters/send'
 import { toApiError } from '../api/client'
 import type { Chapter, Message, Prison, WriterBlock } from '../types'
+
+/**
+ * For a group admin: whom the letter is written as (README "Message fields",
+ * `user`). One of the group's managed writers, with their public key (null
+ * while they have none), or the group's anonymous writer.
+ */
+export type WriteAs = { kind: 'writer'; id: number; publicKey: string | null } | { kind: 'anonymous' }
+
+const NO_BLOCKS: WriterBlock[] = []
 
 /** The prototype's page estimate (new-letter.html updateCount). */
 const CHARS_PER_PAGE = 2800
@@ -34,8 +43,22 @@ export function useLetterDraft(
   preferredGroup?: number,
   /** Writing a returned or declined letter again: its text, and its id to send as resendOf. */
   initial?: { text: string; resendOf: number },
+  /** A group admin's letter: the writer it is written as; nothing can be sent until one is chosen. Ignored for writers. */
+  writeAs?: WriteAs | null,
 ) {
-  const { user, keypair } = useAuth()
+  const { user, keypair, groupKeypair } = useAuth()
+  const isGroup = user?.role === 'chapter'
+  const groupId = isGroup ? user.chapterId : null
+  /** Who the letter goes out as: the signed-in writer, or a group admin writing for one of the group's writers. */
+  const sender: Sender | null = !user
+    ? null
+    : isGroup
+      ? groupId !== null && groupKeypair && writeAs
+        ? { groupId, groupKeypair, writer: writeAs.kind === 'writer' ? { id: writeAs.id, publicKey: writeAs.publicKey } : null }
+        : null
+      : keypair
+        ? { userId: user.id, keypair }
+        : null
   const [text, setText] = useState(initial?.text ?? '')
   const [resendOf, setResendOf] = useState<number | null>(initial?.resendOf ?? null)
   const [relayNote, setRelayNote] = useState('')
@@ -67,27 +90,34 @@ export function useLetterDraft(
 
   /** Groups that print and mail for this facility, active ones only. */
   const groups: Chapter[] = useMemo(() => (facility?.relay_groups ?? []).filter((g) => g.accountStatus === 'active'), [facility])
-  /** Groups not mailing this writer's letters (API #179), by group id, with the reason they gave. */
-  const blocksState = useApi(getMyBlocks, [])
+  /**
+   * Groups not mailing this writer's letters (API #179), by group id, with the
+   * reason they gave. A writer's own only: a block is about the writer sending,
+   * and a group may still write for a writer it looks after (README "Blocking a writer").
+   */
+  const blocksState = useApi(() => (isGroup ? Promise.resolve(NO_BLOCKS) : getMyBlocks()), [isGroup])
   const blocked = useMemo(() => new Map<number, WriterBlock>((blocksState.data ?? []).map((b) => [b.chapter.id, b])), [blocksState.data])
-  // The chosen group, else the thread's own, else the first; never one that has blocked this writer.
+  // The chosen group, else the thread's own (for a group, itself), else the first; never one that has blocked this writer.
   const open = groups.filter((g) => !blocked.has(g.id))
   const relayChapterId =
-    open.find((g) => g.id === chosenGroup)?.id ?? open.find((g) => g.id === preferredGroup)?.id ?? open[0]?.id ?? null
+    open.find((g) => g.id === chosenGroup)?.id ??
+    open.find((g) => g.id === (preferredGroup ?? groupId))?.id ??
+    open[0]?.id ??
+    null
   /** Every group that mails to this facility has blocked this writer. */
   const allBlocked = groups.length > 0 && open.length === 0
 
   const pages = Math.max(1, Math.ceil(text.length / CHARS_PER_PAGE))
   const overPageLimit = !paper && facility?.pageLimit != null && pages > facility.pageLimit
-  const canSend = Boolean(prisonerId && relayChapterId && user && keypair && draftHasContent({ text, paper, file })) && !sending && !attachmentFailed
+  const canSend = Boolean(prisonerId && relayChapterId && sender && draftHasContent({ text, paper, file })) && !sending && !attachmentFailed
 
   async function send(): Promise<Message | null> {
-    if (!canSend || !prisonerId || !relayChapterId || !user || !keypair) return null
+    if (!canSend || !prisonerId || !relayChapterId || !sender) return null
     setSending(true)
     setError(null)
     const draft: LetterDraft = { prisonerId, relayChapterId, text, relayNote, paper, file, idempotencyKey, resendOf }
     try {
-      const message = await sendLetter(draft, { userId: user.id, keypair })
+      const message = await sendLetter(draft, sender)
       clearDraft()
       return message
     } catch (err) {
@@ -169,6 +199,8 @@ export function useLetterDraft(
     text, setText, relayNote, setRelayNote, paper, setPaper, file, setFile,
     groups, blocked, allBlocked, relayChapterId, setChosenGroup, resendOf,
     pages, overPageLimit, canSend, sending, error, send,
+    /** A group admin holds the group key in this session (needed to write for the group's writers). */
+    hasGroupKey: Boolean(groupKeypair),
     attachmentFailed, retryAttachment, skipAttachment,
   }
 }
