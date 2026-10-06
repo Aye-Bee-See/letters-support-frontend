@@ -12,6 +12,7 @@ export {
   openChallenge,
   passwordKeys,
   recoveryKeys,
+  resealTo,
   sealPrivateKeyTo,
   signInKeys,
   unlockAccount,

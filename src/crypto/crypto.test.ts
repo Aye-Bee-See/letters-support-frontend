@@ -9,6 +9,7 @@ import {
   lockKeys,
   openChallenge,
   passwordKeys,
+  resealTo,
   sealPrivateKeyTo,
   signInKeys,
   unlockAccount,
@@ -169,6 +170,18 @@ describe('account flows', () => {
     expect(await unlockGroupKey({ wrappedOrgPrivateKey, chapterPublicKey: group.publicKey }, member)).toEqual(group)
     const outsider = await generateKeypair()
     await expect(unlockGroupKey({ wrappedOrgPrivateKey, chapterPublicKey: group.publicKey }, outsider)).rejects.toThrow()
+  })
+
+  it('re-seals what was sealed to an old group key to a new one, and only the new one opens it', async () => {
+    const oldGroup = await generateKeypair()
+    const newGroup = await generateKeypair()
+    const secret = bytes(32)
+    const sealed = await sealTo(oldGroup.publicKey, secret)
+    const resealed = await resealTo(sealed, oldGroup, newGroup.publicKey)
+    expect(await openEnvelope({ wrappedKey: resealed }, newGroup)).toEqual(secret)
+    await expect(openEnvelope({ wrappedKey: resealed }, oldGroup)).rejects.toThrow()
+    // Something not sealed to the old key is refused rather than passed on.
+    await expect(resealTo(sealed, newGroup, oldGroup.publicKey)).rejects.toThrow()
   })
 })
 
