@@ -15,15 +15,17 @@ import { useGroup } from '../../hooks/useGroup'
 interface Props {
   /** Called after the key was handed to someone, so the page around it can reload its own list. */
   onHanded?: () => void
+  /** Change it to make the notice read the roster again (the page around it read its own again). */
+  reloadKey?: number
 }
 
-export default function MembersWaitingNotice({ onHanded }: Props) {
+export default function MembersWaitingNotice({ onHanded, reloadKey = 0 }: Props) {
   const { groupKeypair } = useAuth()
   const group = useGroup()
   const refreshKey = useGroupKeyRefresh()
   const chapter = group.chapterId
   const canHand = chapter !== null && group.isActive && group.isOwner && group.keyState === 'ready'
-  const roster = useApi(() => (canHand ? getMemberKeys(chapter) : Promise.resolve(null)), [canHand, chapter])
+  const roster = useApi(() => (canHand ? getMemberKeys(chapter) : Promise.resolve(null)), [canHand, chapter, reloadKey])
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 

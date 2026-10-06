@@ -29,6 +29,8 @@ const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month:
 
 type Note = { ok: boolean; text: string } | null
 
+const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
 function NoteLine({ note }: { note: Note }) {
   if (!note) return null
   return (
@@ -258,7 +260,7 @@ function SetUpKey({
         isOwner: done.owner === user.id,
       })
       // README "Latecomers": letters the server still held a key for are sealed to the new key.
-      const caught = done.caughtUp && done.caughtUp.sealed > 0 ? ` ${done.caughtUp.sealed} earlier letters were sealed to it.` : ''
+      const caught = done.caughtUp && done.caughtUp.sealed > 0 ? ` ${count(done.caughtUp.sealed, 'earlier letter was', 'earlier letters were')} sealed to it.` : ''
       setNote({ ok: true, text: `Your group's key is set up.${caught}` })
       onDone(false)
     } catch (err) {
@@ -416,7 +418,7 @@ function Roster({
           <p className="settings-hint">
             <strong>{EVERY_HOLDER}</strong>
           </p>
-          <MembersWaitingNotice onHanded={() => onChanged(false)} key={noticeKey} />
+          <MembersWaitingNotice onHanded={() => onChanged(false)} reloadKey={noticeKey} />
         </>
       ) : (
         roster.publicKey && (
@@ -547,7 +549,7 @@ function Rotate({
           }
         }
         // Step 2: a new keypair; every item opened with the old key and sealed to the new one.
-        setStep(`Re-sealing ${material.envelopes.length} letters and ${material.writers.length} writers’ keys…`)
+        setStep(`Re-sealing ${count(material.envelopes.length, 'letter')} and ${count(material.writers.length, 'writer’s key', 'writers’ keys')}…`)
         const fresh = await generateKeypair()
         const keepIds = kept.map((m) => m.id).filter((id) => material.members.some((m) => m.id === id && m.publicKey))
         const input = await reseal(material, current, fresh, keepIds)
@@ -568,8 +570,9 @@ function Rotate({
           setNote({
             ok: true,
             text:
-              `The group key is rotated (version ${done.keyVersion}): ${done.envelopes} letters and ${done.writers} writers’ keys re-sealed, ` +
-              `${done.members.length} group admins hold the new key.` +
+              `The group key is rotated (version ${done.keyVersion}): ${count(done.envelopes, 'letter')} and ` +
+              `${count(done.writers, 'writer’s key', 'writers’ keys')} re-sealed; ` +
+              `${count(done.members.length, 'group admin holds', 'group admins hold')} the new key.` +
               (removed.length > 0 ? ` No longer holding it: ${removed.join(', ')}.` : ''),
           })
           onDone(false)
