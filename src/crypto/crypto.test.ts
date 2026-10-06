@@ -5,6 +5,7 @@ import { deriveKey, KDF_PARAMS, normalizeCode, passwordBytes, splitFromMaster } 
 import {
   createAccountKeys,
   createClaimToken,
+  firstKeysForSplitAccount,
   lockKeys,
   openChallenge,
   passwordKeys,
@@ -120,6 +121,21 @@ describe('account flows', () => {
     const challenge = (await getSodium()).randombytes_buf(32)
     const answer = await openChallenge(await sealTo(keypair.publicKey, challenge), keypair)
     expect(answer).toBe(await toBase64(challenge))
+  })
+
+  it('gives a keyless split account keys under its existing salt, so the same password still signs in', { timeout: SLOW }, async () => {
+    // A seeded account: split, with a salt and no keys (API #181: the salt must not change).
+    const kdfSalt = await toBase64(bytes(16))
+    const params = { scheme: 'split' as const, kdfSalt, kdfParams: { ...KDF_PARAMS } }
+    const before = await signInKeys('a long enough password', params)
+    const first = await firstKeysForSplitAccount(before.wrapKey, params)
+    expect(first.keyFields.kdfSalt).toBe(kdfSalt)
+    expect(first.keyFields.kdfParams).toEqual(KDF_PARAMS)
+
+    const next = await signInKeys('a long enough password', params)
+    expect(next.authKey).toBe(before.authKey)
+    expect(await unlockAccount(first.keyFields, next.wrapKey)).toEqual(first.keypair)
+    expect(await unlockWithRecoveryCode({ ...first.keyFields }, first.recoveryCode)).toEqual(first.keypair)
   })
 
   it('re-wraps a private key under a new password (password change)', { timeout: SLOW }, async () => {

@@ -7,6 +7,7 @@ export { generateKeypair, type Keypair } from './primitives'
 export {
   createAccountKeys,
   createClaimToken,
+  firstKeysForSplitAccount,
   lockKeys,
   openChallenge,
   passwordKeys,

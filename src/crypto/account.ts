@@ -104,6 +104,32 @@ export async function signInKeys(password: string, params: LoginParams): Promise
   return deriveSplitKeys(password, params.kdfSalt, params.kdfParams)
 }
 
+/**
+ * First keys for an account that already signs in split and has none (the API's
+ * seeded development accounts, web issue #3). The private key is wrapped under
+ * the wrap key from signInKeys, so under the account's **existing** salt and
+ * parameters, which go back unchanged: a split account's salt changes only with
+ * its password (API #181), or its next sign-in would derive a different auth key.
+ * Wipes the wrap key. Show `recoveryCode` once.
+ */
+export async function firstKeysForSplitAccount(
+  wrapKey: Uint8Array,
+  params: LoginParams,
+): Promise<Omit<NewAccount, 'authKey'>> {
+  try {
+    const keypair = await generateKeypair()
+    const wrappedPrivateKey = await wrapPrivateKey(keypair.privateKey, wrapKey)
+    const rc = await recoveryKeys(keypair.privateKey)
+    return {
+      keypair,
+      recoveryCode: rc.recoveryCode,
+      keyFields: { publicKey: keypair.publicKey, wrappedPrivateKey, kdfSalt: params.kdfSalt, kdfParams: params.kdfParams, ...rc.fields },
+    }
+  } finally {
+    await wipe(wrapKey)
+  }
+}
+
 /** Check that an unwrapped private key belongs to the expected public key. */
 async function asKeypair(privateKey: string, publicKey: string | null): Promise<Keypair> {
   const derived = await publicKeyOf(privateKey)
