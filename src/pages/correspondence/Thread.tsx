@@ -4,6 +4,7 @@ import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import ReplyPanel from '../../components/forms/ReplyPanel'
+import WriterBlockActions from '../../components/group/WriterBlockActions'
 import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
@@ -311,6 +312,8 @@ function Sidebar({ chat, letters, showWriter }: { chat: Chat; letters: OpenedMes
                 </>
               )}
             </div>
+            {/* Block from our group, recommend a site-wide block (WP4b); nothing for a writer the group looks after. */}
+            <WriterBlockActions writer={chat.user_details} />
           </div>
         </>
       )}

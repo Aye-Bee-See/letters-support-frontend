@@ -2,7 +2,10 @@ import type { Notification, NotificationEvent } from '../types'
 
 // Feed entries in words (README "The feed"). Entries carry ids and states,
 // never letter content, so each line is worded from `event` and `detail`.
-// A plain map, one entry per event, so other pages can add theirs.
+// A plain map, one entry per event, so other pages can add theirs. Written by
+// two packages at once (WP1 inbox, WP4b blocks) and merged into this one map;
+// the block and ban lines are WP4b's, which say who did what and what happened
+// to the letters.
 
 type Detail = Record<string, unknown>
 
@@ -61,17 +64,21 @@ export const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n
         : 'The group-owner admin passed ownership to another group admin',
   'group.waiting': () => 'A group admin is waiting to be handed the group key',
   // README "Blocking a writer".
-  'group.block': (d) =>
-    d.action === 'lifted'
-      ? `A writer’s block was lifted${heldClause(num(d.released), 'back in the queue')}`
-      : `A writer was blocked from your group${heldClause(num(d.held), 'on hold')}`,
+  'group.block': (d) => {
+    const held = num(d.held)
+    const released = num(d.released)
+    if (d.action === 'lifted') {
+      return `A group admin unblocked a writer from your group${released ? `; ${letters(released)} went back into the queue` : ''}`
+    }
+    return `A group admin blocked a writer from your group${held ? `; ${letters(held)} of theirs waiting in your queue ${held === 1 ? 'is' : 'are'} held` : ''}`
+  },
   'writer.block': (d) => (d.action === 'lifted' ? 'A group is mailing your letters again' : 'A group has stopped mailing your letters'),
   // README "Recommending a site-wide block".
-  'ban.recommended': () => 'A group recommends blocking a writer site-wide',
+  'ban.recommended': () => 'A group recommends blocking a writer from the whole site',
   'ban.decided': (d) =>
     d.decision === 'banned'
-      ? 'A site admin blocked the writer your group recommended, site-wide'
-      : 'A site admin dismissed your group’s recommendation to block a writer',
+      ? 'A site admin blocked a writer your group recommended from the whole site'
+      : 'A site admin dismissed your group’s recommendation to block a writer from the whole site',
 }
 
 /** One feed entry in words. An event this client doesn't know yet still reads as something. */
