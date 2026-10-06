@@ -1,7 +1,7 @@
 import { toApiError } from '../api/client'
 import { getGroupPublicKey } from '../api/letters'
 import { createWriter, updateWriter, type NewWriter } from '../api/writers'
-import { generateKeypair, sealPrivateKeyTo } from '../crypto'
+import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../crypto'
 import type { Writer } from '../types'
 
 // A group's managed writers in end-to-end mode (README "Managed writers and
@@ -16,9 +16,8 @@ export interface GroupPublicKey {
   keyVersion: number
 }
 
-/** A fresh keypair for a writer: the public key, and the private key sealed to the group. */
-export async function newWriterKeys(group: GroupPublicKey) {
-  const keypair = await generateKeypair()
+/** A writer's keypair as the API stores it: the public key, and the private key sealed to the group. */
+export async function writerKeyFields(keypair: Keypair, group: GroupPublicKey) {
   return {
     publicKey: keypair.publicKey,
     orgWrappedPrivateKey: await sealPrivateKeyTo(keypair.privateKey, group.publicKey),
@@ -44,21 +43,51 @@ export async function withCurrentGroupKey<T>(groupId: number, known: GroupPublic
 }
 
 /** POST /auth/writer with a keypair made here, sealed to the group (README "Managed writers and claiming"). */
-export function createKeyedWriter(
+export async function createKeyedWriter(
   groupId: number,
   known: GroupPublicKey,
   fields: Omit<NewWriter, 'publicKey' | 'orgWrappedPrivateKey' | 'orgKeyVersion'>,
 ) {
-  return withCurrentGroupKey(groupId, known, async (key) => createWriter({ ...fields, ...(await newWriterKeys(key)) }))
+  const keypair = await generateKeypair()
+  return withCurrentGroupKey(groupId, known, async (key) => createWriter({ ...fields, ...(await writerKeyFields(keypair, key)) }))
 }
 
 /**
  * Give an unclaimed writer made before encryption their first keys (PUT /auth/user,
  * README "Latecomers"); the server then seals to them the letters it still holds.
- * Only a group admin holding the group key may (a 403 otherwise).
+ * Only a group admin holding the group key may (a 403 otherwise). Answers the
+ * new keypair, for a hand-off that goes straight on to a claim token; drop it after.
  */
-export function giveWriterKeys(writerId: number, groupId: number, known: GroupPublicKey) {
-  return withCurrentGroupKey(groupId, known, async (key) => updateWriter(writerId, await newWriterKeys(key)))
+export async function giveWriterKeys(writerId: number, groupId: number, known: GroupPublicKey): Promise<Keypair> {
+  const keypair = await generateKeypair()
+  await withCurrentGroupKey(groupId, known, async (key) => updateWriter(writerId, await writerKeyFields(keypair, key)))
+  return keypair
+}
+
+/**
+ * A refusal from the managed-writer endpoints, in words. Keyed on status, `name`
+ * and `condition` (README "Errors"), never on the sentence; a 400 shows the
+ * API's own sentences, which name the field.
+ */
+export function describeWriterError(err: unknown): string {
+  const e = toApiError(err)
+  if (e.status === 0) return e.message === 'Could not reach the server.' ? 'Couldn’t reach the server. Check the connection and try again.' : e.message
+  if (e.status === 400) return e.errors.length ? e.errors.join(' ') : e.message
+  if (e.status === 409 && e.name === 'KeyVersionError')
+    return 'Your group’s key changed while this was being saved. Sign in again to pick up the new key, then try again.'
+  if (e.status === 409 && e.name === 'ClaimError')
+    return 'This is your group’s anonymous writer, shared by everyone the group writes for. It can never be handed to one person.'
+  if (e.status === 409 && e.name === 'AccountDeleteError')
+    return e.condition === 'anonymous'
+      ? 'Your group’s anonymous writer can’t be deleted: it holds the anonymous letters of everyone the group writes for.'
+      : 'This account can’t be deleted.'
+  if (e.status === 409 && e.name === 'KeyChangeError') return 'This writer already has keys, and they can’t change.'
+  if (e.status === 409) return 'This writer is no longer one of your group’s unclaimed writers: they may have claimed their account.'
+  if (e.status === 404) return 'This writer is no longer one of your group’s: they may have claimed their account, or been deleted.'
+  if (e.status === 403)
+    return 'Your group can’t do this right now. Only a group admin of an active group may, and giving a writer keys needs the group key.'
+  if (e.status === 429) return 'Too many tries in a row. Wait a minute and try again.'
+  return e.message
 }
 
 /** The group's shared anonymous writer: listed with the others, never handed off, never keyed. */

@@ -208,3 +208,40 @@
 }
 
 .pending-banner strong { color: var(--text); }
+
+/* ── Additions for the web page (group-writers) ── */
+
+/* A claim token is 24 characters in six groups: let it wrap on a phone. */
+.token-value { overflow-wrap: anywhere; }
+
+/* The claim link under the token, with its own copy button. */
+.token-link-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+}
+
+.token-link-value {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  word-break: break-all;
+  user-select: all;
+  flex: 1;
+  min-width: 0;
+}
+
+.token-link-row .token-copy-btn { color: var(--mid); border-color: var(--border); }
+.token-link-row .token-copy-btn:hover { color: var(--text); border-color: var(--text); }
+
+.handoff-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+.handoff-error {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--alert);
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
