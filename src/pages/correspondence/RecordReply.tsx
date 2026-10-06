@@ -70,8 +70,9 @@ function FoundLetter({ found }: { found: ReferenceLookup }) {
           {letter ? (
             <>
               of <strong>{longDate(letter.createdAt)}</strong>
-              {letter.paper ? ', written on paper' : ''}: {STATUS_WORDS[letter.status]}
-              {found.mailedAt ? ` (mailed ${longDate(found.mailedAt)})` : ''}
+              {letter.paper ? ', written on paper' : ''}:{' '}
+              {found.mailedAt ? `mailed ${longDate(found.mailedAt)}` : STATUS_WORDS[letter.status]}
+              {found.mailedAt && letter.status !== 'mailed' ? `, ${STATUS_WORDS[letter.status]} since` : ''}
             </>
           ) : (
             <>No longer kept{found.mailedAt ? `; it was mailed ${longDate(found.mailedAt)}` : ''}. The reply still goes in the thread.</>
@@ -286,7 +287,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
                     <td>
                       <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
                       {chat.prisoner_details?.prison_details && (
-                        <span className="convo-facility">{chat.prisoner_details.prison_details.prisonName}</span>
+                        <div className="convo-facility">{chat.prisoner_details.prison_details.prisonName}</div>
                       )}
                     </td>
                     <td>
