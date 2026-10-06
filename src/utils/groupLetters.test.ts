@@ -6,7 +6,7 @@ const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
   anonymous: false,
   careOf: { id: 3, name: 'PDX ABC' },
-  reference: '4827-1935-6',
+  reference: '4827-1935-8',
   replySheetAllowed: false,
   ...over,
 })
@@ -16,7 +16,7 @@ const error = (over: Partial<ApiError>): ApiError => ({ status: 409, name: 'Lett
 describe('footerSentence', () => {
   it('says the name, the group and the reference (README "Reply reference")', () => {
     expect(footerSentence(footer())).toBe(
-      'Write back to James Hollow, c/o PDX ABC. Reference 4827-1935-6: please write this number at the top of your reply.',
+      'Write back to James Hollow, c/o PDX ABC. Reference 4827-1935-8: please write this number at the top of your reply.',
     )
   })
 
@@ -26,7 +26,7 @@ describe('footerSentence', () => {
 
   it('names the group only for the anonymous writer', () => {
     expect(footerSentence(footer({ name: null, anonymous: true }))).toBe(
-      'Write back to PDX ABC. Reference 4827-1935-6: please write this number at the top of your reply.',
+      'Write back to PDX ABC. Reference 4827-1935-8: please write this number at the top of your reply.',
     )
     expect(footerSentence(footer({ name: null, anonymous: true, reference: null }))).toBe('Write back to PDX ABC.')
   })

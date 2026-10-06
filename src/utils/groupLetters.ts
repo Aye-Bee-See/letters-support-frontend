@@ -119,7 +119,7 @@ export const NOTE_LIMIT = 200
 
 /**
  * The sentence printed under the letter, from `footer`:
- * "Write back to James Hollow, c/o PDX ABC. Reference 4827-1935-6: please write
+ * "Write back to James Hollow, c/o PDX ABC. Reference 4827-1935-8: please write
  * this number at the top of your reply." The group's anonymous writer has no
  * name, so the footer names the group only. Where the facility refuses
  * reference numbers (`reference` null) it says the name and c/o only. Never a

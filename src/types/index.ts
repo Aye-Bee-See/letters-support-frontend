@@ -350,7 +350,7 @@ export interface Message extends Timestamps {
   statusChangedAt: string | null
   statusChangedBy: number | null
   paper: boolean
-  /** Nine digits, printed in the footer as 4827-1935-6. Outgoing letters only. */
+  /** Nine digits, printed in the footer as 4827-1935-8. Outgoing letters only. */
   replyReference: string | null
   repliesTo: number | null
   keep: boolean
@@ -396,7 +396,7 @@ export interface LetterFooter {
   anonymous: boolean
   /** The relay group whose address the reply comes to. */
   careOf: { id: number; name: string } | null
-  /** Printed as 4827-1935-6; null where the facility carries `no_reference_numbers` (then name and c/o only). */
+  /** Printed as 4827-1935-8; null where the facility carries `no_reference_numbers` (then name and c/o only). */
   reference: string | null
   /** The facility carries `reply_sheet_allowed`: a blank reply sheet may be enclosed. */
   replySheetAllowed: boolean
@@ -557,7 +557,7 @@ export interface HistoryEntry {
 
 /** GET /messaging/reference?number= (README "Reply reference"): what a reply reference points at. */
 export interface ReferenceLookup {
-  /** Formatted, 4827-1935-6. */
+  /** Formatted, 4827-1935-8. */
   reference: string
   /** Null once the letter itself was deleted. */
   letter: { id: number; chat: number; status: LetterStatus; paper: boolean; createdAt: string } | null

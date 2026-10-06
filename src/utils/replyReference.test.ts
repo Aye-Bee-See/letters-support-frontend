@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkReference, describeReferenceError, formatReference, normalizeReference } from './replyReference'
+import { checkReference, describeReferenceError, formatReference, normalizeReference, REFERENCE_EXAMPLE } from './replyReference'
 
 describe('normalizeReference', () => {
   it('keeps the digits, dropping dashes, spaces and dots', () => {
@@ -15,6 +15,10 @@ describe('checkReference', () => {
     expect(checkReference('482719358')).toBe('ok')
     expect(checkReference('4827-1935-8')).toBe('ok')
     expect(checkReference('000000000')).toBe('ok')
+  })
+  it('accepts the example the forms show', () => {
+    expect(REFERENCE_EXAMPLE).toBe('4827-1935-8')
+    expect(checkReference(REFERENCE_EXAMPLE)).toBe('ok')
   })
   it('calls a wrong last digit, or two digits swapped, a mistake', () => {
     expect(checkReference('4827-1935-6')).toBe('checksum')

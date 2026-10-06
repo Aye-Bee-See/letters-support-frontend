@@ -6,7 +6,7 @@ import { useApi } from '../../hooks/useApi'
 import type { Chat, LetterStatus, ReferenceLookup, WriterMatch } from '../../types'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
-import { checkReference, describeReferenceError, formatReference, normalizeReference } from '../../utils/replyReference'
+import { checkReference, describeReferenceError, formatReference, normalizeReference, REFERENCE_EXAMPLE } from '../../utils/replyReference'
 
 // /replies/new: a group admin records a prisoner's reply that came to the
 // group's PO box (README "Reply reference": filing a reply). Step 1 finds
@@ -104,7 +104,7 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
     onTarget(null)
     const state = checkReference(typed)
     if (state === 'incomplete') {
-      setProblem('A reply reference is nine digits, like 4827-1935-6. Dashes and spaces are optional.')
+      setProblem(`A reply reference is nine digits, like ${REFERENCE_EXAMPLE}. Dashes and spaces are optional.`)
       setSubmitted('')
     } else if (state === 'checksum') {
       setProblem('That number has a mistake in it; check it against the letter.')
@@ -140,7 +140,7 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
           className="reply-reference-input"
           inputMode="numeric"
           autoComplete="off"
-          placeholder="4827-1935-6"
+          placeholder={REFERENCE_EXAMPLE}
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
         />
@@ -407,7 +407,7 @@ export default function RecordReply() {
             <div className="thread-sidebar-heading">The reply reference</div>
             <div className="thread-sidebar-info">
               Every letter your group prints ends with a footer asking the prisoner to write a nine-digit number, like{' '}
-              <strong>4827-1935-6</strong>, at the top of their reply. It finds the writer and the letter it answers.
+              <strong>{REFERENCE_EXAMPLE}</strong>, at the top of their reply. It finds the writer and the letter it answers.
             </div>
           </div>
           <hr className="thread-sidebar-divider" />

@@ -18,7 +18,7 @@ import { sealAndSend } from './send'
 
 export interface ReplyDraft {
   /**
-   * The reply reference copied from the top of the reply (4827-1935-6, dashes
+   * The reply reference copied from the top of the reply (4827-1935-8, dashes
    * optional). The API fills in the writer, the prisoner and the letter it
    * answers from it. Leave it out for a reply filed by name.
    */

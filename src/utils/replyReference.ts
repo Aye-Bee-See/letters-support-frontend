@@ -1,5 +1,5 @@
 // The reply reference (README "Reply reference"): nine digits, the last a check
-// digit, printed in a letter's footer as 4827-1935-6. A prisoner copies it by
+// digit, printed in a letter's footer as 4827-1935-8. A prisoner copies it by
 // hand onto their reply; the volunteer types it back in here. Digits only, no
 // other codes. The API checks the number too; checking it here as well tells
 // the volunteer about a slip of the pen before anything is sent.
@@ -7,6 +7,9 @@
 import type { ApiError } from '../types'
 
 export const REFERENCE_LENGTH = 9
+
+/** The example the forms show (placeholder and help text): a number whose check digit is right. */
+export const REFERENCE_EXAMPLE = '4827-1935-8'
 
 /** What the volunteer typed, as digits: spaces, dashes and dots dropped, as the API does. */
 export function normalizeReference(value: string): string {
@@ -41,7 +44,7 @@ export function checkReference(value: string): 'incomplete' | 'checksum' | 'ok' 
   return checkDigit(digits.slice(0, -1)) === digits[REFERENCE_LENGTH - 1] ? 'ok' : 'checksum'
 }
 
-/** `482719356` as `4827-1935-6`, the way it is printed. Anything that isn't nine digits comes back as typed. */
+/** `482719358` as `4827-1935-8`, the way it is printed. Anything that isn't nine digits comes back as typed. */
 export function formatReference(value: string): string {
   const digits = normalizeReference(value)
   if (!/^[0-9]{9}$/.test(digits)) return value
