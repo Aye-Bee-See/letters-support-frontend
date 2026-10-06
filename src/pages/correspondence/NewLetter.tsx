@@ -72,13 +72,15 @@ export default function NewLetter() {
   const chooseWriter = (id: number | null) => setParam('writer', id === null ? null : id === ANONYMOUS_OPTION ? 'anonymous' : String(id))
 
   /** Who can read the letter, in words, for the note under Send. */
+  const readerGroups = group && group.id !== user?.chapterId ? ['your group', group.name] : ['your group']
+  const andList = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
   const readers = !isGroup
     ? `Only you and ${group ? group.name : 'that group'} can read it.`
     : writeAs?.kind === 'anonymous'
-      ? `Only your group${group && group.id !== user?.chapterId ? ` and ${group.name}` : ''} can read it.`
+      ? `Only ${andList(readerGroups)} can read it.`
       : chosenWriter && !chosenWriter.publicKey
-        ? `Only your group${group && group.id !== user?.chapterId ? ` and ${group.name}` : ''} can read it until ${writerName} has keys; they get their copy then.`
-        : `Only ${writerName ?? 'the writer'}, your group${group && group.id !== user?.chapterId ? ` and ${group.name}` : ''} can read it.`
+        ? `Only ${andList(readerGroups)} can read it until ${writerName} has keys; they get their copy then.`
+        : `Only ${andList([writerName ?? 'the writer', ...readerGroups])} can read it.`
 
   async function onSend() {
     const message = await draft.send()
@@ -120,7 +122,7 @@ export default function NewLetter() {
           {draft.paper ? (
             <p className="letter-meta-bar" style={{ padding: '1rem 0' }}>
               {isGroup
-                ? `Nothing to type: a letter written by hand, that ${group?.name ?? 'the group'} mails. It is logged here so a reply can find its way back to ${writerName ?? 'its writer'}.`
+                ? `Nothing to type: a letter written by hand, that ${group?.name ?? 'the group'} mails. It is logged here so a reply can find its way back to ${writeAs?.kind === 'anonymous' ? 'your group' : (writerName ?? 'its writer')}.`
                 : `Nothing to type: you are handing this letter to ${group?.name ?? 'the group'} on paper. It is logged here so a reply can find its way back to you.`}
             </p>
           ) : (

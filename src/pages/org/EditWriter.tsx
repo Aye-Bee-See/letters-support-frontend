@@ -31,9 +31,6 @@ export default function EditWriter() {
           {deleted.name}'s account is gone, with {count(deleted.letters, 'letter')}, {count(deleted.replies, 'reply', 'replies')} and{' '}
           {count(deleted.threads, 'thread')}.
         </p>
-        <Link to="/inbox?tab=writers" className="cw-cancel">
-          ← Your writers
-        </Link>
       </Page>
     )
   }
