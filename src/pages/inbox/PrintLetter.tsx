@@ -294,6 +294,13 @@ export default function PrintLetter() {
               </span>
               <span>·</span>
               <Link to={`/threads/${m.chat}`}>Conversation</Link>
+              {/* The prisoner's answer to this letter, filed by its reply reference (README "Reply reference"). */}
+              {m.replyReference && (
+                <>
+                  <span>·</span>
+                  <Link to={`/replies/new?reply=${encodeURIComponent(m.replyReference)}`}>Record the reply to this letter</Link>
+                </>
+              )}
             </div>
           </div>
 
