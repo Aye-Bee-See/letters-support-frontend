@@ -44,6 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession((s) => (s ? { ...s, user: { ...s.user, penName } } : s))
   }, [])
 
+  // Memory only, like everything else in the session. The old group keypair is
+  // a base64 string, which JavaScript cannot overwrite: dropping it is the most
+  // a browser allows.
+  const groupKeySet = useCallback((groupKeypair: Keypair | null, orgKey: NonNullable<KeyBundle['orgKey']>) => {
+    setSession((s) => (s && s.keys ? { ...s, keys: { ...s.keys, orgKey }, groupKeypair } : s))
+  }, [])
+
   const endSession = useCallback(() => {
     setAuthToken(null)
     // Keys are base64 strings, which JavaScript cannot overwrite; dropping every
@@ -98,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       twoFactorSetupRequired: session?.twoFactorSetupRequired ?? null,
       twoFactorSetUp,
       penNameChosen,
+      groupKeySet,
       isAuthenticated: session !== null,
       isAdmin: role === 'admin',
       isChapter: role === 'chapter',
@@ -105,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       startSession,
       endSession,
     }
-  }, [session, startSession, endSession, twoFactorSetUp, penNameChosen])
+  }, [session, startSession, endSession, twoFactorSetUp, penNameChosen, groupKeySet])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

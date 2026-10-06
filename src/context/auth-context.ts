@@ -27,6 +27,13 @@ export interface AuthState {
   twoFactorSetUp: () => void
   /** Call once the account has chosen a pen name (the name as the API stored it). */
   penNameChosen: (penName: string) => void
+  /**
+   * The group key changed under this session (README "Group keys", "Rotating a
+   * group key"): it was set up, handed to this admin, taken back, or rotated.
+   * Replaces `keys.orgKey` and the open group keypair (null when this admin no
+   * longer holds it), so the admin can act at once without signing in again.
+   */
+  groupKeySet: (groupKeypair: Keypair | null, orgKey: NonNullable<KeyBundle['orgKey']>) => void
   isAuthenticated: boolean
   isAdmin: boolean
   isChapter: boolean
