@@ -5,6 +5,7 @@ import { ADMIN_UI } from '../../components/forms/uiClasses'
 import InvitationTable from '../../components/invitations/InvitationTable'
 import InviteForm from '../../components/invitations/InviteForm'
 import TokenNotice from '../../components/invitations/TokenNotice'
+import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { ADMIN_KIND_LABELS } from '../../components/invitations/wording'
 import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
@@ -38,6 +39,8 @@ export default function Invitations() {
   const groupById = useMemo(() => new Map((groups.data ?? []).map((g) => [g.id, g])), [groups.data])
   // The token to hand over, after a create or renew: shown until dismissed.
   const [issued, setIssued] = useState<{ invitation: Invitation; renewed: boolean } | null>(null)
+  // Leaving loses the code on screen for good: ask first, for an in-app link as for closing the tab.
+  useLeaveGuard(issued !== null, 'The invitation code on this page is shown only now. Leave without copying it?')
 
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))

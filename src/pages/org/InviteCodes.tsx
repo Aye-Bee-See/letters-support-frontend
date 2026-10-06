@@ -1,10 +1,11 @@
 import qrcode from 'qrcode-generator'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cancelInviteCodes, getInviteCodes, issueInviteCodes } from '../../api/inviteCodes'
 import { formatCode } from '../../crypto'
 import { useApi } from '../../hooks/useApi'
 import { useGroup } from '../../hooks/useGroup'
+import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import type { ApiError, InviteCodeBatch, InviteCodeSummary, IssuedInviteCodes } from '../../types'
 
 // Invite codes (README "Invite codes"): the group issues a batch, prints the
@@ -41,13 +42,8 @@ export default function InviteCodes() {
   const [notice, setNotice] = useState<string | null>(null)
   const groupName = group?.name ?? 'Your group'
 
-  // Leaving with the codes on screen loses them for good: the browser asks first.
-  useEffect(() => {
-    if (!issued) return
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [issued])
+  // Leaving with the codes on screen loses them for good, by a link in the app as much as by closing the tab: ask first.
+  useLeaveGuard(issued !== null, 'The invite codes on this page are shown only now. Leave without copying or printing them?')
 
   return (
     <div className="settings-wrap">
@@ -290,7 +286,7 @@ function IssuedPanel({
   }
 
   return (
-    <section className="settings-section">
+    <section className="settings-section" data-leave-guard-ok>
       <h2 className="settings-section-heading">
         {plural(codes.length, 'new code')}
         {issued.label ? `: ${issued.label}` : ''}

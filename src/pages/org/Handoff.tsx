@@ -7,6 +7,7 @@ import { createClaimToken, unlockManagedWriterKey, type Keypair } from '../../cr
 import { describeWriterError, giveWriterKeys, isAnonymousWriter, writerLabel } from '../../groups/writers'
 import { useAuth } from '../../hooks/useAuth'
 import { useGroup } from '../../hooks/useGroup'
+import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useManagedWriter } from '../../hooks/useManagedWriter'
 import type { Writer } from '../../types'
 
@@ -29,6 +30,8 @@ export default function Handoff() {
   const { chapterId, keyState, keyVersion } = useGroup()
   const { writer, missing, loading, error, reload } = useManagedWriter(id)
   const [issued, setIssued] = useState<{ token: string; expiresAt: string } | null>(null)
+  // Leaving loses the token on screen for good: ask first, for an in-app link as for closing the tab.
+  useLeaveGuard(issued !== null, 'The claim token on this page is shown only now. Leave without copying it?')
   const [busy, setBusy] = useState<'issue' | 'revoke' | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
 
