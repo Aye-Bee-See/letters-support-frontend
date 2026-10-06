@@ -369,7 +369,8 @@ export interface Message extends Timestamps {
   attachments?: Attachment[]
   status_history?: MessageStatusEntry[]
   prisoner_details?: Prisoner
-  user_details?: Pick<User, 'id' | 'name' | 'username' | 'managedBy' | 'anonymousForChapter'>
+  /** full=true: the writer (the pen name, else the name, is what the footer prints). */
+  user_details?: Pick<User, 'id' | 'name' | 'username' | 'managedBy' | 'anonymousForChapter'> & Partial<Pick<User, 'penName'>>
 }
 
 export interface MessageStatusEntry extends Timestamps {

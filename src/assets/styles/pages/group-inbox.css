@@ -1,0 +1,306 @@
+/* ============================================================
+   GROUP INBOX (InboxOrg) and ONE LETTER (PrintLetter)
+   Built on inbox.css and thread.css; only what those lack.
+   ============================================================ */
+
+/* --- Tabs ------------------------------------------------- */
+.group-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.group-tab {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.6rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--mid);
+  cursor: pointer;
+}
+
+.group-tab:hover { color: var(--text); }
+.group-tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+.group-tab-count {
+  font-family: var(--mono);
+  font-weight: 400;
+  margin-left: 0.35rem;
+}
+
+/* --- Queue ------------------------------------------------ */
+.queue-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 1rem 1.25rem;
+}
+
+.queue-batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--off-white);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--mid);
+}
+
+.queue-batch-bar .btn { color: var(--text); border-color: var(--border); }
+.queue-batch-bar .btn-primary { color: var(--white); border-color: var(--text); }
+.queue-batch-bar .btn:disabled { opacity: 0.45; cursor: default; }
+
+.col-check { width: 2.25rem; }
+.queue-row td.col-check, .queue-table th.col-check { padding-right: 0; }
+
+.queue-row { border-bottom: 1px solid #f0f0ee; color: var(--text); }
+.queue-row:last-child { border-bottom: none; }
+.queue-row:hover td { background: var(--off-white); }
+.queue-row.is-selected td { background: #f7f6f3; }
+
+.queue-row td {
+  padding: 0.7rem 1rem;
+  vertical-align: top;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.queue-row td:first-child { padding-left: 1.25rem; }
+
+.queue-id {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--mid);
+}
+
+.queue-open {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.queue-sub {
+  font-size: 0.73rem;
+  color: var(--mid);
+  font-family: var(--sans);
+  margin-top: 0.15rem;
+}
+
+.paper-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 0.05rem 0.35rem;
+  margin-left: 0.4rem;
+  color: var(--mid);
+  vertical-align: middle;
+}
+
+.queue-row .status-notice { margin: 0.35rem 0 0; }
+
+/* Messages above a list or a form: a refusal, a confirmation, a done. */
+.group-message {
+  margin: 0 0 1rem 1.25rem;
+  padding: 0.65rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  border-left: 3px solid var(--border);
+  background: var(--off-white);
+}
+
+.group-message.is-error { border-left-color: var(--alert); background: var(--alert-bg); color: var(--alert); }
+.group-message.is-done { border-left-color: #2a6e2a; background: #eef6ee; color: #234d23; }
+.group-message p + p { margin-top: 0.5rem; }
+.group-message .btn { margin-top: 0.5rem; margin-right: 0.4rem; }
+
+.inbox-card .group-message { margin: 0; border-left-width: 0; border-bottom: 1px solid var(--border); }
+
+/* --- Writers tab ------------------------------------------ */
+.writer-meta {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--mid);
+}
+
+.writer-block .inbox-card { margin-top: 0.25rem; }
+
+/* --- Activity (sidebar) ----------------------------------- */
+.activity-list { list-style: none; margin: 0 0 1.25rem; padding: 0; }
+
+.activity-item {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text);
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f0f0ee;
+}
+
+.activity-item:last-child { border-bottom: none; }
+.activity-item.unread { font-weight: 700; }
+
+.activity-date {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--mid);
+  font-weight: 400;
+}
+
+.sidebar-links { list-style: none; margin: 0 0 1.25rem; padding: 0; font-size: 0.8rem; line-height: 1.9; }
+
+/* --- One letter: the print sheet --------------------------- */
+.print-sheet {
+  background: var(--white);
+  border: 1px solid var(--border);
+  padding: 2.5rem 2.75rem;
+  margin: 0 0 1.5rem;
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #000;
+}
+
+.print-sheet-to {
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.print-sheet-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.print-sheet-empty { font-style: italic; color: var(--mid); }
+
+.print-sheet-footer {
+  margin-top: 2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #999;
+  font-size: 0.9rem;
+}
+
+.print-sheet-image { display: block; max-width: 100%; margin-top: 1.5rem; }
+
+.print-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--mid);
+}
+
+.print-note {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--mid);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.print-relay-note {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border-left: 3px solid var(--text);
+  padding: 0.5rem 0.9rem;
+  margin: 0 0 1rem;
+  background: var(--off-white);
+}
+
+/* --- One letter: the action forms -------------------------- */
+.letter-action { margin-bottom: 1rem; }
+.letter-action .btn { color: var(--text); border-color: var(--border); width: 100%; text-align: center; }
+.letter-action .btn-primary { color: var(--white); border-color: var(--text); }
+.letter-action .btn:disabled { opacity: 0.45; cursor: default; }
+
+.letter-action-form {
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.letter-action-form fieldset { border: none; padding: 0; margin: 0 0 0.6rem; }
+.letter-action-form legend { font-weight: 700; margin-bottom: 0.35rem; }
+.letter-action-form label { display: block; margin-bottom: 0.3rem; }
+.letter-action-form input[type='radio'] { margin-right: 0.35rem; }
+.letter-action-form select,
+.letter-action-form textarea {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.45rem;
+  margin-top: 0.2rem;
+  background: var(--white);
+}
+.letter-action-form textarea { min-height: 4.5rem; resize: vertical; }
+.letter-action-hint { color: var(--mid); font-size: 0.72rem; margin: 0.25rem 0 0.6rem; }
+.letter-action-buttons { display: flex; gap: 0.4rem; }
+.letter-action-buttons .btn { width: auto; flex: 1; }
+
+.letter-history { list-style: none; margin: 0; padding: 0; font-size: 0.75rem; line-height: 1.6; color: var(--mid); }
+
+/* ============================================================
+   PRINT: only the sheet. PrintLetter puts `printing-letter` on
+   <body> while it is open, so no other page is affected.
+   No QR code or barcode is ever on this sheet (README "Reply reference").
+   ============================================================ */
+@media print {
+  body.printing-letter .site-header,
+  body.printing-letter .site-footer,
+  body.printing-letter .stale-banner,
+  body.printing-letter .no-print,
+  body.printing-letter .thread-sidebar {
+    display: none !important;
+  }
+
+  body.printing-letter * { visibility: hidden; }
+  body.printing-letter .print-sheet,
+  body.printing-letter .print-sheet * { visibility: visible; }
+
+  body.printing-letter,
+  body.printing-letter .app-wrap,
+  body.printing-letter .app-layout,
+  body.printing-letter .thread-main {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: none;
+    max-width: none;
+    min-height: 0;
+    background: #fff;
+  }
+
+  body.printing-letter .print-sheet {
+    border: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12pt;
+  }
+
+  body.printing-letter .print-sheet-image { page-break-before: always; max-height: 100vh; }
+
+  @page { margin: 2cm; }
+}
+
+@media (max-width: 640px) {
+  .print-sheet { padding: 1.25rem; }
+  .queue-filters, .group-message { margin-left: 0; }
+}
