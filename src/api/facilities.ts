@@ -38,8 +38,9 @@ export const getFacility = (id: number, full = true) =>
 export const getMailRules = (retired = false) => getOne<MailRuleList>('/prison/mail-rules', retired ? { retired: true } : undefined)
 
 // Directory writes are superadmin-only (22 Sept); group admins propose edits
-// through corrections.ts. Unlike a prisoner's, a facility's edits and relay
-// links don't touch queued letters.
+// through corrections.ts. Relay links are the exception: a group admin links
+// and unlinks their own active group (below). Unlike a prisoner's, a facility's
+// edits and relay links don't touch queued letters.
 
 /** The fields PUT /prison/prison accepts (PRISON_FIELDS in the API). */
 export type FacilityFields = Partial<
@@ -57,9 +58,15 @@ export const updateFacility = (id: number, fields: FacilityFields) =>
 /** Superadmin only. Refused while prisoners are listed there (a 400, SequelizeForeignKeyConstraintError). */
 export const deleteFacility = (id: number) => del<number>('/prison/prison', { id })
 
-/** Attach a group that prints and mails for this facility. Idempotent; takes effect at once. Answers with the facility (full), relay groups included. */
+/**
+ * Attach a group that prints and mails for this facility. Idempotent; takes
+ * effect at once. Answers with the facility (full), relay groups included. A
+ * superadmin links any group; a group admin only their own group, and only
+ * while it is active (README "What each role can do"): another group's is a 403
+ * ("own group only"), and a pending or suspended group's a 403 saying which.
+ */
 export const linkRelayGroup = (prison: number, chapter: number) =>
   put<{ updatedRows: Prison; chapter: number; prison: number }>('/prison/relay', { prison, chapter })
 
-/** Detach a relay group. A 404 if there was no link. */
+/** Detach a relay group: the same people as linking. A 404 if there was no link. */
 export const unlinkRelayGroup = (prison: number, chapter: number) => del<number>('/prison/relay', { prison, chapter })

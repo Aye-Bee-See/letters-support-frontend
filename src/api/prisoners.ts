@@ -30,7 +30,8 @@ export const getPrisoner = (id: number, full = true) =>
   getOne<Prisoner>('/prisoner/prisoner', { id, full })
 
 // Directory writes are superadmin-only (22 Sept). Group admins propose edits
-// through corrections.ts instead.
+// through corrections.ts instead, except support links: a group admin links and
+// unlinks their own active group (below).
 
 /** The fields PUT /prisoner/prisoner accepts (PRISONER_FIELDS in the API). */
 export type PrisonerFields = Partial<
@@ -61,9 +62,14 @@ export const updatePrisoner = (id: number, fields: PrisonerFields) =>
 /** Superadmin only. Refused while letter threads point at the prisoner (a 400, SequelizeForeignKeyConstraintError). */
 export const deletePrisoner = (id: number) => del<number>('/prisoner/prisoner', { id })
 
-/** Link a support group to a prisoner, or change the link's description (the same pair again). Takes effect at once. */
+/**
+ * Link a support group to a prisoner, or change the link's description (the
+ * same pair again). Takes effect at once; answers with the prisoner (full). A
+ * superadmin links any group; a group admin only their own group, and only
+ * while it is active (README "What each role can do"): another group's is a 403.
+ */
 export const linkSupportGroup = (prisoner: number, chapter: number, description: string | null) =>
-  put<unknown>('/prisoner/support', { prisoner, chapter, description })
+  put<{ prisoner: Prisoner; chapter: number }>('/prisoner/support', { prisoner, chapter, description })
 
-/** Remove a support link. A 404 if there was none. */
+/** Remove a support link: the same people as linking. A 404 if there was none. */
 export const unlinkSupportGroup = (prisoner: number, chapter: number) => del<number>('/prisoner/support', { prisoner, chapter })

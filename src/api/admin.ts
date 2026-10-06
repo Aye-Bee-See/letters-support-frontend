@@ -1,7 +1,7 @@
 // Superadmin-only calls: the dashboard counts and the moderation decisions. Every
 // call here is a 403 for anyone else; the /admin routes are behind RequireAdmin.
 import { getList, getOne, put } from './client'
-import type { AdminSummary, AuditEntry, BanRecommendation, BanRecommendationStatus, EncryptionReadiness, ListParams, Submission, User, UserRole } from '../types'
+import type { AdminSummary, AuditEntry, BanRecommendation, EncryptionReadiness, ListParams, Submission, User, UserRole } from '../types'
 
 export const getAdminSummary = () => getOne<AdminSummary>('/moderation/summary')
 
@@ -28,9 +28,8 @@ export const rejectSubmission = (id: number, decisionNote: string) => put<Submis
 export const searchAccounts = (q: string, params?: ListParams & { role?: UserRole }) =>
   getList<User>('/auth/users', { q, page_size: 10, ...params })
 
-/** Site-wide ban recommendations from groups (API #172): pending by default, newest first, not paged. */
-export const getBanRecommendations = (status?: BanRecommendationStatus) =>
-  getOne<BanRecommendation[]>('/moderation/ban-recommendations', status ? { status } : undefined)
+/** Site-wide ban recommendations from groups (API #172). A group reads its own with the same call, so it lives in moderation.ts. */
+export { getBanRecommendations } from './moderation'
 
 /**
  * Decide one. `ban` gives the writer the banned role (every session ends at once)
