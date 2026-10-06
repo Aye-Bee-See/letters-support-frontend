@@ -332,3 +332,262 @@
   .services-grid { grid-template-columns: 1fr; }
   .settings-inner { padding: 1.5rem 0 3rem; }
 }
+
+/* ============================================================
+   React port: a group admin's pages (/settings, /invite-codes,
+   /settings/invitations). Not in the prototype: the classes the
+   shared parts take on these pages (GROUP_UI in
+   components/forms/uiClasses.ts), and the pages' own pieces.
+   admin.css is loaded only under /admin, so none of its names
+   are used here.
+   ============================================================ */
+.settings-inner-wide { max-width: 860px; }
+
+.settings-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.settings-static {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--mid);
+}
+
+select.settings-input { appearance: auto; }
+
+/* Linked records: one per line, with their buttons */
+.settings-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+}
+.settings-list li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.settings-list-name { font-family: var(--sans); font-weight: 600; }
+.settings-sub { font-family: var(--sans); font-size: 0.75rem; color: var(--mid); }
+.settings-stale { color: var(--alert); }
+
+.settings-add-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.settings-add-row .settings-input { width: auto; min-width: 200px; flex: 1; }
+
+/* Buttons: small, outlined; the save button is .settings-save-btn above */
+.settings-btn {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.8rem;
+  background: var(--white);
+  color: var(--text);
+  border: 1.5px solid var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  white-space: nowrap;
+}
+.settings-btn:hover { background: var(--text); color: var(--white); }
+.settings-btn-danger { color: var(--alert); border-color: var(--alert); }
+.settings-btn-danger:hover { background: var(--alert); color: var(--white); }
+.settings-btn:disabled,
+.settings-save-btn:disabled { opacity: 0.45; cursor: default; }
+.settings-btn:disabled:hover { background: var(--white); color: var(--text); }
+.settings-btn-danger:disabled:hover { color: var(--alert); }
+.settings-save-btn:disabled:hover { background: var(--text); }
+
+.settings-save-row > span:empty { display: none; }
+
+.settings-link-button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Notices */
+.settings-alert {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+}
+.settings-alert-ok { background: #eef6ee; border-color: #a3d4a3; border-left-color: #2a6e2a; color: #1f5a1f; }
+.settings-alert-warn { background: #fdf8e8; border-color: #e8d4a0; border-left-color: #b38600; color: #7a5500; }
+.settings-alert-err { background: var(--alert-bg); border-color: #e8b4b4; border-left-color: var(--alert); color: var(--alert); }
+.settings-alert-block { margin-bottom: 1rem; }
+.settings-alert strong { font-weight: 700; }
+
+/* Tables: batches, invitations */
+.settings-table-wrap { overflow-x: auto; }
+.settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+}
+.settings-table th {
+  text-align: left;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.settings-table td {
+  padding: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.settings-table td.num, .settings-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.settings-nowrap { white-space: nowrap; }
+.settings-actions { white-space: nowrap; text-align: right; }
+.settings-actions .settings-btn + .settings-btn { margin-left: 0.4rem; }
+
+.settings-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.settings-badge {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border);
+}
+.settings-badge-good { color: #2a6e2a; background: #eef6ee; border-color: #a3d4a3; }
+.settings-badge-wait { color: #7a5500; background: #fdf8e8; border-color: #e8d4a0; }
+.settings-badge-bad { color: var(--alert); background: var(--alert-bg); border-color: #e8b4b4; }
+
+.settings-kind { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+
+/* A token shown once (an invitation), in handoff.css's dark .token-box */
+.settings-token-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1.5px solid var(--text);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin-bottom: 2rem;
+}
+.settings-token-notice .token-box { padding: 1rem 1.25rem; flex-wrap: wrap; }
+.settings-token-notice .token-value { user-select: all; word-break: break-all; }
+.settings-token-link { font-size: 0.8rem; letter-spacing: 0; font-weight: 400; }
+
+/* /settings: the other settings pages, numbers, history */
+.settings-links {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem 1.5rem;
+  font-family: var(--sans);
+}
+.settings-links a { font-size: 0.85rem; font-weight: 700; }
+.settings-links span { display: block; font-size: 0.75rem; color: var(--mid); line-height: 1.45; }
+
+.settings-group-form { margin-bottom: 2.75rem; }
+
+.settings-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+}
+
+.settings-history { list-style: none; font-family: var(--sans); font-size: 0.8rem; }
+.settings-history li { padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+.settings-history li:last-child { border-bottom: none; }
+.settings-history-when { color: var(--mid); font-size: 0.72rem; }
+.settings-history-what { font-weight: 600; }
+
+/* /invite-codes: the codes once, and their printed slips */
+.invite-codes-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.4rem 1rem;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.invite-codes-list li { user-select: all; }
+.invite-quota { font-family: var(--sans); font-size: 0.82rem; }
+.invite-quota strong { font-size: 1rem; }
+
+/* The slips: only in print (and in the on-screen preview) */
+.invite-slips { display: none; }
+.invite-slips.is-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.invite-slip {
+  border: 1px dashed #888;
+  padding: 0.9rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 0.25rem 1rem;
+  background: var(--white);
+  color: #000;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  font-family: var(--sans);
+}
+.invite-slip-group { font-size: 0.95rem; font-weight: 800; grid-column: 1; }
+.invite-slip-what { font-size: 0.72rem; line-height: 1.45; grid-column: 1; }
+.invite-slip-code {
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  grid-column: 1;
+  margin-top: 0.25rem;
+}
+.invite-slip-link { font-family: var(--mono); font-size: 0.62rem; word-break: break-all; grid-column: 1; }
+.invite-slip-until { font-size: 0.68rem; grid-column: 1; }
+.invite-slip-qr { grid-column: 2; grid-row: 1 / span 5; align-self: center; }
+.invite-slip-qr svg { width: 96px; height: 96px; display: block; }
+
+@media print {
+  /* Only the slips: the site header and the page around them are hidden. */
+  body:has(.invite-slips) .site-header,
+  body:has(.invite-slips) .stale-banner,
+  body:has(.invite-slips) .invite-screen { display: none !important; }
+  body:has(.invite-slips) { background: #fff; }
+  body:has(.invite-slips) .settings-wrap,
+  body:has(.invite-slips) .settings-inner { max-width: none; padding: 0; margin: 0; }
+  .invite-slips,
+  .invite-slips.is-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0;
+  }
+  .invite-slip { border-color: #000; }
+}
+
+@media (max-width: 640px) {
+  .settings-actions { white-space: normal; }
+  .settings-actions .settings-btn + .settings-btn { margin-left: 0; margin-top: 0.3rem; }
+}
