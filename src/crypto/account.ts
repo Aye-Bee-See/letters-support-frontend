@@ -223,6 +223,23 @@ export async function unlockGroupKey(
   return asKeypair(privateKey, orgKey.chapterPublicKey)
 }
 
+/**
+ * Open a managed writer's private key from `orgWrappedPrivateKey` (GET /auth/writers),
+ * which the group's browser sealed to the group key when it made the writer
+ * (README "Managed writers and claiming"). For handing the writer their account
+ * with a claim token. Checked against the writer's public key; throws if the copy
+ * was sealed to another group key (the group rotated since this session signed in).
+ */
+export async function unlockManagedWriterKey(
+  writer: { orgWrappedPrivateKey: string; publicKey: string },
+  group: Keypair,
+): Promise<Keypair> {
+  const raw = await openSealed(writer.orgWrappedPrivateKey, group)
+  const privateKey = await toBase64(raw)
+  await wipe(raw)
+  return asKeypair(privateKey, writer.publicKey)
+}
+
 /** Seal a private key (a group's, or a managed writer's) to someone's public key. */
 export async function sealPrivateKeyTo(privateKey: string, recipientPublicKey: string): Promise<string> {
   const raw = await fromBase64(privateKey)

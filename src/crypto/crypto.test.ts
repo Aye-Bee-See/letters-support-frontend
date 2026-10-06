@@ -13,6 +13,7 @@ import {
   signInKeys,
   unlockAccount,
   unlockGroupKey,
+  unlockManagedWriterKey,
   unlockWithClaimToken,
   unlockWithRecoveryCode,
 } from './account'
@@ -169,6 +170,28 @@ describe('account flows', () => {
     expect(await unlockGroupKey({ wrappedOrgPrivateKey, chapterPublicKey: group.publicKey }, member)).toEqual(group)
     const outsider = await generateKeypair()
     await expect(unlockGroupKey({ wrappedOrgPrivateKey, chapterPublicKey: group.publicKey }, outsider)).rejects.toThrow()
+  })
+})
+
+describe('managed writers', () => {
+  it('opens a writer key the group sealed, and hands it on with a claim token', { timeout: SLOW }, async () => {
+    const group = await generateKeypair()
+    const writer = await generateKeypair()
+    const orgWrappedPrivateKey = await sealPrivateKeyTo(writer.privateKey, group.publicKey)
+    const opened = await unlockManagedWriterKey({ orgWrappedPrivateKey, publicKey: writer.publicKey }, group)
+    expect(opened).toEqual(writer)
+    const claim = await createClaimToken(opened.privateKey)
+    expect(await unlockWithClaimToken({ ...claim.fields, publicKey: writer.publicKey }, claim.token)).toEqual(writer)
+  })
+
+  it('refuses a writer key sealed to another group key, or belonging to another writer', async () => {
+    const group = await generateKeypair()
+    const rotated = await generateKeypair()
+    const writer = await generateKeypair()
+    const orgWrappedPrivateKey = await sealPrivateKeyTo(writer.privateKey, group.publicKey)
+    await expect(unlockManagedWriterKey({ orgWrappedPrivateKey, publicKey: writer.publicKey }, rotated)).rejects.toThrow()
+    const other = await generateKeypair()
+    await expect(unlockManagedWriterKey({ orgWrappedPrivateKey, publicKey: other.publicKey }, group)).rejects.toThrow(/does not match/)
   })
 })
 

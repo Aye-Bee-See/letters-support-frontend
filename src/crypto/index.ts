@@ -16,6 +16,7 @@ export {
   signInKeys,
   unlockAccount,
   unlockGroupKey,
+  unlockManagedWriterKey,
   unlockWithClaimToken,
   unlockWithRecoveryCode,
   type ClaimMaterial,
