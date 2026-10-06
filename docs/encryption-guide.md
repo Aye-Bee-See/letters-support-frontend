@@ -279,7 +279,7 @@ When someone forgets their password, the recovery code is the only way back in. 
 
 - **`openLetter(message, reader)`** picks the envelope this reader can open: their own (`readerType: "user"`, their id), or, for a group admin holding the group key, the group's (`readerType: "chapter"`). It opens the envelope to get the letter's content key, then decrypts the body and relay note. It never throws; it returns one of three states:
   - `open`: the text and relay note, plus the content key, kept for attachments. The text is `null` when there's no typed body, as with a paper letter or a scan-only reply.
-  - `waiting`: there's no envelope for this reader yet, for example a reply recorded before the writer had keys. The page says "Your group will share this letter with you shortly." (The group's client adds the missing envelope; that's Step 6.)
+  - `waiting`: there's no envelope for this reader yet, for example a reply recorded before the writer had keys. The page says "Your group will share this letter with you shortly." (The group's client adds the missing envelope; that's WP2, `group-writers`.)
   - `unreadable`: an envelope that wouldn't open, or ciphertext that failed to decrypt. XChaCha20-Poly1305 refuses altered data rather than returning garbage.
 - **`openAttachment(attachment, contentKey)`** downloads the stored file, which in end-to-end mode is ciphertext, and decrypts it with the letter's content key and the attachment's own nonce. It returns a `Blob` of the original type.
 
@@ -312,18 +312,22 @@ Tested against the local API: a typed letter with a note and a file, the same le
 | --- | --- |
 | Crypto core (`src/crypto/`) | Built and tested (Step 3) |
 | Sign-in: split only (plain refused), unlocking keys | Built (Step 4) |
-| Dev script moving local seeded accounts to split | Built |
+| Dev script for local seeded accounts: plain moved to split, keyless split accounts given keys under their existing salt (web #3) | Built (`group-foundation`) |
 | Join with an invite code: keys made with the account, recovery code confirmed | Built (Step 4) |
 | Claim: the group-made keypair re-locked under the writer's password | Built (Step 4) |
 | Local backend switched to end-to-end mode | Done 25 September |
 | Recovery with a recovery code: same keypair, new password and new recovery code | Built (Step 4) |
 | Every account has keys; sign-in refuses a keyless account | Built (Step 4) |
 | First superadmin created with keys (bootstrap setup code) | API side (Pax), `questions-for-pax.md` H |
-| Group key creation and approving access (group-owner admin) | Step 6 |
+| Group key creation and approving access (group-owner admin) | WP3, `group-keys` (wrappers and `useGroup` in WP0, `group-foundation`) |
 | Reading letters: envelopes, bodies, relay notes, attachments (Thread page) | Built (Step 5) |
 | Writing and sending letters: New Letter, reply panel, paper letters, scans | Built (Step 5) |
-| Group inbox: print queue, printing with the reply reference, recording replies | Step 5, next |
-| Group keys: hand-over, rotation, managed writers, claim tokens | Step 6 |
+| Group inbox: print queue, printing with the reply reference, sharing with a partner group | WP1, `group-inbox` |
+| Recording a prisoner's reply by reply reference or pen name | WP5, `group-replies` |
+| Group keys: hand-over, ownership, rotation | WP3, `group-keys` |
+| Managed writers: keys sealed to the group, claim tokens, writing as a writer, missing envelopes after sign-in | WP2, `group-writers` |
+
+The WP numbers are the work packages of `group-admin-plan.md` (6 October), each a branch of that name.
 
 ## 10. Known limits
 
