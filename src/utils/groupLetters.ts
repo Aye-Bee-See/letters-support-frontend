@@ -1,4 +1,4 @@
-import type { ApiError, DeclineReason, HeldReason, LetterFooter, LetterStatus, Message, ReturnReason } from '../types'
+import type { ApiError, DeclineReason, HeldReason, LetterFooter, LetterStatus, MailRule, Message, Prison, ReturnReason } from '../types'
 
 // Wording for the group inbox and the one-letter print page (group-admin-plan.md,
 // WP1). The API sends codes; these are the group admin's words for them. Nothing
@@ -83,6 +83,21 @@ export const DECLINE_REASONS: { value: DeclineReason; label: string }[] = [
 export function declineText(m: Pick<Message, 'declineReason' | 'declineRuleLabel'>): string {
   const reason = DECLINE_REASONS.find((r) => r.value === m.declineReason)?.label ?? 'Not sent'
   return m.declineReason === 'facility_rule' && m.declineRuleLabel ? `${reason}: “${m.declineRuleLabel}”` : reason
+}
+
+/**
+ * The mail rules a batch decline may name, from the queue's full=true rows. The
+ * API checks the rule against each letter's own facility (`400 not_eligible`,
+ * README "Declined letters"), so rules are offered only when every selected
+ * letter is at one facility; otherwise `why` says why `facility_rule` isn't.
+ */
+export function batchDeclineRules(letters: Pick<Message, 'prisoner_details'>[]): { rules: MailRule[]; why: string } {
+  const facilities = new Set(letters.map((m) => m.prisoner_details?.prison ?? null))
+  if (facilities.has(null)) return { rules: [], why: 'a selected letter has no facility listed' }
+  if (facilities.size > 1) return { rules: [], why: 'the selected letters are at different facilities: select letters to one facility to name its rule' }
+  const prison = (letters[0]?.prisoner_details?.prison_details ?? null) as Prison | null
+  const rules = (prison?.mail_rule_details ?? []).filter((r) => !r.retired)
+  return { rules, why: 'this facility lists no mail rules' }
 }
 
 /** Return and decline notes: at most 200 characters, shown to the writer, never encrypted. */

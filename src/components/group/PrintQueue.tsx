@@ -4,8 +4,9 @@ import { toApiError } from '../../api/client'
 import { getMessages, setLetterStatusBatch } from '../../api/letters'
 import { useApi } from '../../hooks/useApi'
 import type { GroupKeyState } from '../../hooks/useGroup'
-import type { Message, Prison } from '../../types'
+import type { DeclineReason, Message, Prison } from '../../types'
 import {
+  batchDeclineRules,
   declineText,
   EMPTY_QUEUE,
   heldReasonShort,
@@ -22,6 +23,7 @@ import { displayName } from '../../utils/prisoners'
 import FilterChip from '../ui/FilterChip'
 import LoadState from '../ui/LoadState'
 import StatusNotice from '../ui/StatusNotice'
+import { DeclineForm } from './DeclineLetter'
 
 // The group's print queue (group-admin-plan.md, WP1 "To print"). Rows come from
 // GET /messaging/messages?relayChapter=&status=&held=&full=true (README "GET
@@ -30,10 +32,12 @@ import StatusNotice from '../ui/StatusNotice'
 // decrypted. Marking goes through PUT /messaging/status/batch, all or none
 // (README "PUT /messaging/status/batch"); a held letter is printed only with
 // `release: true`, after the group admin confirms (README "Moved and freed").
+// "Don't send" declines the selected letters the same way (README "Declined
+// letters"): queued, held or printed, held ones without `release`.
 
 const PAGE_SIZE = 50
 
-/** What a filter's selected letters can be marked as, if anything. */
+/** What a filter's selected letters can be marked as, if anything. These filters' letters can be declined too; mailed and later can't. */
 const BATCH_MOVE: Partial<Record<QueueFilter, { target: 'printed' | 'mailed'; label: string; release?: true }>> = {
   queued: { target: 'printed', label: 'Mark printed' },
   held: { target: 'printed', label: 'Mark printed', release: true },
@@ -127,6 +131,7 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
   )
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [confirming, setConfirming] = useState(false)
+  const [declining, setDeclining] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'error' | 'done'; text: string } | null>(null)
 
@@ -135,7 +140,11 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
   const pages = list.data ? Math.max(1, Math.ceil(list.data.total / PAGE_SIZE)) : 1
   // Printing needs the letters open; marking mailed only needs them on paper already.
   const canMove = !!move && (move.target === 'mailed' || keyState === 'ready')
-  const chosen = rows.filter((m) => selected.has(m.id)).map((m) => m.id)
+  const chosenRows = rows.filter((m) => selected.has(m.id))
+  const chosen = chosenRows.map((m) => m.id)
+  const declineRules = batchDeclineRules(chosenRows)
+  // Deselecting every letter closes the form; selecting again opens it where it was.
+  const showDecline = declining && chosen.length > 0
 
   const toggle = (id: number) =>
     setSelected((s) => {
@@ -161,6 +170,27 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
       setConfirming(false)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function decline(reason: DeclineReason, rule: string | null, note: string): Promise<string | null> {
+    if (chosen.length === 0) return 'Select the letters not to send.'
+    try {
+      const done = await setLetterStatusBatch(chosen, { status: 'declined', reason, ...(rule ? { rule } : {}), ...(note ? { note } : {}) })
+      setNotice({
+        kind: 'done',
+        text: `${done.count === 1 ? '1 letter' : `${done.count} letters`} not sent. ${done.count === 1 ? 'The writer is' : 'Each writer is'} told why, and may write it again.`,
+      })
+      setSelected(new Set())
+      setDeclining(false)
+      list.reload()
+      return null
+    } catch (err) {
+      const apiError = toApiError(err)
+      // A rule some letter's facility doesn't carry (any more): `not_eligible` on the field.
+      return apiError.status === 400 && reason === 'facility_rule'
+        ? 'That rule isn’t one of the facility’s rules any more. Nothing was marked; reload and pick again.'
+        : statusRefusal(apiError, chosen, 'declined')
     }
   }
 
@@ -198,15 +228,28 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
       {move && rows.length > 0 && (
         <div className="queue-batch-bar">
           <span>{chosen.length === 0 ? 'Select letters to mark them together.' : `${chosen.length} selected`}</span>
-          {!confirming && (
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              disabled={!canMove || chosen.length === 0 || busy}
-              onClick={() => (move.release ? setConfirming(true) : run())}
-            >
-              {busy ? 'Marking…' : move.label}
-            </button>
+          {!confirming && !showDecline && (
+            <>
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                disabled={!canMove || chosen.length === 0 || busy}
+                onClick={() => (move.release ? setConfirming(true) : run())}
+              >
+                {busy ? 'Marking…' : move.label}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                disabled={chosen.length === 0 || busy}
+                onClick={() => {
+                  setNotice(null)
+                  setDeclining(true)
+                }}
+              >
+                Don’t send
+              </button>
+            </>
           )}
           {move.target === 'printed' && keyState !== 'ready' && (
             <span>
@@ -230,6 +273,16 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
             Cancel
           </button>
         </div>
+      )}
+
+      {showDecline && (
+        <DeclineForm
+          rules={declineRules.rules}
+          noRulesWhy={declineRules.why}
+          count={chosen.length}
+          onDecline={decline}
+          onCancel={() => setDeclining(false)}
+        />
       )}
 
       <LoadState state={list} what="the letters" />

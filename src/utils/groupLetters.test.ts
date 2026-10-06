@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { ApiError, LetterFooter } from '../types'
-import { declineText, footerSentence, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
+import type { ApiError, LetterFooter, MailRule, Message } from '../types'
+import { batchDeclineRules, declineText, footerSentence, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -87,5 +87,24 @@ describe('batch refusals (README "PUT /messaging/status/batch")', () => {
     )
     expect(statusRefusal(error({ status: 404, name: 'NotFoundError', message: 'Message 42 not found' }), ids, 'printed')).toMatch(/^Letter 42 is gone/)
     expect(statusRefusal(error({ status: 409, message: '' }), ids, 'printed')).toContain('Nothing was marked')
+  })
+})
+
+describe('batchDeclineRules (README "Declined letters")', () => {
+  const rule = (tag: string, retired = false): MailRule => ({ id: tag.length, tag, category: 'format' as MailRule['category'], label: tag, description: null, retired })
+  const at = (prison: number | null, rules: MailRule[] = []) =>
+    ({ prisoner_details: { prison, prison_details: prison === null ? null : { id: prison, mail_rule_details: rules } } }) as unknown as Pick<Message, 'prisoner_details'>
+
+  it('offers the facility’s current rules when every letter is at one facility', () => {
+    const rules = [rule('handwritten_only'), rule('no_cards', true)]
+    expect(batchDeclineRules([at(7, rules), at(7, rules)]).rules.map((r) => r.tag)).toEqual(['handwritten_only'])
+  })
+
+  it('offers no rule across facilities, or for a letter with none, and says why', () => {
+    const across = batchDeclineRules([at(7, [rule('handwritten_only')]), at(8, [rule('handwritten_only')])])
+    expect(across.rules).toEqual([])
+    expect(across.why).toContain('different facilities')
+    expect(batchDeclineRules([at(7, [rule('a')]), at(null)]).why).toContain('no facility')
+    expect(batchDeclineRules([at(7)]).why).toContain('no mail rules')
   })
 })
