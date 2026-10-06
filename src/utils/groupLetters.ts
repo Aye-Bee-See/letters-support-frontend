@@ -168,3 +168,24 @@ export function statusRefusal(error: ApiError, ids: number[], target: LetterStat
   if (error.status === 400) return `The server refused this change.${nothing}`
   return `Something went wrong on the server (${error.status}).${nothing} Try again later.`
 }
+
+// --- Sharing with a partner group (README "Sending and reading letters") --------
+
+export type ShareOutcome = { kind: 'done' | 'error'; text: string }
+
+/**
+ * What POST /messaging/envelope's refusal means for a share. `retry` for a
+ * first 409 KeyVersionError (the partner rotated its key while it was being
+ * sealed: fetch the key again and seal once more); a second one says so. A 409
+ * EnvelopeError means the partner holds an envelope already. Matched on the
+ * error's name, never on the status alone.
+ */
+export function shareRefusal(error: ApiError, partner: string, retried: boolean): ShareOutcome | 'retry' {
+  if (error.status === 409 && error.name === 'KeyVersionError')
+    return retried ? { kind: 'error', text: `${partner} changed its key again while this was being shared. Try once more.` } : 'retry'
+  if (error.status === 409 && error.name === 'EnvelopeError') return { kind: 'done', text: `${partner} can already read this letter.` }
+  if (error.status === 400) return { kind: 'error', text: `${partner} can’t be given this letter: it may no longer relay for this facility.` }
+  if (error.status === 403) return { kind: 'error', text: 'Only a group that can read this letter can share it.' }
+  if (error.status === 0) return { kind: 'error', text: 'Couldn’t reach the server. Try again.' }
+  return { kind: 'error', text: `Couldn’t share the letter (${error.status}). Try again later.` }
+}

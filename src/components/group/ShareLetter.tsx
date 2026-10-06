@@ -3,18 +3,18 @@ import { toApiError } from '../../api/client'
 import { addEnvelope, getGroupPublicKey } from '../../api/letters'
 import { envelopeFor } from '../../crypto'
 import type { Chapter } from '../../types'
+import { shareRefusal, type ShareOutcome } from '../../utils/groupLetters'
 
 // Share with a partner group (README "Sending and reading letters"): give another
 // group that relays for the prisoner's facility its own envelope, sealed to its
 // current public key with that key's version, through POST /messaging/envelope.
-// A 409 means it has one already, or rotated its key meanwhile: the key is
-// fetched again and sealed once more, and if it is still refused the group
-// already holds the letter.
+// A 409 KeyVersionError means it rotated its key meanwhile: the key is fetched
+// again and sealed once more. A 409 EnvelopeError means it holds the letter
+// already. shareRefusal words each answer.
 
-type Outcome = { kind: 'done' | 'error'; text: string }
-
-async function shareWith(messageId: number, partner: Chapter, contentKey: Uint8Array): Promise<Outcome> {
-  for (let attempt = 0; attempt < 2; attempt++) {
+async function shareWith(messageId: number, partner: Chapter, contentKey: Uint8Array): Promise<ShareOutcome> {
+  // Ends by the second attempt: shareRefusal answers `retry` only to the first.
+  for (let attempt = 0; ; attempt++) {
     const key = await getGroupPublicKey(partner.id)
     if (!key.publicKey) return { kind: 'error', text: `${partner.name} has no group key yet, so nothing can be shared with it.` }
     const envelope = await envelopeFor(contentKey, { readerType: 'chapter', readerId: partner.id, publicKey: key.publicKey, keyVersion: key.keyVersion })
@@ -22,24 +22,19 @@ async function shareWith(messageId: number, partner: Chapter, contentKey: Uint8A
       await addEnvelope({ message: messageId, readerType: 'chapter', readerId: partner.id, wrappedKey: envelope.wrappedKey, keyVersion: key.keyVersion })
       return { kind: 'done', text: `Shared: ${partner.name} can read this letter now.` }
     } catch (err) {
-      const error = toApiError(err)
+      const outcome = shareRefusal(toApiError(err), partner.name, attempt > 0)
       // Rotated while we sealed: fetch its key again and try once more.
-      if (error.status === 409 && error.name === 'KeyVersionError' && attempt === 0) continue
-      if (error.status === 409) return { kind: 'done', text: `${partner.name} can already read this letter.` }
-      if (error.status === 400) return { kind: 'error', text: `${partner.name} can’t be given this letter: it may no longer relay for this facility.` }
-      if (error.status === 403) return { kind: 'error', text: 'Only a group that can read this letter can share it.' }
-      if (error.status === 0) return { kind: 'error', text: 'Couldn’t reach the server. Try again.' }
-      return { kind: 'error', text: `Couldn’t share the letter (${error.status}). Try again later.` }
+      if (outcome === 'retry') continue
+      return outcome
     }
   }
-  return { kind: 'error', text: `${partner.name} changed its key twice while this was being shared. Try again.` }
 }
 
 export default function ShareLetter({ messageId, partners, contentKey }: { messageId: number; partners: Chapter[]; contentKey: Uint8Array }) {
   const [open, setOpen] = useState(false)
   const [partnerId, setPartnerId] = useState('')
   const [busy, setBusy] = useState(false)
-  const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const [outcome, setOutcome] = useState<ShareOutcome | null>(null)
 
   async function submit() {
     const partner = partners.find((p) => String(p.id) === partnerId)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, LetterFooter, MailRule, Message } from '../types'
-import { batchDeclineRules, declineText, footerSentence, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
+import { batchDeclineRules, declineText, shareRefusal, footerSentence, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -106,5 +106,18 @@ describe('batchDeclineRules (README "Declined letters")', () => {
     expect(across.why).toContain('different facilities')
     expect(batchDeclineRules([at(7, [rule('a')]), at(null)]).why).toContain('no facility')
     expect(batchDeclineRules([at(7)]).why).toContain('no mail rules')
+  })
+})
+
+describe('shareRefusal (POST /messaging/envelope)', () => {
+  it('retries a first KeyVersionError and says so on a second', () => {
+    const rotated = error({ name: 'KeyVersionError' })
+    expect(shareRefusal(rotated, 'PDX ABC', false)).toBe('retry')
+    expect(shareRefusal(rotated, 'PDX ABC', true)).toEqual({ kind: 'error', text: expect.stringContaining('changed its key again') })
+  })
+
+  it('reads an EnvelopeError as already shared, and any other 409 as a refusal', () => {
+    expect(shareRefusal(error({ name: 'EnvelopeError' }), 'PDX ABC', false)).toEqual({ kind: 'done', text: 'PDX ABC can already read this letter.' })
+    expect(shareRefusal(error({ name: 'EncryptionModeError' }), 'PDX ABC', true)).toEqual({ kind: 'error', text: expect.stringContaining('(409)') })
   })
 })
