@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getNotifications } from '../../api/notifications'
+import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useApi } from '../../hooks/useApi'
 import type { Notification } from '../../types'
 import { inboxDate } from '../../utils/letters'
@@ -8,6 +10,10 @@ import { wordEvent } from '../../utils/notifications'
 // The group's recent feed entries, worded (README "The feed"): letters arriving
 // to print, status moves, key and ownership changes, blocks, and site admins'
 // decisions on the group's recommendations. Entries hold ids, never content.
+// An unread `group.key` entry means the key was set up, handed, taken back or
+// rotated since this session opened it (README "Group keys"): the session reads
+// its group key again, so the inbox works with the new one without a visit to
+// the keys page or a new sign-in.
 
 const SHOWN = 8
 
@@ -22,6 +28,12 @@ function linkOf(n: Notification): string | null {
 
 export default function GroupActivity() {
   const feed = useApi(() => getNotifications(SHOWN), [])
+  const refreshKey = useGroupKeyRefresh()
+  const keyChanged = (feed.data ?? []).some((n) => n.event === 'group.key' && !n.readAt)
+  useEffect(() => {
+    // Quiet: on a failure the session keeps the key it has, and the next visit tries again.
+    if (keyChanged) void refreshKey().catch(() => null)
+  }, [keyChanged, refreshKey])
   if (feed.loading) return <p className="sidebar-info">Loading…</p>
   // The inbox works without it: say nothing more than that it couldn't load.
   if (feed.error) return <p className="sidebar-info">Recent activity couldn’t be loaded.</p>
