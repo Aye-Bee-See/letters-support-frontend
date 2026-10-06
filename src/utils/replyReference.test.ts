@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkReference, formatReference, normalizeReference } from './replyReference'
+import { checkReference, describeReferenceError, formatReference, normalizeReference } from './replyReference'
 
 describe('normalizeReference', () => {
   it('keeps the digits, dropping dashes, spaces and dots', () => {
@@ -25,6 +25,14 @@ describe('checkReference', () => {
     expect(checkReference('4827-1935')).toBe('incomplete')
     expect(checkReference('4827-1935-88')).toBe('incomplete')
     expect(checkReference('4827-1935-A')).toBe('incomplete')
+  })
+})
+
+describe('describeReferenceError', () => {
+  it('words the two refusals from name and condition, and nothing else', () => {
+    expect(describeReferenceError({ name: 'ReplyReferenceError', condition: 'checksum' })).toMatch(/mistake in it/)
+    expect(describeReferenceError({ name: 'ReplyReferenceError', condition: 'unknown' })).toMatch(/not one of your group’s letters/)
+    expect(describeReferenceError({ name: 'ValidationError', condition: null })).toBeNull()
   })
 })
 

@@ -4,6 +4,8 @@
 // other codes. The API checks the number too; checking it here as well tells
 // the volunteer about a slip of the pen before anything is sent.
 
+import type { ApiError } from '../types'
+
 export const REFERENCE_LENGTH = 9
 
 /** What the volunteer typed, as digits: spaces, dashes and dots dropped, as the API does. */
@@ -44,4 +46,16 @@ export function formatReference(value: string): string {
   const digits = normalizeReference(value)
   if (!/^[0-9]{9}$/.test(digits)) return value
   return `${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8)}`
+}
+
+/**
+ * A refused reply reference, worded from `name` and `condition` (README "Reply
+ * reference"): a 400 `checksum` is a copying mistake; a 404 `unknown` is a
+ * number that isn't one of this group's letters (or was never issued: the API
+ * answers both the same, so numbers can't be used to fish). Null for any other error.
+ */
+export function describeReferenceError(e: Pick<ApiError, 'name' | 'condition'>): string | null {
+  if (e.name !== 'ReplyReferenceError') return null
+  if (e.condition === 'checksum') return 'That number has a mistake in it; check it against the letter.'
+  return 'That number is not one of your group’s letters. Check it against the letter, or find the writer by name.'
 }

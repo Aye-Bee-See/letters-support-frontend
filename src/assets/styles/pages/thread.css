@@ -544,6 +544,43 @@
 
 .reply-submit-note strong { color: var(--text); font-weight: 600; }
 
+/* Recording a prisoner's reply (/replies/new; not in the prototype): the
+   reference or name field, and what the reference points at. */
+.reply-reference-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+
+.reply-reference-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 22rem;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.7rem;
+  background: var(--white);
+  outline: none;
+}
+
+.reply-reference-input:focus { border-color: #888; }
+
+.reply-found {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--off-white);
+}
+
+.reply-found .thread-sidebar-heading { margin-bottom: 0.15rem; }
+
 /* ============================================================
    SIDEBAR — thread context
    ============================================================ */
