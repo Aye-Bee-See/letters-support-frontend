@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useGroup } from '../../hooks/useGroup'
+import { useGroupHousekeeping } from '../../hooks/useGroupHousekeeping'
 import LoadState from '../ui/LoadState'
 
 // Wraps every group admin's page (a layout route in App.tsx), so no page
@@ -54,6 +55,8 @@ export default function GroupGate() {
   const { user } = useAuth()
   const { pathname } = useLocation()
   const group = useGroup()
+  // Keys for keyless writers and envelopes for waiting letters, once per session (README "Latecomers").
+  useGroupHousekeeping(group)
   const page = <Outlet />
 
   if (user?.role !== 'chapter') return page
