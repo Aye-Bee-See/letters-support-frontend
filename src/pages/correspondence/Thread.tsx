@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
@@ -99,8 +99,8 @@ function DeclinedNote({ m }: { m: Message }) {
   )
 }
 
-/** Why a queued letter is held, for its writer. */
-function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>): string | null {
+/** Why a queued letter is held, for its writer (or, for `writer_blocked`, for the group admins who blocked them). */
+function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>, forGroup: boolean): ReactNode {
   switch (m.heldReason) {
     case 'choose_relay':
       return `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now.`
@@ -109,6 +109,14 @@ function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBl
     case 'prisoner_free':
       return `${prisonerName} has been released. The group will decide whether this letter can still be sent.`
     case 'writer_blocked': {
+      // A group admin reads this in the thread of a writer their group blocked
+      // (README "Blocking a writer"); unblocking is on Blocked writers or in the sidebar.
+      if (forGroup)
+        return (
+          <>
+            Held: your group blocked this writer. <Link to="/blocked-writers">Blocked writers</Link>
+          </>
+        )
       const group = m.relay_group?.name ?? 'The group that mails this letter'
       // The reason they gave, from GET /auth/blocks (API #179); the notification may be long read.
       const block = m.relayChapter !== null ? blocks.get(m.relayChapter) : undefined
@@ -189,6 +197,7 @@ function LetterItem({
   prisonerName,
   writerName,
   blocks,
+  forGroup,
   onWriteAgain,
   onCorrected,
 }: {
@@ -197,6 +206,8 @@ function LetterItem({
   prisonerName: string
   writerName: string
   blocks: Map<number, WriterBlock>
+  /** The reader is a group admin. */
+  forGroup: boolean
   /** Offered on the writer's own returned and declined letters, when a reply can be sent. */
   onWriteAgain?: (resend: Resend) => void
   /** Group admins, on a reply their group may correct: Edit transcription and Delete, then this. */
@@ -206,7 +217,7 @@ function LetterItem({
   const { message: m, opened } = item
   const outbound = m.sender === 'user'
   const status = statusOf(m)
-  const held = heldText(m, prisonerName, blocks)
+  const held = heldText(m, prisonerName, blocks, forGroup)
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
@@ -288,7 +299,21 @@ function LetterItem({
   )
 }
 
-function Sidebar({ chat, letters, showWriter }: { chat: Chat; letters: OpenedMessage[]; showWriter: boolean }) {
+function Sidebar({
+  chat,
+  letters,
+  showWriter,
+  blockNotice,
+  onBlockChanged,
+}: {
+  chat: Chat
+  letters: OpenedMessage[]
+  showWriter: boolean
+  /** What the last block or unblock did, kept across the reload that follows it. */
+  blockNotice: string | null
+  /** After the group blocks or unblocks the writer: their held letters changed. */
+  onBlockChanged: (notice: string) => void
+}) {
   const prisoner = chat.prisoner_details as Prisoner | null | undefined
   const prison = prisoner?.prison_details as Prison | null | undefined
   const address = prison ? addressLine(prison.address) : null
@@ -326,7 +351,7 @@ function Sidebar({ chat, letters, showWriter }: { chat: Chat; letters: OpenedMes
               )}
             </div>
             {/* Block from our group, recommend a site-wide block (WP4b); nothing for a writer the group looks after. */}
-            <WriterBlockActions writer={chat.user_details} />
+            <WriterBlockActions writer={chat.user_details} initialNotice={blockNotice} onChanged={onBlockChanged} />
           </div>
         </>
       )}
@@ -381,6 +406,9 @@ export default function Thread() {
   )
   // A returned or declined letter being written again in the reply panel below.
   const [resend, setResend] = useState<Resend | null>(null)
+  // A block or unblock from the sidebar holds or releases this writer's letters,
+  // so the thread loads again; the sidebar's notice is kept across that reload.
+  const [blockNotice, setBlockNotice] = useState<string | null>(null)
   // Groups not mailing this writer's letters, and why (empty for anyone else).
   const blocksState = useApi(getMyBlocks, [])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
@@ -442,6 +470,7 @@ export default function Thread() {
                 prisonerName={prisonerName}
                 writerName={writerName}
                 blocks={blocks}
+                forGroup={isChapter}
                 onWriteAgain={
                   !isChapter && prisoner?.prison
                     ? (r) => {
@@ -486,7 +515,16 @@ export default function Thread() {
           )}
         </main>
 
-        <Sidebar chat={chat} letters={letters} showWriter={isChapter} />
+        <Sidebar
+          chat={chat}
+          letters={letters}
+          showWriter={isChapter}
+          blockNotice={blockNotice}
+          onBlockChanged={(notice) => {
+            setBlockNotice(notice)
+            page.reload()
+          }}
+        />
       </div>
     </div>
   )

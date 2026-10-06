@@ -29,12 +29,23 @@ import '../../assets/styles/pages/blocked-writers.css'
 // - Recommend a site-wide block: README "Recommending a site-wide block"
 //   (POST /moderation/ban-recommendation). Only a site admin reads the reason;
 //   the writer is not told. One waiting recommendation per group and writer.
+// A block or unblock calls `onChanged` with the notice it shows, so the page can
+// reload what the block changed (the Thread's held letters); the page hands the
+// notice back as `initialNotice` when this remounts after that reload.
 // Renders nothing for anyone but a real writer: not a writer this group looks
 // after, not an anonymous writer, not a group admin or a site admin.
 
 type Form = 'block' | 'recommend' | 'unblock' | null
 
-export default function WriterBlockActions({ writer }: { writer: BlockableWriter }) {
+export default function WriterBlockActions({
+  writer,
+  initialNotice = null,
+  onChanged,
+}: {
+  writer: BlockableWriter
+  initialNotice?: string | null
+  onChanged?: (notice: string) => void
+}) {
   const { user } = useAuth()
   const chapterId = user?.role === 'chapter' ? user.chapterId : null
   const allowed = canActOn(writer, chapterId)
@@ -48,7 +59,7 @@ export default function WriterBlockActions({ writer }: { writer: BlockableWriter
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(initialNotice)
 
   if (!allowed) return null
   // Quiet until we know whether the group has blocked them; a failure says so.
@@ -75,6 +86,8 @@ export default function WriterBlockActions({ writer }: { writer: BlockableWriter
       setReason('')
       blocks.reload()
       recommendations.reload()
+      // A recommendation changes nothing in the queue; a block or unblock does.
+      if (refusalFor !== 'recommend') onChanged?.(message)
     } catch (err) {
       const e = err as ApiError
       setError(blockRefusal(e, refusalFor))
