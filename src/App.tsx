@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import AdminLayout, { AdminStyles } from './components/layout/AdminLayout'
+import GroupGate from './components/layout/GroupGate'
 import { PenNameLock, RequireAdmin, RequireAuth, TwoFactorSetupLock } from './components/layout/RouteGuards'
 import ScrollToTop from './components/layout/ScrollToTop'
 
@@ -25,10 +26,16 @@ import Join from './pages/auth/Join'
 
 import InboxWriter from './pages/inbox/InboxWriter'
 import InboxOrg from './pages/inbox/InboxOrg'
+import PrintLetter from './pages/inbox/PrintLetter'
 import Thread from './pages/correspondence/Thread'
 import NewLetter from './pages/correspondence/NewLetter'
+import RecordReply from './pages/correspondence/RecordReply'
 
+import BlockedWriters from './pages/org/BlockedWriters'
 import CreateWriter from './pages/org/CreateWriter'
+import EditWriter from './pages/org/EditWriter'
+import GroupInvitations from './pages/org/GroupInvitations'
+import GroupKeys from './pages/org/GroupKeys'
 import Handoff from './pages/org/Handoff'
 import InviteCodes from './pages/org/InviteCodes'
 import OrgSettings from './pages/org/OrgSettings'
@@ -83,9 +90,12 @@ export default function App() {
             <Route path="invitation" element={<AcceptInvitation />} />
 
             <Route element={<RequireAuth roles={['user', 'chapter']} />}>
-              <Route path="inbox" element={<InboxRoute />} />
-              <Route path="threads/:id" element={<Thread />} />
-              <Route path="letters/new" element={<NewLetter />} />
+              {/* The group notices for group admins; writers pass straight through. */}
+              <Route element={<GroupGate />}>
+                <Route path="inbox" element={<InboxRoute />} />
+                <Route path="threads/:id" element={<Thread />} />
+                <Route path="letters/new" element={<NewLetter />} />
+              </Route>
             </Route>
 
             {/* Every signed-in account, superadmins included: two-factor sign-in. */}
@@ -96,11 +106,20 @@ export default function App() {
               <Route path="account/pen-name" element={<PenName />} />
             </Route>
 
+            {/* Group admins (group-admin-plan.md): GroupGate says when the group isn't active or the key isn't held. */}
             <Route element={<RequireAuth roles={['chapter']} />}>
-              <Route path="writers/new" element={<CreateWriter />} />
-              <Route path="writers/:id/handoff" element={<Handoff />} />
-              <Route path="invite-codes" element={<InviteCodes />} />
-              <Route path="settings" element={<OrgSettings />} />
+              <Route element={<GroupGate />}>
+                <Route path="writers/new" element={<CreateWriter />} />
+                <Route path="writers/:id/edit" element={<EditWriter />} />
+                <Route path="writers/:id/handoff" element={<Handoff />} />
+                <Route path="invite-codes" element={<InviteCodes />} />
+                <Route path="settings" element={<OrgSettings />} />
+                <Route path="settings/keys" element={<GroupKeys />} />
+                <Route path="settings/invitations" element={<GroupInvitations />} />
+                <Route path="blocked-writers" element={<BlockedWriters />} />
+                <Route path="replies/new" element={<RecordReply />} />
+                <Route path="letters/:id/print" element={<PrintLetter />} />
+              </Route>
             </Route>
           </Route>
 

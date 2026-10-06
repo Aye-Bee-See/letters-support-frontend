@@ -99,6 +99,14 @@ export type NotificationEvent =
   | 'group.key'
   | 'group.owner'
   | 'group.waiting'
+  /** To a group's admins: a writer was blocked from the group, or the block lifted (API #171). */
+  | 'group.block'
+  /** To the writer a group blocked or unblocked (API #171). */
+  | 'writer.block'
+  /** To every superadmin: a group recommends a site-wide block (API #172). */
+  | 'ban.recommended'
+  /** To the recommending group's admins: a superadmin decided (API #172). */
+  | 'ban.decided'
 
 /** Every record carries these. */
 export interface Timestamps {
@@ -342,7 +350,7 @@ export interface Message extends Timestamps {
   statusChangedAt: string | null
   statusChangedBy: number | null
   paper: boolean
-  /** Nine digits, printed in the footer as 4827-1935-6. Outgoing letters only. */
+  /** Nine digits, printed in the footer as 4827-1935-8. Outgoing letters only. */
   replyReference: string | null
   repliesTo: number | null
   keep: boolean
@@ -357,11 +365,12 @@ export interface Message extends Timestamps {
   heldReason: HeldReason | null
   resendOf: number | null
   /** full=true, outgoing letters: what the printed footer says. */
-  footer?: Record<string, unknown>
+  footer?: LetterFooter
   attachments?: Attachment[]
   status_history?: MessageStatusEntry[]
   prisoner_details?: Prisoner
-  user_details?: Pick<User, 'id' | 'name' | 'username' | 'managedBy' | 'anonymousForChapter'>
+  /** full=true: the writer (the pen name, else the name, is what the footer prints). */
+  user_details?: Pick<User, 'id' | 'name' | 'username' | 'managedBy' | 'anonymousForChapter'> & Partial<Pick<User, 'penName'>>
 }
 
 export interface MessageStatusEntry extends Timestamps {
@@ -370,8 +379,27 @@ export interface MessageStatusEntry extends Timestamps {
   fromStatus: LetterStatus | null
   toStatus: LetterStatus
   changedBy: number | null
-  reason: ReturnReason | null
+  /** A return's or a decline's reason; null for every other move. */
+  reason: ReturnReason | DeclineReason | null
+  /** The mail rule's tag, for a `facility_rule` decline (API #170). */
+  rule: string | null
   note: string | null
+}
+
+/**
+ * README "Reply reference": what the printed footer of an outgoing letter says
+ * (`footer` on full=true reads). The client lays it out and words it.
+ */
+export interface LetterFooter {
+  /** The writer's pen name, else their name; null for the group's anonymous writer. */
+  name: string | null
+  anonymous: boolean
+  /** The relay group whose address the reply comes to. */
+  careOf: { id: number; name: string } | null
+  /** Printed as 4827-1935-8; null where the facility carries `no_reference_numbers` (then name and c/o only). */
+  reference: string | null
+  /** The facility carries `reply_sheet_allowed`: a blank reply sheet may be enclosed. */
+  replySheetAllowed: boolean
 }
 
 export interface Attachment extends Timestamps {
@@ -430,6 +458,139 @@ export interface Invitation extends Timestamps {
   state?: 'pending' | 'expired' | 'accepted' | 'revoked'
   /** Only in the create and renew answers: the one time the token is ever shown. */
   token?: string
+}
+
+/** GET /auth/invite-codes: one batch, counted. The codes themselves are never listed. */
+export interface InviteCodeBatch {
+  batch: string
+  label: string | null
+  createdAt: string
+  expiresAt: string
+  total: number
+  used: number
+  cancelled: number
+  expired: number
+  unused: number
+}
+
+/** GET /auth/invite-codes (README "Invite codes"): the group's batches, newest first, and the quota. */
+export interface InviteCodeSummary {
+  chapter: number
+  /** Unused, unexpired codes right now. */
+  outstanding: number
+  /** The most a group may have outstanding at once (INVITE_CODES_OUTSTANDING). */
+  limit: number
+  batches: InviteCodeBatch[]
+}
+
+/** POST /auth/invite-codes: the one time the server says the codes (`XXXX-XXXX-XXXX`). */
+export interface IssuedInviteCodes {
+  chapter: number
+  batch: string
+  label: string | null
+  expiresAt: string
+  codes: string[]
+  outstanding: number
+  limit: number
+}
+
+/** A group admin as GET /auth/member-keys and GET /auth/chapter-rotation list them. */
+export interface GroupMemberKeyState {
+  id: number
+  username: string
+  name: string | null
+  /** Null until the member has keys of their own: nothing can be sealed to them yet. */
+  publicKey: string | null
+  holdsGroupKey: boolean
+}
+
+/** GET /auth/member-keys?chapter= (README "Group keys"): who holds the group key. */
+export interface MemberKeyRoster {
+  chapter: number
+  /** Null until the group has a key. */
+  publicKey: string | null
+  /** 0 until the group has a key, 1 after set-up, one more after each rotation. */
+  keyVersion: number
+  keyRotatedAt: string | null
+  /** The group-owner admin's user id. */
+  owner: number | null
+  /** Group admins (ids) who have keys of their own and are still to be handed the group's. */
+  waiting: number[]
+  members: GroupMemberKeyState[]
+}
+
+/** GET /auth/chapter-rotation?chapter= (README "Rotating a group key"): everything sealed to the current group key. */
+export interface RotationMaterial {
+  chapter: number
+  publicKey: string
+  keyVersion: number
+  /** Every group envelope: open with the old group key, seal to the new one. */
+  envelopes: { id: number; message: number; wrappedKey: string }[]
+  /** Every unclaimed writer whose private key the group holds. */
+  writers: { id: number; name: string | null; publicKey: string | null; orgWrappedPrivateKey: string }[]
+  members: GroupMemberKeyState[]
+}
+
+/** GET /chapter/blocks: a writer this group does not mail for (README "Blocking a writer"). */
+export interface GroupBlock {
+  chapter: number
+  writer: { id: number; penName: string | null; name: string | null } | null
+  /** The writer is told it. */
+  reason: string
+  blockedBy: { id: number; username: string; name: string | null } | null
+  blockedAt: string
+}
+
+/** GET /chapter/history?id=: one entry, newest first (README "The history of one record"). */
+export interface HistoryEntry {
+  id: number
+  at: string
+  /** e.g. `chapter.update`, `chapter.member-key`, `chapter.block`. */
+  action: string
+  /** Null for something the server did itself, or an account since deleted. */
+  actor: AccountBrief | null
+  /** What changed, field by field; absent when nothing did. */
+  changes?: Record<string, { from: unknown; to: unknown }>
+  /** Anything else the entry recorded, e.g. { viaSubmission: 14 }. */
+  details?: Record<string, unknown>
+}
+
+/** GET /messaging/reference?number= (README "Reply reference"): what a reply reference points at. */
+export interface ReferenceLookup {
+  /** Formatted, 4827-1935-8. */
+  reference: string
+  /** Null once the letter itself was deleted. */
+  letter: { id: number; chat: number; status: LetterStatus; paper: boolean; createdAt: string } | null
+  mailedAt: string | null
+  /** The thread to open; null if it is gone too. */
+  chat: number | null
+  writer: { id: number; penName: string | null; name: string | null; anonymous: boolean } | null
+  prisoner: { id: number; birthName: string | null; chosenName: string | null } | null
+  careOf: { id: number; name: string } | null
+}
+
+/** GET /messaging/writers?name= (README "Reply reference"): a writer whose letters this group mailed. */
+export interface WriterMatch {
+  id: number
+  penName: string | null
+  name: string | null
+  anonymous: boolean
+  /** The pen name that matched, current or former. */
+  matched: { name: string; current: boolean }
+}
+
+/** GET /messaging/envelopes/missing (README "Sending and reading letters"): a writer's envelope still to add. */
+export interface MissingEnvelope {
+  message: number
+  chat: number
+  readerType: 'user'
+  /** The writer. */
+  readerId: number
+  /** The writer's public key, to seal the content key to. */
+  publicKey: string
+  /** The group's own envelope for the letter. */
+  wrappedKey: string
+  keyVersion: number | null
 }
 
 /** A proposed directory edit (moderation). */

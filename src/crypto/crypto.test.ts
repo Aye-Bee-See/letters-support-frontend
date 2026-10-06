@@ -5,17 +5,20 @@ import { deriveKey, KDF_PARAMS, normalizeCode, passwordBytes, splitFromMaster } 
 import {
   createAccountKeys,
   createClaimToken,
+  firstKeysForSplitAccount,
   lockKeys,
   openChallenge,
   passwordKeys,
+  resealTo,
   sealPrivateKeyTo,
   signInKeys,
   unlockAccount,
   unlockGroupKey,
+  unlockManagedWriterKey,
   unlockWithClaimToken,
   unlockWithRecoveryCode,
 } from './account'
-import { decryptFile, decryptLetter, encryptFile, encryptLetter, envelopeFor, openEnvelope } from './letters'
+import { decryptFile, decryptLetter, encryptFile, encryptLetter, envelopeFor, openEnvelope, reencryptLetter } from './letters'
 import { generateKeypair, sealTo } from './primitives'
 import { fromBase64, getSodium, toBase64 } from './sodium'
 
@@ -122,6 +125,21 @@ describe('account flows', () => {
     expect(answer).toBe(await toBase64(challenge))
   })
 
+  it('gives a keyless split account keys under its existing salt, so the same password still signs in', { timeout: SLOW }, async () => {
+    // A seeded account: split, with a salt and no keys (API #181: the salt must not change).
+    const kdfSalt = await toBase64(bytes(16))
+    const params = { scheme: 'split' as const, kdfSalt, kdfParams: { ...KDF_PARAMS } }
+    const before = await signInKeys('a long enough password', params)
+    const first = await firstKeysForSplitAccount(before.wrapKey, params)
+    expect(first.keyFields.kdfSalt).toBe(kdfSalt)
+    expect(first.keyFields.kdfParams).toEqual(KDF_PARAMS)
+
+    const next = await signInKeys('a long enough password', params)
+    expect(next.authKey).toBe(before.authKey)
+    expect(await unlockAccount(first.keyFields, next.wrapKey)).toEqual(first.keypair)
+    expect(await unlockWithRecoveryCode({ ...first.keyFields }, first.recoveryCode)).toEqual(first.keypair)
+  })
+
   it('re-wraps a private key under a new password (password change)', { timeout: SLOW }, async () => {
     const keypair = await generateKeypair()
     const changed = await passwordKeys(keypair.privateKey, 'a brand new password')
@@ -153,6 +171,40 @@ describe('account flows', () => {
     expect(await unlockGroupKey({ wrappedOrgPrivateKey, chapterPublicKey: group.publicKey }, member)).toEqual(group)
     const outsider = await generateKeypair()
     await expect(unlockGroupKey({ wrappedOrgPrivateKey, chapterPublicKey: group.publicKey }, outsider)).rejects.toThrow()
+  })
+
+  it('re-seals what was sealed to an old group key to a new one, and only the new one opens it', async () => {
+    const oldGroup = await generateKeypair()
+    const newGroup = await generateKeypair()
+    const secret = bytes(32)
+    const sealed = await sealTo(oldGroup.publicKey, secret)
+    const resealed = await resealTo(sealed, oldGroup, newGroup.publicKey)
+    expect(await openEnvelope({ wrappedKey: resealed }, newGroup)).toEqual(secret)
+    await expect(openEnvelope({ wrappedKey: resealed }, oldGroup)).rejects.toThrow()
+    // Something not sealed to the old key is refused rather than passed on.
+    await expect(resealTo(sealed, newGroup, oldGroup.publicKey)).rejects.toThrow()
+  })
+})
+
+describe('managed writers', () => {
+  it('opens a writer key the group sealed, and hands it on with a claim token', { timeout: SLOW }, async () => {
+    const group = await generateKeypair()
+    const writer = await generateKeypair()
+    const orgWrappedPrivateKey = await sealPrivateKeyTo(writer.privateKey, group.publicKey)
+    const opened = await unlockManagedWriterKey({ orgWrappedPrivateKey, publicKey: writer.publicKey }, group)
+    expect(opened).toEqual(writer)
+    const claim = await createClaimToken(opened.privateKey)
+    expect(await unlockWithClaimToken({ ...claim.fields, publicKey: writer.publicKey }, claim.token)).toEqual(writer)
+  })
+
+  it('refuses a writer key sealed to another group key, or belonging to another writer', async () => {
+    const group = await generateKeypair()
+    const rotated = await generateKeypair()
+    const writer = await generateKeypair()
+    const orgWrappedPrivateKey = await sealPrivateKeyTo(writer.privateKey, group.publicKey)
+    await expect(unlockManagedWriterKey({ orgWrappedPrivateKey, publicKey: writer.publicKey }, rotated)).rejects.toThrow()
+    const other = await generateKeypair()
+    await expect(unlockManagedWriterKey({ orgWrappedPrivateKey, publicKey: other.publicKey }, group)).rejects.toThrow(/does not match/)
   })
 })
 
@@ -192,6 +244,23 @@ describe('letters', () => {
     const { contentKey, fields } = await encryptLetter('hello', [{ readerType: 'user', readerId: 1, publicKey: (await generateKeypair()).publicKey }])
     const extra = await envelopeFor(contentKey, { readerType: 'chapter', readerId: 9, publicKey: partner.publicKey, keyVersion: 1 })
     expect((await decryptLetter(fields, await openEnvelope(extra, partner))).text).toBe('hello')
+  })
+
+  it('re-encrypts an edited body under the same content key, so every envelope still opens it', async () => {
+    const writer = await generateKeypair()
+    const group = await generateKeypair()
+    const { contentKey, fields } = await encryptLetter('Dear frend', [
+      { readerType: 'user', readerId: 7, publicKey: writer.publicKey },
+      { readerType: 'chapter', readerId: 3, publicKey: group.publicKey, keyVersion: 1 },
+    ])
+    const edited = await reencryptLetter('Dear friend', contentKey)
+    expect(edited.nonce).not.toBe(fields.nonce)
+    for (const [envelope, keypair] of [
+      [fields.envelopes[0], writer],
+      [fields.envelopes[1], group],
+    ] as const) {
+      expect((await decryptLetter(edited, await openEnvelope(envelope, keypair))).text).toBe('Dear friend')
+    }
   })
 
   it('refuses altered ciphertext', async () => {
