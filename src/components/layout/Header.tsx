@@ -6,7 +6,7 @@ import { useSignOut } from '../../hooks/useSignOut'
 // Markup and classes from solidarity-site/index.html and inbox-writer.html.
 // The hamburger behaviour replaces solidarity-site/site.js.
 export default function Header() {
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, isChapter } = useAuth()
   const [open, setOpen] = useState(false)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -61,6 +61,17 @@ export default function Header() {
                 <Link to={isAdmin ? '/admin' : '/inbox'} className="btn btn-primary btn-sm">
                   {isAdmin ? 'Admin' : 'Inbox'}
                 </Link>
+                {/* A group admin's own pages; writers have only their inbox, superadmins /admin. */}
+                {isChapter && (
+                  <>
+                    <Link to="/invite-codes" className="nav-auth-link">
+                      Invite codes
+                    </Link>
+                    <Link to="/settings" className="nav-auth-link">
+                      Settings
+                    </Link>
+                  </>
+                )}
                 <Link to="/account/security" className="nav-auth-link">
                   Security
                 </Link>
