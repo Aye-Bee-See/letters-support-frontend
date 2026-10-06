@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
+import CorrectReply from '../../components/forms/CorrectReply'
+import RecordReplyPanel from '../../components/forms/RecordReplyPanel'
 import ReplyPanel from '../../components/forms/ReplyPanel'
 import WriterBlockActions from '../../components/group/WriterBlockActions'
 import LoadState from '../../components/ui/LoadState'
@@ -188,6 +190,7 @@ function LetterItem({
   writerName,
   blocks,
   onWriteAgain,
+  onCorrected,
 }: {
   item: OpenedMessage
   initiallyOpen: boolean
@@ -196,6 +199,8 @@ function LetterItem({
   blocks: Map<number, WriterBlock>
   /** Offered on the writer's own returned and declined letters, when a reply can be sent. */
   onWriteAgain?: (resend: Resend) => void
+  /** Group admins, on a reply their group may correct: Edit transcription and Delete, then this. */
+  onCorrected?: () => void
 }) {
   const [open, setOpen] = useState(initiallyOpen)
   const { message: m, opened } = item
@@ -268,6 +273,14 @@ function LetterItem({
               )}
               <LetterAttachments message={m} contentKey={opened.contentKey} />
             </>
+          )}
+          {onCorrected && (
+            <CorrectReply
+              message={m}
+              text={opened.state === 'open' ? (opened.text ?? '') : ''}
+              contentKey={opened.state === 'open' ? opened.contentKey : null}
+              onChanged={onCorrected}
+            />
           )}
         </div>
       )}
@@ -388,6 +401,11 @@ export default function Thread() {
   const facility = (prisoner?.prison_details as Prison | null | undefined)?.prisonName
   const writerName = chat.user === user?.id ? (user.penName ?? user.username) : (chat.user_details?.name ?? chat.user_details?.username ?? 'Writer')
   const lastRelayId = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group?.id
+  // A group admin may correct or delete a reply their group recorded, or any
+  // reply in the thread of a writer it manages (README "PUT /messaging/message").
+  const managedHere = chat.user_details?.managedBy != null && chat.user_details.managedBy === user?.chapterId && !chat.user_details.claimedAt
+  const canCorrect = (m: Message) =>
+    isChapter && m.sender === 'prisoner' && m.status === 'received' && (managedHere || (m.relayChapter !== null && m.relayChapter === user?.chapterId))
 
   return (
     <div className="app-wrap">
@@ -433,11 +451,19 @@ export default function Thread() {
                       }
                     : undefined
                 }
+                onCorrected={canCorrect(item.message) ? page.reload : undefined}
               />
             ))}
           </div>
-          {/* The writer's reply. Group admins record replies and write for their
-              writers from the group inbox (Step 5, later). */}
+          {/* The writer's reply; for a group admin, recording the prisoner's reply
+              (README "Reply reference": filing a reply), the writer and prisoner fixed. */}
+          {isChapter && prisoner && (
+            <RecordReplyPanel
+              writer={{ id: chat.user, name: writerName }}
+              prisoner={{ id: prisoner.id, name: prisonerName }}
+              onRecorded={() => page.reload()}
+            />
+          )}
           {!isChapter && prisoner?.prison && (
             // Keyed on the letter being written again, so the draft starts from its text.
             <ReplyPanel
@@ -453,8 +479,10 @@ export default function Thread() {
               }}
             />
           )}
-          {!isChapter && !prisoner && (
-            <p className="convo-empty">This person is not in the directory at the moment, so replies can't be sent from here.</p>
+          {!prisoner && (
+            <p className="convo-empty">
+              This person is not in the directory at the moment, so replies can't be {isChapter ? 'recorded' : 'sent'} from here.
+            </p>
           )}
         </main>
 

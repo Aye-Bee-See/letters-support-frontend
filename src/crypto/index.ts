@@ -34,6 +34,7 @@ export {
   envelopeFor,
   forgetContentKey,
   openEnvelope,
+  reencryptLetter,
   type EncryptedLetter,
   type Reader,
 } from './letters'

@@ -18,7 +18,7 @@ import {
   unlockWithClaimToken,
   unlockWithRecoveryCode,
 } from './account'
-import { decryptFile, decryptLetter, encryptFile, encryptLetter, envelopeFor, openEnvelope } from './letters'
+import { decryptFile, decryptLetter, encryptFile, encryptLetter, envelopeFor, openEnvelope, reencryptLetter } from './letters'
 import { generateKeypair, sealTo } from './primitives'
 import { fromBase64, getSodium, toBase64 } from './sodium'
 
@@ -244,6 +244,23 @@ describe('letters', () => {
     const { contentKey, fields } = await encryptLetter('hello', [{ readerType: 'user', readerId: 1, publicKey: (await generateKeypair()).publicKey }])
     const extra = await envelopeFor(contentKey, { readerType: 'chapter', readerId: 9, publicKey: partner.publicKey, keyVersion: 1 })
     expect((await decryptLetter(fields, await openEnvelope(extra, partner))).text).toBe('hello')
+  })
+
+  it('re-encrypts an edited body under the same content key, so every envelope still opens it', async () => {
+    const writer = await generateKeypair()
+    const group = await generateKeypair()
+    const { contentKey, fields } = await encryptLetter('Dear frend', [
+      { readerType: 'user', readerId: 7, publicKey: writer.publicKey },
+      { readerType: 'chapter', readerId: 3, publicKey: group.publicKey, keyVersion: 1 },
+    ])
+    const edited = await reencryptLetter('Dear friend', contentKey)
+    expect(edited.nonce).not.toBe(fields.nonce)
+    for (const [envelope, keypair] of [
+      [fields.envelopes[0], writer],
+      [fields.envelopes[1], group],
+    ] as const) {
+      expect((await decryptLetter(edited, await openEnvelope(envelope, keypair))).text).toBe('Dear friend')
+    }
   })
 
   it('refuses altered ciphertext', async () => {

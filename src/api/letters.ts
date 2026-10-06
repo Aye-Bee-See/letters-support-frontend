@@ -48,6 +48,9 @@ export const getMessage = (id: number, full = true) =>
 export const getGroupPublicKey = (chapter: number) =>
   getOne<{ chapter: number; publicKey: string | null; keyVersion: number }>('/auth/public-key', { chapter })
 
+/** A writer's public key (README "Account keys"): null until they have set up keys, and then it never changes. */
+export const getUserPublicKey = (user: number) => getOne<{ user: number; publicKey: string | null }>('/auth/public-key', { user })
+
 /**
  * POST /messaging/message with an Idempotency-Key (the same key on every retry of
  * one letter, so it is never mailed twice). In end-to-end mode the body is

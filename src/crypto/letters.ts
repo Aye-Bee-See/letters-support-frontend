@@ -63,6 +63,16 @@ export async function envelopeFor(contentKey: Uint8Array, reader: Reader): Promi
   }
 }
 
+/**
+ * A letter's body typed again (README "Sending and reading letters": editing a
+ * letter means new `ciphertext` and `nonce` under the same content key, so every
+ * envelope it already has still opens it). Send both with PUT /messaging/message.
+ */
+export async function reencryptLetter(text: string, contentKey: Uint8Array): Promise<{ ciphertext: string; nonce: string }> {
+  const { ciphertext, nonce } = await encrypt(text, contentKey)
+  return { ciphertext, nonce }
+}
+
 /** Open one of the caller's envelopes to get the letter's content key. */
 export function openEnvelope(envelope: Pick<Envelope, 'wrappedKey'>, keypair: Keypair): Promise<Uint8Array> {
   return openSealed(envelope.wrappedKey, keypair)
