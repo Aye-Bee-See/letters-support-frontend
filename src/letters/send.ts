@@ -1,7 +1,7 @@
 import { getGroupPublicKey, postLetter, uploadAttachment } from '../api/letters'
 import { toApiError } from '../api/client'
 import { encryptFile, encryptLetter, forgetContentKey, openEnvelope, type Keypair, type Reader } from '../crypto'
-import type { Message } from '../types'
+import type { Message, ReaderType } from '../types'
 
 // Sending a letter (README "End-to-end mode: Sending and reading letters",
 // "Paper letters", "Sending exactly once"). A fresh content key encrypts the
@@ -69,36 +69,42 @@ export const draftHasContent = (d: Pick<LetterDraft, 'text' | 'paper' | 'file'>)
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** Encrypt and post, re-sealing once if the group's key changed meanwhile (409 KeyVersionError). */
-async function encryptAndPost(draft: LetterDraft, writer: { userId: number; keypair: Keypair }) {
+/** One letter (or reply) to encrypt and post: what encryptAndPost needs, whoever is sending. */
+export interface SealedPost {
+  /** The typed body; an empty string when there is only a file (or a paper letter). */
+  text: string
+  relayNote?: string
+  /**
+   * Who may open it. Called afresh on every attempt, because a group's key may
+   * have been rotated meanwhile (409 KeyVersionError) and must be fetched again.
+   */
+  readers: () => Promise<Reader[]>
+  /** The rest of POST /messaging/message: sender, prisoner, user, reference… (never the text). */
+  body: Record<string, unknown>
+  /** Made once per letter and reused on every retry, so it is never sent twice. */
+  idempotencyKey: string
+  /** The envelope this client opens on the stored letter, and the keypair that opens it. */
+  self: { readerType: ReaderType; readerId: number; keypair: Keypair }
+}
+
+/**
+ * Encrypt and post, re-sealing once if a group's key changed meanwhile (409
+ * KeyVersionError). Returns the stored letter and the content key it was
+ * sealed with.
+ */
+async function encryptAndPost(post: SealedPost): Promise<{ message: Message; contentKey: Uint8Array }> {
   for (let attempt = 0; ; attempt++) {
-    const group = await getGroupPublicKey(draft.relayChapterId)
-    if (!group.publicKey) throw new Error('This group cannot receive letters yet.')
-    const readers: Reader[] = [
-      { readerType: 'user', readerId: writer.userId, publicKey: writer.keypair.publicKey },
-      { readerType: 'chapter', readerId: draft.relayChapterId, publicKey: group.publicKey, keyVersion: group.keyVersion },
-    ]
-    // A paper letter still carries the encryption of an empty body: its content key encrypts the photo.
-    const { contentKey, fields } = await encryptLetter(draft.paper ? '' : draft.text, readers, draft.relayNote.trim() || undefined)
+    const readers = await post.readers()
+    const { contentKey, fields } = await encryptLetter(post.text, readers, post.relayNote?.trim() || undefined)
     try {
-      const message = await postLetter(
-        {
-          sender: 'user',
-          prisoner: draft.prisonerId,
-          relayChapter: draft.relayChapterId,
-          ...(draft.paper ? { paper: true } : {}),
-          ...(draft.resendOf ? { resendOf: draft.resendOf } : {}),
-          ...fields,
-        },
-        draft.idempotencyKey,
-      )
+      const message = await postLetter({ ...post.body, ...fields }, post.idempotencyKey)
       // The key the stored letter was sealed with. Normally this attempt's; but a
       // retry of a letter already made gets that letter back (the Idempotency-Key),
       // sealed with the first attempt's key, which only its envelope still holds.
-      const mine = message.envelopes?.find((e) => e.readerType === 'user' && e.readerId === writer.userId)
+      const mine = message.envelopes?.find((e) => e.readerType === post.self.readerType && e.readerId === post.self.readerId)
       if (!mine) return { message, contentKey }
       await forgetContentKey(contentKey)
-      return { message, contentKey: await openEnvelope(mine, writer.keypair) }
+      return { message, contentKey: await openEnvelope(mine, post.self.keypair) }
     } catch (err) {
       await forgetContentKey(contentKey)
       const e = toApiError(err)
@@ -110,6 +116,33 @@ async function encryptAndPost(draft: LetterDraft, writer: { userId: number; keyp
       throw err
     }
   }
+}
+
+/** Refuse a file the API would refuse, before anything is sent. */
+function checkFile(file: File | null) {
+  if (!file) return
+  if (!ACCEPTED_FILE_TYPES.includes(file.type)) throw new Error('Only PDF, JPG and PNG files can be sent.')
+  if (file.size > MAX_FILE_BYTES) throw new Error('That file is too large: files can be up to 20 MB.')
+}
+
+/**
+ * Encrypt and post a letter, then upload its file encrypted with the same
+ * content key. Throws AttachmentNotUploaded if the letter went but its file
+ * didn't. Shared by sendLetter and recordReply (src/letters/record.ts).
+ */
+export async function sealAndSend(post: SealedPost, file: File | null): Promise<Message> {
+  checkFile(file)
+  const { message, contentKey } = await encryptAndPost(post)
+  if (file) {
+    try {
+      await uploadLetterFile(message, file, contentKey, post.idempotencyKey)
+    } catch (err) {
+      // The key goes with the error, for the retry.
+      throw new AttachmentNotUploaded(message, contentKey, err)
+    }
+  }
+  await forgetContentKey(contentKey)
+  return message
 }
 
 /**
@@ -134,20 +167,30 @@ export async function uploadLetterFile(letter: Message, file: File, contentKey: 
  * Send a letter; returns the stored letter (its `chat` is the thread). Throws
  * AttachmentNotUploaded if the letter went but its file didn't.
  */
-export async function sendLetter(draft: LetterDraft, writer: { userId: number; keypair: Keypair }): Promise<Message> {
-  if (draft.file) {
-    if (!ACCEPTED_FILE_TYPES.includes(draft.file.type)) throw new Error('Only PDF, JPG and PNG files can be sent.')
-    if (draft.file.size > MAX_FILE_BYTES) throw new Error('That file is too large: files can be up to 20 MB.')
-  }
-  const { message, contentKey } = await encryptAndPost(draft, writer)
-  if (draft.file) {
-    try {
-      await uploadLetterFile(message, draft.file, contentKey, draft.idempotencyKey)
-    } catch (err) {
-      // The key goes with the error, for the retry.
-      throw new AttachmentNotUploaded(message, contentKey, err)
-    }
-  }
-  await forgetContentKey(contentKey)
-  return message
+export function sendLetter(draft: LetterDraft, writer: { userId: number; keypair: Keypair }): Promise<Message> {
+  return sealAndSend(
+    {
+      // A paper letter still carries the encryption of an empty body: its content key encrypts the photo.
+      text: draft.paper ? '' : draft.text,
+      relayNote: draft.relayNote,
+      readers: async () => {
+        const group = await getGroupPublicKey(draft.relayChapterId)
+        if (!group.publicKey) throw new Error('This group cannot receive letters yet.')
+        return [
+          { readerType: 'user', readerId: writer.userId, publicKey: writer.keypair.publicKey },
+          { readerType: 'chapter', readerId: draft.relayChapterId, publicKey: group.publicKey, keyVersion: group.keyVersion },
+        ]
+      },
+      body: {
+        sender: 'user',
+        prisoner: draft.prisonerId,
+        relayChapter: draft.relayChapterId,
+        ...(draft.paper ? { paper: true } : {}),
+        ...(draft.resendOf ? { resendOf: draft.resendOf } : {}),
+      },
+      idempotencyKey: draft.idempotencyKey,
+      self: { readerType: 'user', readerId: writer.userId, keypair: writer.keypair },
+    },
+    draft.file,
+  )
 }
