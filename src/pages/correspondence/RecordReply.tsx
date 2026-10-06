@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { getChats, lookupReference, searchWriters } from '../../api/letters'
+import { getAllChats, lookupReference, searchWriters } from '../../api/letters'
 import RecordReplyPanel, { type RecordedReply } from '../../components/forms/RecordReplyPanel'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, LetterStatus, ReferenceLookup, WriterMatch } from '../../types'
@@ -179,7 +179,8 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
   const [writer, setWriter] = useState<WriterMatch | null>(null)
   const matches = useApi(() => (submitted ? searchWriters(submitted) : Promise.resolve(null)), [submitted])
   // The chosen writer's threads this group can see: its managed writers' and the ones it mails.
-  const threads = useApi(() => (writer ? getChats({ user: writer.id, page_size: 100 }) : Promise.resolve(null)), [writer?.id])
+  // Every page of them: a long-standing writer may have more than a page.
+  const threads = useApi(() => (writer ? getAllChats({ user: writer.id }) : Promise.resolve(null)), [writer?.id])
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -276,13 +277,13 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
               Couldn't load their conversations ({threads.error.message}).
             </p>
           )}
-          {threads.data && threads.data.items.length === 0 && (
+          {threads.data && threads.data.length === 0 && (
             <p className="reply-notes-hint">Your group can't see any conversation of {writerName(writer)}'s.</p>
           )}
-          {threads.data && threads.data.items.length > 0 && (
+          {threads.data && threads.data.length > 0 && (
             <table className="convo-table">
               <tbody>
-                {threads.data.items.map((chat) => (
+                {threads.data.map((chat) => (
                   <tr key={chat.id} className="convo-row">
                     <td>
                       <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
