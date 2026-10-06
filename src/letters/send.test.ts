@@ -82,3 +82,51 @@ describe('sendLetter', () => {
     expect(MAX_FILE_BYTES).toBe(20 * 1024 * 1024 - 16)
   })
 })
+
+describe('sendLetter for a group, as one of its writers', () => {
+  const groups = new Map<number, { publicKey: string; privateKey: string }>()
+  beforeEach(async () => {
+    posted.length = 0
+    reply = async (body) => ({ id: 99, chat: 1, envelopes: body.envelopes })
+    groups.set(7, await generateKeypair())
+    groups.set(8, await generateKeypair())
+    vi.mocked(getGroupPublicKey).mockImplementation(async (chapter: number) => ({ chapter, publicKey: groups.get(chapter)!.publicKey, keyVersion: chapter === 7 ? 3 : 1 }))
+  })
+
+  const draft = { prisonerId: 3, relayChapterId: 7, text: 'Hello', relayNote: '', paper: false, file: null, idempotencyKey: 'k'.repeat(32) }
+  const envelopes = () => (posted[0].envelopes as { readerType: string; readerId: number; keyVersion?: number }[]).map((e) => [e.readerType, e.readerId, e.keyVersion ?? null])
+
+  it('seals to the managed writer and the group, and names the writer', async () => {
+    const sam = await generateKeypair()
+    await sendLetter(draft, { groupId: 7, groupKeypair: groups.get(7)!, writer: { id: 12, publicKey: sam.publicKey } })
+    expect(posted[0]).toMatchObject({ sender: 'user', user: 12, relayChapter: 7 })
+    // The group mails it itself: one group envelope.
+    expect(envelopes()).toEqual([['user', 12, null], ['chapter', 7, 3]])
+  })
+
+  it('adds the relay group when another group mails it', async () => {
+    const sam = await generateKeypair()
+    await sendLetter({ ...draft, relayChapterId: 8, paper: true }, { groupId: 7, groupKeypair: groups.get(7)!, writer: { id: 12, publicKey: sam.publicKey } })
+    expect(posted[0]).toMatchObject({ user: 12, relayChapter: 8, paper: true })
+    expect(envelopes()).toEqual([['user', 12, null], ['chapter', 7, 3], ['chapter', 8, 1]])
+  })
+
+  it('leaves out the writer envelope for a writer without keys, and `user` for the anonymous writer', async () => {
+    await sendLetter(draft, { groupId: 7, groupKeypair: groups.get(7)!, writer: { id: 12, publicKey: null } })
+    expect(posted[0]).toMatchObject({ user: 12 })
+    expect(envelopes()).toEqual([['chapter', 7, 3]])
+    posted.length = 0
+    await sendLetter({ ...draft, relayChapterId: 8 }, { groupId: 7, groupKeypair: groups.get(7)!, writer: null })
+    expect(posted[0]).not.toHaveProperty('user')
+    expect(envelopes()).toEqual([['chapter', 7, 3], ['chapter', 8, 1]])
+  })
+
+  it('encrypts the file with the stored letter’s key, opened with the group key, on a retry', async () => {
+    const first = await encryptLetter('Hello', [{ readerType: 'chapter', readerId: 7, publicKey: groups.get(7)!.publicKey, keyVersion: 3 }])
+    reply = async () => ({ id: 98, chat: 1, envelopes: first.fields.envelopes })
+    const scan = new File([new Uint8Array([5, 6])], 'scan.pdf', { type: 'application/pdf' })
+    await sendLetter({ ...draft, file: scan }, { groupId: 7, groupKeypair: groups.get(7)!, writer: null })
+    const file = uploaded[uploaded.length - 1]
+    await expect(decryptFile(file.bytes, file.nonce, first.contentKey)).resolves.toEqual(new Uint8Array([5, 6]))
+  })
+})
