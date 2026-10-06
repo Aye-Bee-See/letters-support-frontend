@@ -1,7 +1,8 @@
+import { toApiError } from '../api/client'
 import { getGroupPublicKey, getUserPublicKey } from '../api/letters'
 import type { Keypair, Reader } from '../crypto'
 import type { Message } from '../types'
-import { normalizeReference } from '../utils/replyReference'
+import { describeReferenceError, normalizeReference } from '../utils/replyReference'
 import { sealAndSend } from './send'
 
 // Recording a prisoner's reply (README "Reply reference": filing a reply;
@@ -38,6 +39,14 @@ export interface ReplyDraft {
 export interface RecordingGroup {
   chapterId: number
   keypair: Keypair
+}
+
+/** What to tell a group admin about a reply that couldn't be recorded, corrected or deleted. */
+export function describeReplyError(err: unknown): string {
+  const e = toApiError(err)
+  const reference = describeReferenceError(e)
+  if (reference) return reference
+  return e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'Something went wrong.'
 }
 
 /** A reply can be recorded when it has something in it: a transcription, a file, or both. */

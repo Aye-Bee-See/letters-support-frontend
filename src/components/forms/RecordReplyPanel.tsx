@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { getUserPublicKey } from '../../api/letters'
-import { toApiError } from '../../api/client'
 import { forgetContentKey } from '../../crypto'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
-import { recordReply, replyHasContent } from '../../letters/record'
+import { describeReplyError as describe, recordReply, replyHasContent } from '../../letters/record'
 import { AttachmentNotUploaded, newIdempotencyKey, uploadLetterFile } from '../../letters/send'
 import type { Message } from '../../types'
-import { describeReferenceError, formatReference } from '../../utils/replyReference'
+import { formatReference } from '../../utils/replyReference'
 import AttachmentRetry from './AttachmentRetry'
 import UploadZone from './UploadZone'
 
@@ -16,14 +15,6 @@ import UploadZone from './UploadZone'
 // settled before this panel shows: by a reply reference or a name search on
 // /replies/new, or by the thread it sits under. The transcription and the scan
 // are encrypted in this browser (src/letters/record.ts).
-
-/** What to tell the group admin about a failed request. */
-function describe(err: unknown): string {
-  const e = toApiError(err)
-  const reference = describeReferenceError(e)
-  if (reference) return reference
-  return e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'Something went wrong.'
-}
 
 /** A reply that was filed without its file: what retrying the file needs. The content key stays in memory only. */
 interface FileToRetry {
