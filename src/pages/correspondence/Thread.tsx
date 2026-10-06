@@ -16,8 +16,10 @@ import { addressLine } from '../../utils/facilities'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
-// Markup and classes from solidarity-site/thread.html (pages/thread.css). The
-// reply panel is built with New Letter (Step 5, next). Every letter is opened
+// Markup and classes from solidarity-site/thread.html (pages/thread.css). At
+// the bottom, a writer's reply panel, or for a group admin the panel that
+// records the prisoner's reply (WP5); the sidebar holds the group's block
+// actions (WP4b). Every letter is opened
 // when the page loads (collapsed rows show a preview); attachments are fetched
 // and decrypted only when a letter is expanded.
 

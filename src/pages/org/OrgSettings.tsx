@@ -77,6 +77,10 @@ export default function OrgSettings() {
               <span>Writers your group doesn’t mail for, and your site-wide block recommendations.</span>
             </li>
             <li>
+              <Link to="/replies/new">Record a reply</Link>
+              <span>File a prisoner’s answer in the writer’s conversation, by its reply reference or by name.</span>
+            </li>
+            <li>
               <Link to="/account/security">Your sign-in security</Link>
               <span>Two-factor sign-in for your own account.</span>
             </li>
