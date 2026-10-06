@@ -2,16 +2,13 @@
 // (README "Managed writers", and "Managed writers and claiming" under End-to-end
 // mode). The writer's keypair and the claim token are made in the browser
 // (src/crypto); these calls only carry the results.
-import { del, getAllPages, getList, post, put } from './client'
+import { del, getAllPages, post, put } from './client'
 import type { ClaimMaterial } from '../crypto'
-import type { ListParams, User, Writer } from '../types'
-
-/** A group gets its own unclaimed writers; an admin can pass { chapter: id }. */
-export const getWriters = (params?: ListParams & { chapter?: number }) =>
-  getList<Writer>('/auth/writers', params)
+import type { User, Writer } from '../types'
 
 /**
- * Every page of GET /auth/writers. The one call that returns a writer's
+ * Every page of GET /auth/writers: a group gets its own unclaimed writers, an
+ * admin can pass { chapter: id }. The one call that returns a writer's
  * `orgWrappedPrivateKey` to the managing group (GET /auth/user strips key
  * columns), so pages about one writer find them here by id.
  */

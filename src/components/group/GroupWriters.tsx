@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { getAllChats } from '../../api/letters'
-import { getWriters } from '../../api/writers'
+import { getAllWriters } from '../../api/writers'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, PrisonSummary, Writer } from '../../types'
 import { heldReasonShort } from '../../utils/groupLetters'
@@ -16,8 +16,8 @@ import LoadState from '../ui/LoadState'
 // buttons open are other packages' (WP2): this only links to them.
 
 async function loadWriters() {
-  const [writers, chats] = await Promise.all([getWriters({ page_size: 100 }), getAllChats()])
-  return { writers: writers.items, chats }
+  const [writers, chats] = await Promise.all([getAllWriters(), getAllChats()])
+  return { writers, chats }
 }
 
 function WriterThreads({ chats }: { chats: Chat[] }) {
