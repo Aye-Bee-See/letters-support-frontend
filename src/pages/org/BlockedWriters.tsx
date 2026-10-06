@@ -196,9 +196,8 @@ function RecommendationRow({ rec: r }: { rec: BanRecommendation }) {
         <div className="block-item-meta">Waiting for a site admin to decide.</div>
       ) : (
         <div className="block-item-decision">
-          {r.status === 'banned'
-            ? `Blocked from the whole site by ${r.decided_by ? r.decided_by.name || r.decided_by.username : 'a site admin'}`
-            : `Dismissed by ${r.decided_by ? r.decided_by.name || r.decided_by.username : 'a site admin'}`}
+          {r.decided_by ? `A site admin (${r.decided_by.name || r.decided_by.username})` : 'A site admin'}
+          {r.status === 'banned' ? ' blocked them from the whole site' : ' dismissed it'}
           {r.decidedAt && ` on ${longDate(r.decidedAt)}`}.
           {r.decisionNote ? (
             <>

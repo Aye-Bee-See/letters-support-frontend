@@ -78,8 +78,10 @@ export default function WriterBlockActions({ writer }: { writer: BlockableWriter
     } catch (err) {
       const e = err as ApiError
       setError(blockRefusal(e, refusalFor))
-      // Someone else got there first: show how things stand now.
+      // Someone else got there first: show how things stand now, and close the
+      // form when there is nothing left to send (a recommendation already waiting).
       if (e.status === 404 || e.status === 409) {
+        if (e.status === 409) setForm(null)
         blocks.reload()
         recommendations.reload()
       }
@@ -137,6 +139,7 @@ export default function WriterBlockActions({ writer }: { writer: BlockableWriter
       )}
 
       {notice && <p className="block-notice" role="status">{notice}</p>}
+      {error && form === null && <p className="block-error" role="alert">{error}</p>}
 
       {form === null && (
         <div className="block-actions-buttons">

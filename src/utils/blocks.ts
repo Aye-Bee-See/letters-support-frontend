@@ -15,6 +15,8 @@ export interface BlockableWriter {
   id: number
   name: string | null
   penName?: string | null
+  /** Last resort for naming them: the thread's writer has no pen name in it, and a writer may have no name. */
+  username?: string
   role: UserRole
   managedBy: number | null
   anonymousForChapter: number | null
@@ -36,9 +38,12 @@ export function canActOn(writer: BlockableWriter, chapterId: number | null): boo
   return true
 }
 
-/** How a writer is named on these screens: pen name first, then name. */
-export function writerLabel(writer: { penName?: string | null; name?: string | null } | null | undefined, fallback = 'this writer'): string {
-  return writer?.penName || writer?.name || fallback
+/** How a writer is named on these screens: pen name first, then name, then username. */
+export function writerLabel(
+  writer: { penName?: string | null; name?: string | null; username?: string } | null | undefined,
+  fallback = 'this writer',
+): string {
+  return writer?.penName || writer?.name || writer?.username || fallback
 }
 
 /** One person on a block or a recommendation: `you`, their name, or their username. */
