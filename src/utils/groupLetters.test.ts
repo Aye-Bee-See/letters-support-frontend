@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, LetterFooter, MailRule, Message } from '../types'
-import { batchDeclineRules, declineText, shareRefusal, footerSentence, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
+import { batchDeclineRules, declineText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -119,5 +119,13 @@ describe('shareRefusal (POST /messaging/envelope)', () => {
   it('reads an EnvelopeError as already shared, and any other 409 as a refusal', () => {
     expect(shareRefusal(error({ name: 'EnvelopeError' }), 'PDX ABC', false)).toEqual({ kind: 'done', text: 'PDX ABC can already read this letter.' })
     expect(shareRefusal(error({ name: 'EncryptionModeError' }), 'PDX ABC', true)).toEqual({ kind: 'error', text: expect.stringContaining('(409)') })
+  })
+})
+
+describe('heldPrintQuestion', () => {
+  it('names the hold before printing a held letter', () => {
+    expect(heldPrintQuestion('prisoner_free')).toBe('This letter is on hold: the prisoner has been released, so it may never reach them. Print it anyway?')
+    expect(heldPrintQuestion('something_new')).toBe('This letter is on hold. Print it anyway?')
+    expect(heldPrintQuestion(null)).toBeNull()
   })
 })

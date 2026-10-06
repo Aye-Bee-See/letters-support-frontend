@@ -13,7 +13,7 @@ import { useGroup, type GroupKeyState } from '../../hooks/useGroup'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, LetterStatus, MailRule, Message, Prison } from '../../types'
 import { addressLines } from '../../utils/facilities'
-import { declineText, footerSentence, heldReasonText, returnReasonText, writerLabel, type QueueFilter } from '../../utils/groupLetters'
+import { declineText, footerSentence, heldPrintQuestion, heldReasonText, returnReasonText, writerLabel, type QueueFilter } from '../../utils/groupLetters'
 import { inboxDate } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
@@ -267,6 +267,12 @@ export default function PrintLetter() {
   const images = (files ?? []).filter((f) => f.url && f.attachment.mimeType.startsWith('image/'))
   const others = (files ?? []).filter((f) => !f.url || !f.attachment.mimeType.startsWith('image/'))
   const held = m.status === 'queued' ? heldReasonText(m.heldReason) : null
+  // A held letter is printed only on purpose (README "Moved and freed"): asked here as well as on Mark printed.
+  const printLetter = () => {
+    const question = m.status === 'queued' ? heldPrintQuestion(m.heldReason) : null
+    if (question && !window.confirm(question)) return
+    window.print()
+  }
 
   const done = (text: string) => {
     setFlash(text)
@@ -335,7 +341,7 @@ export default function PrintLetter() {
 
               {m.status !== 'declined' && (
                 <div className="print-toolbar no-print">
-                  <button type="button" className="btn btn-sm btn-primary" onClick={() => window.print()}>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={printLetter}>
                     Print
                   </button>
                   <span>

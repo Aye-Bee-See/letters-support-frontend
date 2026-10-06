@@ -46,6 +46,18 @@ const HELD_REASONS: Record<HeldReason, string> = {
 export const heldReasonText = (reason: string | null | undefined): string | null =>
   reason ? (HELD_REASONS[reason as HeldReason] ?? 'On hold') : null
 
+/**
+ * What the print page asks before printing a held letter, naming the hold:
+ * "This letter is on hold: the prisoner has been released, so it may never reach
+ * them. Print it anyway?" Null for a letter that isn't held.
+ */
+export function heldPrintQuestion(reason: string | null | undefined): string | null {
+  const text = heldReasonText(reason)
+  if (!text) return null
+  const why = text.replace(/^On hold:?\s*/, '')
+  return why ? `This letter is on hold: ${why}. Print it anyway?` : 'This letter is on hold. Print it anyway?'
+}
+
 /** The short form, for a row's badge. */
 const HELD_SHORT: Record<HeldReason, string> = {
   choose_relay: 'Held: writer must choose a group',
