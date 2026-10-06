@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import GroupActivity from '../../components/group/GroupActivity'
 import GroupConversations from '../../components/group/GroupConversations'
 import GroupWriters from '../../components/group/GroupWriters'
+import MembersWaitingNotice from '../../components/group/MembersWaitingNotice'
 import PrintQueue from '../../components/group/PrintQueue'
 import AppShell from '../../components/layout/AppShell'
 import { useAuth } from '../../hooks/useAuth'
@@ -87,6 +88,9 @@ export default function InboxOrg() {
         <p className="inbox-hero-sub">Group inbox</p>
         <h1 className="inbox-hero-title">{group.group?.name ?? user?.username}</h1>
       </div>
+
+      {/* The group-owner admin hands the key to admins waiting for it (WP3); renders nothing for anyone else. */}
+      <MembersWaitingNotice />
 
       <div className="group-tabs" role="tablist">
         {TABS.map((t) => (
