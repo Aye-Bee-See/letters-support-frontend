@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { issueClaimToken, revokeClaimToken } from '../../api/writers'
 import { toApiError } from '../../api/client'
+import type { CaughtUp } from '../../api/groups'
 import LoadState from '../../components/ui/LoadState'
 import { createClaimToken, unlockManagedWriterKey, type Keypair } from '../../crypto'
 import { describeWriterError, giveWriterKeys, isAnonymousWriter, writerLabel } from '../../groups/writers'
@@ -29,7 +30,8 @@ export default function Handoff() {
   const { groupKeypair } = useAuth()
   const { chapterId, keyState, keyVersion } = useGroup()
   const { writer, missing, loading, error, reload } = useManagedWriter(id)
-  const [issued, setIssued] = useState<{ token: string; expiresAt: string } | null>(null)
+  // `caughtUp`: the earlier letters sealed to a writer given their first keys on the way (README "Latecomers", API #194).
+  const [issued, setIssued] = useState<{ token: string; expiresAt: string; caughtUp: CaughtUp } | null>(null)
   // Leaving loses the token on screen for good: ask first, for an in-app link as for closing the tab.
   useLeaveGuard(issued !== null, 'The claim token on this page is shown only now. Leave without copying it?')
   const [busy, setBusy] = useState<'issue' | 'revoke' | null>(null)
@@ -59,12 +61,15 @@ export default function Handoff() {
   const anonymous = isAnonymousWriter(writer)
   const ready = keyState === 'ready' && groupKeypair !== null && chapterId !== null
 
-  /** The writer's keypair: opened from the group's sealed copy, or made now for a writer who has none. */
-  async function writerKeypair(w: Writer, group: Keypair, groupId: number): Promise<Keypair> {
+  /**
+   * The writer's keypair: opened from the group's sealed copy, or made now for a
+   * writer who has none, with what the server then sealed to them (`caughtUp`).
+   */
+  async function writerKeypair(w: Writer, group: Keypair, groupId: number): Promise<{ keypair: Keypair; caughtUp: CaughtUp }> {
     if (!w.publicKey) return giveWriterKeys(w.id, groupId, { publicKey: group.publicKey, keyVersion })
     if (!w.orgWrappedPrivateKey) throw new Error('Your group doesn’t hold a copy of this writer’s key, so it can’t be handed on.')
     try {
-      return await unlockManagedWriterKey({ orgWrappedPrivateKey: w.orgWrappedPrivateKey, publicKey: w.publicKey }, group)
+      return { keypair: await unlockManagedWriterKey({ orgWrappedPrivateKey: w.orgWrappedPrivateKey, publicKey: w.publicKey }, group), caughtUp: null }
     } catch {
       throw new Error('This writer’s key is locked with a newer group key than the one open here. Sign in again, then hand off.')
     }
@@ -75,10 +80,10 @@ export default function Handoff() {
     setBusy('issue')
     setProblem(null)
     try {
-      const keypair = await writerKeypair(writer, groupKeypair, chapterId)
+      const { keypair, caughtUp } = await writerKeypair(writer, groupKeypair, chapterId)
       const material = await createClaimToken(keypair.privateKey)
       const answer = await issueClaimToken(writer.id, material.fields)
-      setIssued({ token: material.token, expiresAt: answer.expiresAt })
+      setIssued({ token: material.token, expiresAt: answer.expiresAt, caughtUp })
     } catch (err) {
       setProblem(describeWriterError(err))
       // A writer given keys just now has them even if the token failed: the next try opens those.
@@ -163,7 +168,17 @@ export default function Handoff() {
             )}
 
             {issued ? (
-              <TokenShown token={issued.token} expiresAt={issued.expiresAt} name={name} onDone={done} />
+              <>
+                {issued.caughtUp && issued.caughtUp.sealed > 0 && (
+                  <div className="pending-banner" role="status">
+                    <span>
+                      {name} has keys now.{' '}
+                      {issued.caughtUp.sealed === 1 ? '1 earlier letter was' : `${issued.caughtUp.sealed} earlier letters were`} sealed to them.
+                    </span>
+                  </div>
+                )}
+                <TokenShown token={issued.token} expiresAt={issued.expiresAt} name={name} onDone={done} />
+              </>
             ) : !ready ? (
               <div className="pending-banner" role="status">
                 <span>

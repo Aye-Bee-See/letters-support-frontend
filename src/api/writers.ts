@@ -4,6 +4,7 @@
 // (src/crypto); these calls only carry the results.
 import { del, getAllPages, post, put } from './client'
 import type { ClaimMaterial } from '../crypto'
+import type { CaughtUp } from './groups'
 import type { User, Writer } from '../types'
 
 /**
@@ -44,9 +45,13 @@ export const createWriter = (writer: NewWriter & { chapter?: number }) => post<U
 export type WriterFields = Partial<Pick<User, 'name' | 'email' | 'managerNote' | 'penName'>> &
   ({ publicKey?: never } | { publicKey: string; orgWrappedPrivateKey: string; orgKeyVersion: number })
 
-/** PUT /auth/user for an unclaimed writer of the caller's group. */
+/**
+ * PUT /auth/user for an unclaimed writer of the caller's group. Giving the
+ * writer their first keys answers `caughtUp` too, the letters the server then
+ * sealed to them (README "Latecomers", API #194); any other edit has none.
+ */
 export const updateWriter = (id: number, fields: WriterFields) =>
-  put<{ updatedRows: number[]; newUser: Partial<User> & { id: number } }>('/auth/user', { id, ...fields })
+  put<{ updatedRows: number[]; newUser: Partial<User> & { id: number }; caughtUp?: CaughtUp }>('/auth/user', { id, ...fields })
 
 /**
  * DELETE /auth/user for an unclaimed writer of the caller's group: the account,
