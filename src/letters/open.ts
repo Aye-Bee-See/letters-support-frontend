@@ -1,6 +1,6 @@
 import { downloadAttachment } from '../api/letters'
 import { decryptFile, decryptLetter, openEnvelope, type Keypair } from '../crypto'
-import type { Attachment, Envelope, Message } from '../types'
+import type { Attachment, Envelope, Message, StoredEnvelope } from '../types'
 
 // Opening letters (README "End-to-end mode: Sending and reading letters").
 // Each letter has its own content key, sealed in an envelope to each reader.
@@ -14,6 +14,8 @@ export interface LetterReader {
   keypair: Keypair
   chapterId?: number | null
   groupKeypair?: Keypair | null
+  /** The version of the group key this session holds (`keys.orgKey.keyVersion`), to tell a stale envelope from a broken one. */
+  groupKeyVersion?: number | null
 }
 
 export type OpenedLetter =
@@ -21,11 +23,19 @@ export type OpenedLetter =
   | { state: 'open'; text: string | null; relayNote: string | null; contentKey: Uint8Array }
   /** No envelope for this reader yet: e.g. a reply recorded before the writer had keys; the group shares it on its next sign-in. */
   | { state: 'waiting' }
+  /**
+   * The group's envelope would not open, and it names a group key version other
+   * than the one this session holds (README "Sending and reading letters":
+   * envelopes carry `keyVersion` on reads, API #198). `sealedWith` below
+   * `holding`: sealed under an older group key; above it: this session's key is
+   * the old one, and signing in again picks up the new.
+   */
+  | { state: 'old-key'; sealedWith: number; holding: number }
   /** An envelope exists but would not open, or the body would not decrypt. */
   | { state: 'unreadable' }
 
 /** The envelope this reader can open, and the keypair that opens it. */
-function envelopeFor(envelopes: Envelope[], reader: LetterReader): { envelope: Envelope; keypair: Keypair } | null {
+function envelopeFor(envelopes: (Envelope | StoredEnvelope)[], reader: LetterReader): { envelope: Envelope; keypair: Keypair } | null {
   const mine = envelopes.find((e) => e.readerType === 'user' && e.readerId === reader.userId)
   if (mine) return { envelope: mine, keypair: reader.keypair }
   if (reader.groupKeypair && reader.chapterId != null) {
@@ -47,6 +57,9 @@ export async function openLetter(message: Message, reader: LetterReader): Promis
     const { text, relayNote } = await decryptLetter(message, contentKey)
     return { state: 'open', text, relayNote, contentKey }
   } catch {
+    const sealedWith = found.envelope.readerType === 'chapter' ? found.envelope.keyVersion : null
+    const holding = reader.groupKeyVersion
+    if (typeof sealedWith === 'number' && typeof holding === 'number' && sealedWith !== holding) return { state: 'old-key', sealedWith, holding }
     return { state: 'unreadable' }
   }
 }

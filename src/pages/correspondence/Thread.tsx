@@ -13,7 +13,8 @@ import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, DeclineReason, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
-import { threadPrisonerName } from '../../utils/letters'
+import { writerLabel } from '../../utils/groupLetters'
+import { oldKeyText, threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
 // Markup and classes from solidarity-site/thread.html (pages/thread.css). At
@@ -135,6 +136,7 @@ function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBl
 function previewOf(m: Message, opened: OpenedLetter): string {
   if (opened.state === 'waiting') return 'Waiting to be shared with you'
   if (opened.state === 'unreadable') return 'This letter could not be opened'
+  if (opened.state === 'old-key') return oldKeyText(opened.sealedWith, opened.holding).short
   if (opened.text) return opened.text.replace(/\s+/g, ' ').slice(0, 90) + (opened.text.length > 90 ? '…' : '')
   if (m.paper) return 'Written on paper'
   return m.sender === 'prisoner' ? 'Scan' : 'Letter'
@@ -271,6 +273,11 @@ function LetterItem({
               <span className="letter-body-scan-note">This letter could not be opened.</span>
             </div>
           )}
+          {opened.state === 'old-key' && (
+            <div className="letter-body-scan">
+              <span className="letter-body-scan-note">{oldKeyText(opened.sealedWith, opened.holding).long}</span>
+            </div>
+          )}
           {opened.state === 'open' && (
             <>
               {opened.text && <div className="letter-body-text">{opened.text}</div>}
@@ -344,7 +351,7 @@ function Sidebar({
           <div className="thread-sidebar-section">
             <div className="thread-sidebar-heading">Writer</div>
             <div className="thread-sidebar-info">
-              <strong>{chat.user_details.name ?? chat.user_details.username}</strong>
+              <strong>{writerLabel(chat.user_details)}</strong>
               {chat.user_details.managedBy && !chat.user_details.claimedAt && (
                 <>
                   <br />
@@ -401,9 +408,9 @@ function Sidebar({
 
 export default function Thread() {
   const id = Number(useParams().id)
-  const { user, keypair, groupKeypair, isChapter } = useAuth()
+  const { user, keypair, groupKeypair, keys, isChapter } = useAuth()
   const page = useApi(
-    () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair }),
+    () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair, groupKeyVersion: keys?.orgKey?.keyVersion ?? null }),
     [id, user?.id],
   )
   // A returned or declined letter being written again in the reply panel below.
@@ -429,7 +436,9 @@ export default function Thread() {
   const prisoner = chat.prisoner_details
   const prisonerName = threadPrisonerName(chat)
   const facility = (prisoner?.prison_details as Prison | null | undefined)?.prisonName
-  const writerName = chat.user === user?.id ? (user.penName ?? user.username) : (chat.user_details?.name ?? chat.user_details?.username ?? 'Writer')
+  // A group admin knows the writer by their pen name, as the letters are signed
+  // (README "GET /chat/chats": `user_details.penName`), else their name, else their username.
+  const writerName = chat.user === user?.id ? (user.penName ?? user.username) : chat.user_details ? writerLabel(chat.user_details) : 'Writer'
   const lastRelayId = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group?.id
   // A group admin may correct or delete a reply their group recorded, or any
   // reply in the thread of a writer it manages (README "PUT /messaging/message").
@@ -490,7 +499,7 @@ export default function Thread() {
               (README "Reply reference": filing a reply), the writer and prisoner fixed. */}
           {isChapter && prisoner && (
             <RecordReplyPanel
-              writer={{ id: chat.user, name: writerName }}
+              writer={{ id: chat.user, name: writerName, publicKey: chat.user_details?.publicKey }}
               prisoner={{ id: prisoner.id, name: prisonerName }}
               onRecorded={() => page.reload()}
             />

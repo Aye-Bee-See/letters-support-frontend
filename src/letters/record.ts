@@ -25,6 +25,13 @@ export interface ReplyDraft {
   reference?: string | null
   /** Whose thread it goes in: from the reference lookup, the name search, or the thread. Sealed to when they have keys. */
   writerId: number
+  /**
+   * The writer's public key when it is already known: the reference lookup
+   * gives it (README "Reply reference": `writer.publicKey`), and so does a
+   * thread's `user_details`. Null for a writer without keys. Left out (the name
+   * search gives no key), it is fetched from GET /auth/public-key.
+   */
+  writerPublicKey?: string | null
   /** Who wrote it. Sent only for a reply filed by name; with a reference the number says. */
   prisonerId?: number | null
   /** The transcription; an empty string when there is only a scan or photo. */
@@ -68,12 +75,16 @@ export async function recordReply(draft: ReplyDraft, group: RecordingGroup): Pro
       // A scan alone still carries the encryption of an empty body: its content key encrypts the file.
       text: draft.text.trim() === '' ? '' : draft.text,
       readers: async () => {
-        const [writer, own] = await Promise.all([getUserPublicKey(draft.writerId), getGroupPublicKey(group.chapterId)])
+        const known = draft.writerPublicKey
+        const [writerKey, own] = await Promise.all([
+          known !== undefined ? known : getUserPublicKey(draft.writerId).then((w) => w.publicKey),
+          getGroupPublicKey(group.chapterId),
+        ])
         if (!own.publicKey) throw new Error('Your group has no group key yet, so nothing can be recorded.')
         const readers: Reader[] = [{ readerType: 'chapter', readerId: group.chapterId, publicKey: own.publicKey, keyVersion: own.keyVersion }]
         // The writer must have an envelope once they have a public key; before that one would be refused.
-        if (writer.publicKey) readers.unshift({ readerType: 'user', readerId: draft.writerId, publicKey: writer.publicKey })
-        sealedToWriter = writer.publicKey !== null
+        if (writerKey) readers.unshift({ readerType: 'user', readerId: draft.writerId, publicKey: writerKey })
+        sealedToWriter = writerKey !== null
         return readers
       },
       body: reference ? { sender: 'prisoner', reference } : { sender: 'prisoner', user: draft.writerId, prisoner: draft.prisonerId },

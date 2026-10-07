@@ -324,7 +324,10 @@ not a convenience.
   or in an app; nothing to do on the writer's side.
 - **A group admin sees "This letter could not be opened" after a rotation.**
   They were left out of the new key, or their session still holds the old one.
-  The keys page and the inbox pick up a new key; otherwise sign in again.
+  The keys page and the inbox pick up a new key; otherwise sign in again. When
+  the letter's envelope names another group key version than the session's,
+  the page says so instead: "sealed under an older group key" (the current
+  key can't open it), or "a newer group key" than the session holds.
 
 ## Further reading
 

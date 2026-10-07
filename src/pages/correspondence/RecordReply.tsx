@@ -36,7 +36,8 @@ function writerName(w: { penName: string | null; name: string | null; anonymous:
 
 /** Who the reply goes to, settled by step 1. */
 interface Target {
-  writer: { id: number; name: string }
+  /** `publicKey` from the reference lookup; the name search gives none, so the panel fetches it. */
+  writer: { id: number; name: string; publicKey?: string | null }
   prisoner: { id: number; name: string }
   reference: string | null
 }
@@ -123,7 +124,9 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
   const ready: Target | null =
     found && found.writer && found.prisoner
       ? {
-          writer: { id: found.writer.id, name: writerName(found.writer) },
+          // The lookup gives the writer's key (README "Reply reference"), so nothing more is fetched;
+          // an older API without the field leaves it undefined, and the panel fetches it.
+          writer: { id: found.writer.id, name: writerName(found.writer), publicKey: found.writer.publicKey },
           prisoner: { id: found.prisoner.id, name: displayName(found.prisoner) },
           reference: found.reference,
         }

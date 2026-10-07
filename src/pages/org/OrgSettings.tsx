@@ -12,9 +12,10 @@ import { capitalise, changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOC
 
 // A group admin's own group (group-admin-plan.md WP4a). The record through
 // PUT /chapter/chapter, which a group admin may send for their own active group
-// (README "Chapters" > "Chapter fields": every field but accountStatus, which
-// only a site admin sets, and the counted lettersSent and averageTimeDays).
-// Only the changed fields are sent (utils/groupForm.ts, shared with the site
+// (README "Chapters" > "Chapter fields": every field but accountStatus,
+// vouchedBy and recordStatus, which only a site admin sets (API #192), and the
+// counted lettersSent and averageTimeDays). The form has none of the three, and
+// only its changed fields are sent (utils/groupForm.ts, shared with the site
 // admin's admin/EditGroup.tsx). The link panels (README "What each role can
 // do": an active group links itself to a facility or a prisoner) apply at once,
 // apart from Save. The history is GET /chapter/history (README "The history of

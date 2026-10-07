@@ -146,12 +146,21 @@ export interface KeyBundle {
   } | null
 }
 
-/** A letter's content key sealed to one reader. */
+/** A letter's content key sealed to one reader, as it is sent: `keyVersion` only for a group's envelope. */
 export interface Envelope {
   readerType: ReaderType
   readerId: number | null
   wrappedKey: string
   keyVersion?: number | null
+}
+
+/**
+ * An envelope as a letter is read (README "Sending and reading letters", API
+ * #198): `keyVersion` is always there, the group key version it was sealed to
+ * for a group's envelope, null for a person's.
+ */
+export interface StoredEnvelope extends Envelope {
+  keyVersion: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -321,10 +330,10 @@ export interface Chat extends Timestamps {
   prisoner_details?: (Pick<Prisoner, 'id' | 'birthName' | 'chosenName' | 'status' | 'prison'> & {
     prison_details?: PrisonSummary | null
   }) | Prisoner | null
-  /** full=true */
+  /** full=true. `penName` is what the writer signs with, the name a group knows them by (API #195). */
   user_details?: Pick<
     User,
-    'id' | 'name' | 'username' | 'bio' | 'role' | 'chapterId' | 'managedBy' | 'claimedAt' | 'anonymousForChapter' | 'publicKey'
+    'id' | 'name' | 'penName' | 'username' | 'bio' | 'role' | 'chapterId' | 'managedBy' | 'claimedAt' | 'anonymousForChapter' | 'publicKey'
   >
   messages?: Message[]
 }
@@ -341,7 +350,7 @@ export interface Message extends Timestamps {
   messageText?: string
   ciphertext?: string | null
   nonce?: string | null
-  envelopes?: Envelope[]
+  envelopes?: StoredEnvelope[]
   relayChapter: number | null
   relay_group: { id: number; name: string } | null
   relayNote?: string | null
@@ -564,7 +573,8 @@ export interface ReferenceLookup {
   mailedAt: string | null
   /** The thread to open; null if it is gone too. */
   chat: number | null
-  writer: { id: number; penName: string | null; name: string | null; anonymous: boolean } | null
+  /** `publicKey` is null for a writer without keys yet: a reply is then sealed to the group alone (API #195). */
+  writer: { id: number; penName: string | null; name: string | null; anonymous: boolean; publicKey: string | null } | null
   prisoner: { id: number; birthName: string | null; chosenName: string | null } | null
   careOf: { id: number; name: string } | null
 }
@@ -806,4 +816,19 @@ export interface ApiError {
   message: string
   /** Seconds to wait, from Retry-After on a 429. */
   retryAfter?: number
+  /**
+   * The records a refusal is about, e.g. the letters that stopped a batch
+   * (README "PUT /messaging/status/batch"). Absent from an older API, and from
+   * refusals that are not about particular records.
+   */
+  ids?: number[]
+  /** A 400's failures, one per sentence in `errors` (README "Error codes"). */
+  problems?: ApiProblem[]
+}
+
+/** One failure of a 400, for a client that words it itself (README "Error codes"). */
+export interface ApiProblem {
+  field: string | null
+  code: string
+  params?: Record<string, unknown>
 }

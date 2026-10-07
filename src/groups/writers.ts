@@ -1,5 +1,6 @@
 import { toApiError } from '../api/client'
 import { getGroupPublicKey } from '../api/letters'
+import type { CaughtUp } from '../api/groups'
 import { createWriter, updateWriter, type NewWriter } from '../api/writers'
 import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../crypto'
 import type { Writer } from '../types'
@@ -56,12 +57,14 @@ export async function createKeyedWriter(
  * Give an unclaimed writer made before encryption their first keys (PUT /auth/user,
  * README "Latecomers"); the server then seals to them the letters it still holds.
  * Only a group admin holding the group key may (a 403 otherwise). Answers the
- * new keypair, for a hand-off that goes straight on to a claim token; drop it after.
+ * new keypair, for a hand-off that goes straight on to a claim token (drop it
+ * after), and `caughtUp`, what the server sealed to them (API #194): null once
+ * it holds no keys, or from an older API that didn't say.
  */
-export async function giveWriterKeys(writerId: number, groupId: number, known: GroupPublicKey): Promise<Keypair> {
+export async function giveWriterKeys(writerId: number, groupId: number, known: GroupPublicKey): Promise<{ keypair: Keypair; caughtUp: CaughtUp }> {
   const keypair = await generateKeypair()
-  await withCurrentGroupKey(groupId, known, async (key) => updateWriter(writerId, await writerKeyFields(keypair, key)))
-  return keypair
+  const answer = await withCurrentGroupKey(groupId, known, async (key) => updateWriter(writerId, await writerKeyFields(keypair, key)))
+  return { keypair, caughtUp: answer?.caughtUp ?? null }
 }
 
 /**

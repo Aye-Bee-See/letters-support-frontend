@@ -69,24 +69,63 @@ describe('writerLabel', () => {
 })
 
 describe('batch refusals (README "PUT /messaging/status/batch")', () => {
-  it('finds the letters the sentence names, among those asked for', () => {
-    expect(lettersNamed({ message: 'Letter 42: a printed letter cannot move to printed.' }, [41, 42, 43])).toEqual([42])
-    expect(lettersNamed({ message: 'Message 41, 43 not found' }, [41, 42, 43])).toEqual([41, 43])
+  const ids = [41, 42, 43]
+
+  it('takes the letters from `ids`, among those asked for, and not from the sentence', () => {
+    expect(lettersNamed({ message: 'Letter 42: a printed letter cannot move to printed.', ids: [42] }, ids)).toEqual([42])
+    expect(lettersNamed({ message: 'Message 41, 43 not found', ids: [41, 43] }, ids)).toEqual([41, 43])
+    expect(lettersNamed({ message: 'Letter 41 is wrong', ids: [] }, ids)).toEqual([])
+    expect(lettersNamed({ message: '', ids: [99] }, ids)).toEqual([])
+  })
+
+  it('takes the letters of a facility_rule decline from problems[0].params.ids', () => {
+    const problems = [{ field: 'rule', code: 'not_eligible', params: { ids: [43] } }]
+    expect(lettersNamed({ message: 'The facility of letter 41 has no mail rule', problems }, ids)).toEqual([43])
+  })
+
+  it('reads the sentence only when the API sent no ids (an older API)', () => {
+    expect(lettersNamed({ message: 'Letter 42: a printed letter cannot move to printed.' }, ids)).toEqual([42])
     expect(lettersNamed({ message: 'Chapter 3 is not active' }, [41])).toEqual([])
   })
 
-  it('words the refusal from status, name and condition, naming the letter', () => {
-    const ids = [41, 42]
-    expect(statusRefusal(error({ message: 'Letter 42: a mailed letter cannot move to printed.' }), ids, 'printed')).toMatch(/^Letter 42 can’t be marked printed/)
-    expect(statusRefusal(error({ name: 'LetterHeldError', message: 'Letter 41: this letter is held (prisoner_free).' }), ids, 'printed')).toMatch(/^Letter 41 is on hold/)
-    expect(
-      statusRefusal(error({ condition: 'changed_meanwhile', message: 'Letter 41 was changed by someone else meanwhile; nothing was moved.' }), ids, 'mailed'),
-    ).toContain('someone else')
-    expect(statusRefusal(error({ status: 403, name: 'ForbiddenError', message: 'Only the relay group (letter 41, 42).' }), ids, 'mailed')).toMatch(
+  it('words letter_status.not_allowed, naming the letter from ids', () => {
+    const refusal = error({ condition: 'not_allowed', ids: [42], message: 'Letter 41: nothing to do with it.' })
+    expect(statusRefusal(refusal, ids, 'printed')).toMatch(/^Letter 42 can’t be marked printed/)
+    expect(statusRefusal(refusal, ids, 'printed')).toContain('Nothing was marked')
+    expect(statusRefusal(refusal, [42], 'printed')).not.toContain('Nothing was marked')
+  })
+
+  it('words letter_held.<heldReason> by the hold, and an unknown hold as a hold', () => {
+    const held = (condition: string) => statusRefusal(error({ name: 'LetterHeldError', condition, ids: [41] }), ids, 'printed')
+    expect(held('writer_blocked')).toMatch(/^Letter 41 is on hold: your group blocked this writer\. Printing a held letter has to be confirmed/)
+    expect(held('prisoner_free')).toContain('the prisoner has been released')
+    expect(held('choose_relay')).toContain('choose which group')
+    expect(held('reseal_needed')).toContain('send it again')
+    expect(held('something_new')).toMatch(/^Letter 41 is on hold\. Printing/)
+  })
+
+  it('words authorization.not_yours apart from a group that cannot act', () => {
+    expect(statusRefusal(error({ status: 403, name: 'AuthorizationError', condition: 'not_yours', ids: [41, 42] }), ids, 'mailed')).toMatch(
       /^Letters 41 and 42 aren’t your group’s/,
     )
-    expect(statusRefusal(error({ status: 404, name: 'NotFoundError', message: 'Message 42 not found' }), ids, 'printed')).toMatch(/^Letter 42 is gone/)
-    expect(statusRefusal(error({ status: 409, message: '' }), ids, 'printed')).toContain('Nothing was marked')
+    expect(statusRefusal(error({ status: 403, name: 'AuthorizationError', message: 'Your group is suspended (3).' }), ids, 'mailed')).toMatch(
+      /^Your group can’t change letters right now/,
+    )
+  })
+
+  it('words not_found and changed_meanwhile, naming the letters', () => {
+    expect(statusRefusal(error({ status: 404, name: 'NotFoundError', ids: [43] }), ids, 'printed')).toMatch(/^Letter 43 is gone/)
+    expect(statusRefusal(error({ condition: 'changed_meanwhile', ids: [41] }), ids, 'mailed')).toMatch(/^Letter 41 was changed by someone else/)
+  })
+
+  it('words a facility_rule decline naming a rule the facility lacks', () => {
+    const problems = [{ field: 'rule', code: 'not_eligible', params: { ids: [42] } }]
+    expect(statusRefusal(error({ status: 400, name: null, problems }), ids, 'declined')).toMatch(/^The facility of letter 42 doesn’t list that rule/)
+  })
+
+  it('says one of the letters when nothing names one', () => {
+    expect(statusRefusal(error({ status: 409, ids: [] }), ids, 'printed')).toMatch(/^One of the letters/)
+    expect(statusRefusal(error({ status: 0 }), ids, 'printed')).toContain('Couldn’t reach the server')
   })
 })
 

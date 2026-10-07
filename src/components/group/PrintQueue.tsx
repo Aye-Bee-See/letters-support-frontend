@@ -11,6 +11,7 @@ import {
   EMPTY_QUEUE,
   heldReasonShort,
   heldReasonText,
+  lettersNamed,
   QUEUE_FILTERS,
   queueFilter,
   returnReasonText,
@@ -76,19 +77,21 @@ function QueueRow({
   filter,
   selectable,
   selected,
+  refused,
   onToggle,
 }: {
   m: Message
   filter: QueueFilter
   selectable: boolean
   selected: boolean
+  refused: boolean
   onToggle: () => void
 }) {
   const prisoner = m.prisoner_details
   const prison = (prisoner?.prison_details ?? null) as Prison | null
   const held = heldReasonShort(m.heldReason)
   return (
-    <tr className={selected ? 'queue-row is-selected' : 'queue-row'}>
+    <tr className={['queue-row', selected && 'is-selected', refused && 'is-refused'].filter(Boolean).join(' ')}>
       {selectable && (
         <td className="col-check">
           <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select letter ${m.id}`} />
@@ -134,6 +137,8 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
   const [declining, setDeclining] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'error' | 'done'; text: string } | null>(null)
+  // The letters the last refusal named, from its `ids` (README "PUT /messaging/status/batch"), marked in the list.
+  const [refused, setRefused] = useState<Set<number>>(new Set())
 
   const move = BATCH_MOVE[filter]
   const rows = list.data?.items ?? []
@@ -159,6 +164,7 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
     if (!move || chosen.length === 0) return
     setBusy(true)
     setNotice(null)
+    setRefused(new Set())
     try {
       const done = await setLetterStatusBatch(chosen, { status: move.target, ...(move.release ? { release: true } : {}) })
       setNotice({ kind: 'done', text: `${done.count === 1 ? '1 letter' : `${done.count} letters`} marked ${move.target}.` })
@@ -166,7 +172,9 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
       setConfirming(false)
       list.reload()
     } catch (err) {
-      setNotice({ kind: 'error', text: statusRefusal(toApiError(err), chosen, move.target) })
+      const apiError = toApiError(err)
+      setNotice({ kind: 'error', text: statusRefusal(apiError, chosen, move.target) })
+      setRefused(new Set(lettersNamed(apiError, chosen)))
       setConfirming(false)
     } finally {
       setBusy(false)
@@ -175,6 +183,7 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
 
   async function decline(reason: DeclineReason, rule: string | null, note: string): Promise<string | null> {
     if (chosen.length === 0) return 'Select the letters not to send.'
+    setRefused(new Set())
     try {
       const done = await setLetterStatusBatch(chosen, { status: 'declined', reason, ...(rule ? { rule } : {}), ...(note ? { note } : {}) })
       setNotice({
@@ -187,10 +196,9 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
       return null
     } catch (err) {
       const apiError = toApiError(err)
-      // A rule some letter's facility doesn't carry (any more): `not_eligible` on the field.
-      return apiError.status === 400 && reason === 'facility_rule'
-        ? 'That rule isn’t one of the facility’s rules any more. Nothing was marked; reload and pick again.'
-        : statusRefusal(apiError, chosen, 'declined')
+      // A rule some letter's facility doesn't carry (any more) is `not_eligible` on `rule`, naming the letters.
+      setRefused(new Set(lettersNamed(apiError, chosen)))
+      return statusRefusal(apiError, chosen, 'declined')
     }
   }
 
@@ -214,6 +222,7 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
                 className="btn btn-sm"
                 onClick={() => {
                   setSelected(new Set())
+                  setRefused(new Set())
                   setNotice(null)
                   list.reload()
                 }}
@@ -315,7 +324,9 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
           </thead>
           <tbody>
             {rows.map((m) => (
-              <QueueRow key={m.id} m={m} filter={filter} selectable={!!move} selected={selected.has(m.id)} onToggle={() => toggle(m.id)} />
+              <QueueRow key={m.id} m={m} filter={filter} selectable={!!move} selected={selected.has(m.id)}
+                refused={refused.has(m.id)}
+                onToggle={() => toggle(m.id)} />
             ))}
           </tbody>
         </table>

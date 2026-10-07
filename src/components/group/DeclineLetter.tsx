@@ -127,11 +127,8 @@ export default function DeclineLetter({ message, rules, onDone }: { message: Mes
       onDone('Not sent. The writer is told why, and may write it again.')
       return null
     } catch (err) {
-      const apiError = toApiError(err)
-      // A rule this facility doesn't carry (any more): `not_eligible` on the field (README "Declined letters").
-      return apiError.status === 400 && reason === 'facility_rule'
-        ? 'That rule isn’t one of this facility’s rules any more. Reload and pick again.'
-        : statusRefusal(apiError, [message.id], 'declined')
+      // A rule this facility doesn't carry (any more) is `not_eligible` on `rule` (README "Declined letters"); statusRefusal words it.
+      return statusRefusal(toApiError(err), [message.id], 'declined')
     }
   }
 
