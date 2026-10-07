@@ -806,4 +806,19 @@ export interface ApiError {
   message: string
   /** Seconds to wait, from Retry-After on a 429. */
   retryAfter?: number
+  /**
+   * The records a refusal is about, e.g. the letters that stopped a batch
+   * (README "PUT /messaging/status/batch"). Absent from an older API, and from
+   * refusals that are not about particular records.
+   */
+  ids?: number[]
+  /** A 400's failures, one per sentence in `errors` (README "Error codes"). */
+  problems?: ApiProblem[]
+}
+
+/** One failure of a 400, for a client that words it itself (README "Error codes"). */
+export interface ApiProblem {
+  field: string | null
+  code: string
+  params?: Record<string, unknown>
 }

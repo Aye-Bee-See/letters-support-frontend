@@ -2,8 +2,8 @@ import type { ApiError, DeclineReason, HeldReason, LetterFooter, LetterStatus, M
 
 // Wording for the group inbox and the one-letter print page (group-admin-plan.md,
 // WP1). The API sends codes; these are the group admin's words for them. Nothing
-// here is worded from an error's sentence (plan section 3), except the letter ids
-// a batch refusal names, which the API gives nowhere else.
+// here is worded from an error's sentence (plan section 3); the letter ids a
+// refusal names come from its `ids`, read from the sentence only for an older API.
 
 // --- The print queue's filters (README "GET /messaging/messages") ---------------
 
@@ -147,36 +147,59 @@ export function writerLabel(writer: { name?: string | null; penName?: string | n
 
 /**
  * Which of the letters asked for a refusal names. All or none: when one letter
- * can't move, none did, and the API's sentence says which ("Letter 42: …", or
- * "letter 41, 42" in a 403, "Message 41, 42 not found" in a 404). The id is
- * there and nowhere else, so it is read from the sentence, and only the ids
- * that were asked for count.
+ * can't move, none did. The API names the letters in `ids` (API #196), or, for
+ * a `facility_rule` decline naming a rule a facility lacks, in
+ * `problems[0].params.ids`. An older API named them only in its sentence
+ * ("Letter 42: …", "letter 41, 42", "Message 41, 42 not found"), so the
+ * sentence is read only when neither field is there. Only the ids that were
+ * asked for count.
  */
-export function lettersNamed(error: Pick<ApiError, 'message'>, ids: number[]): number[] {
-  const named = new Set((error.message.match(/\d+/g) ?? []).map(Number))
+export function lettersNamed(error: Pick<ApiError, 'message' | 'ids' | 'problems'>, ids: number[]): number[] {
+  const fromParams = error.problems?.[0]?.params?.ids
+  const given = error.ids ?? (Array.isArray(fromParams) ? fromParams.filter((id): id is number => typeof id === 'number') : null)
+  const named = new Set(given ?? (error.message.match(/\d+/g) ?? []).map(Number))
   return ids.filter((id) => named.has(id))
 }
+
+/** True when the refusal named its letters in a field, as the API has since #196. */
+const namesInField = (error: Pick<ApiError, 'ids' | 'problems'>) => Array.isArray(error.ids) || Array.isArray(error.problems?.[0]?.params?.ids)
 
 const letterList = (ids: number[]) =>
   ids.length === 1 ? `Letter ${ids[0]}` : `Letters ${ids.slice(0, -1).join(', ')} and ${ids[ids.length - 1]}`
 
-/** Why a batch (or one letter) couldn't be marked, worded from the status, `name` and `condition`. Nothing was changed. */
+/**
+ * Why a batch (or one letter) couldn't be marked, worded from the status, `name`
+ * and `condition` (README "PUT /messaging/status/batch", "Error codes"):
+ * `letter_status.not_allowed`, `letter_held.<heldReason>`,
+ * `authorization.not_yours`, `not_found` and `changed_meanwhile`. Nothing was changed.
+ */
 export function statusRefusal(error: ApiError, ids: number[], target: LetterStatus): string {
   const named = lettersNamed(error, ids)
   const who = named.length ? letterList(named) : ids.length === 1 ? 'This letter' : 'One of the letters'
   const plural = named.length > 1
+  const is = plural ? 'are' : 'is'
   const nothing = ids.length > 1 ? ' Nothing was marked: the letters move all together or not at all.' : ''
   if (error.status === 0) return 'Couldn’t reach the server. Nothing was marked; try again.'
-  if (error.status === 409 && error.name === 'LetterHeldError')
-    return `${who} ${plural ? 'are' : 'is'} on hold, and printing a held letter has to be confirmed.${nothing}`
+  if (error.status === 409 && error.name === 'LetterHeldError') {
+    // The condition is the hold itself (README "Moved and freed"); one this client doesn't know is still a hold.
+    const why = (heldReasonText(error.condition) ?? '').replace(/^On hold:?\s*/, '')
+    const hold = why ? `${who} ${is} on hold: ${why}.` : `${who} ${is} on hold.`
+    return `${hold} Printing a held letter has to be confirmed: print it from the Held list, or from the letter’s own page.${nothing}`
+  }
   if (error.status === 409 && error.condition === 'changed_meanwhile')
     return `${who} ${plural ? 'were' : 'was'} changed by someone else meanwhile.${nothing} Reload and try again.`
+  // `letter_status.not_allowed`, and any other 409: the letter is not where the move starts from.
   if (error.status === 409)
     return `${who} can’t be marked ${target} from where ${plural ? 'they are' : 'it is'} now; someone may have moved ${plural ? 'them' : 'it'} already.${nothing} Reload to see where things stand.`
-  if (error.status === 403)
+  // `authorization.not_yours`; an older API sent no condition, but named the letters in its sentence.
+  if (error.status === 403 && (error.condition === 'not_yours' || (!namesInField(error) && !error.condition && named.length > 0)))
     return `${who} ${plural ? 'aren’t' : 'isn’t'} your group’s to mark: ${plural ? 'they are' : 'it is'} mailed by another group now.${nothing}`
+  if (error.status === 403) return `Your group can’t change letters right now: it may be waiting for approval or suspended.${nothing}`
   if (error.status === 404)
-    return `${who} ${plural ? 'are' : 'is'} gone: the writer may have deleted ${plural ? 'them' : 'it'}.${nothing} Reload the list.`
+    return `${who} ${is} gone: the writer may have deleted ${plural ? 'them' : 'it'}.${nothing} Reload the list.`
+  // A `facility_rule` decline naming a rule some letter's facility lacks: `not_eligible` on `rule`, naming the letters.
+  if (error.status === 400 && error.problems?.[0]?.field === 'rule' && error.problems[0].code === 'not_eligible')
+    return `${named.length ? `The facility of ${who.toLowerCase()}` : 'A selected letter’s facility'} doesn’t list that rule (any more).${nothing} Reload and pick again, or decline for another reason.`
   if (error.status === 400) return `The server refused this change.${nothing}`
   return `Something went wrong on the server (${error.status}).${nothing} Try again later.`
 }

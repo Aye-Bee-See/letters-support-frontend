@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import type { ApiEnvelope, ApiError, ApiListEnvelope, ListParams, ListResult } from '../types'
+import type { ApiEnvelope, ApiError, ApiListEnvelope, ApiProblem, ListParams, ListResult } from '../types'
 
 // The JWT lives in memory only (never localStorage). AuthContext owns the
 // session and pushes the token here so requests made outside React can use it.
@@ -69,6 +69,9 @@ export function toApiError(error: unknown): ApiError {
       errors[0] ||
       (error.response ? error.message : 'Could not reach the server.')
     const retryAfter = Number(error.response?.headers?.['retry-after'])
+    // `ids` names the records a refusal is about (README "PUT /messaging/status/batch").
+    const ids = Array.isArray(body?.ids) ? (body.ids as unknown[]).filter((id): id is number => typeof id === 'number') : null
+    const problems = Array.isArray(body?.problems) ? (body.problems as ApiProblem[]) : null
     return {
       status: error.response?.status ?? 0,
       name: typeof body?.name === 'string' ? body.name : null,
@@ -76,6 +79,8 @@ export function toApiError(error: unknown): ApiError {
       errors,
       message,
       ...(Number.isFinite(retryAfter) && retryAfter > 0 ? { retryAfter } : {}),
+      ...(ids ? { ids } : {}),
+      ...(problems ? { problems } : {}),
     }
   }
   return {

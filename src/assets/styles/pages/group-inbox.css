@@ -66,6 +66,9 @@
 .queue-row:last-child { border-bottom: none; }
 .queue-row:hover td { background: var(--off-white); }
 .queue-row.is-selected td { background: #f7f6f3; }
+/* A letter the last refusal named (its `ids`). */
+.queue-row.is-refused td { background: var(--alert-bg); }
+.queue-row.is-refused td:first-child { box-shadow: inset 3px 0 0 var(--alert); }
 
 .queue-row td {
   padding: 0.7rem 1rem;
