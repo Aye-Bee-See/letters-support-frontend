@@ -14,7 +14,7 @@ import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from
 import type { Attachment, Chat, DeclineReason, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { writerLabel } from '../../utils/groupLetters'
-import { threadPrisonerName } from '../../utils/letters'
+import { oldKeyText, threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
 // Markup and classes from solidarity-site/thread.html (pages/thread.css). At
@@ -136,6 +136,7 @@ function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBl
 function previewOf(m: Message, opened: OpenedLetter): string {
   if (opened.state === 'waiting') return 'Waiting to be shared with you'
   if (opened.state === 'unreadable') return 'This letter could not be opened'
+  if (opened.state === 'old-key') return oldKeyText(opened.sealedWith, opened.holding).short
   if (opened.text) return opened.text.replace(/\s+/g, ' ').slice(0, 90) + (opened.text.length > 90 ? '…' : '')
   if (m.paper) return 'Written on paper'
   return m.sender === 'prisoner' ? 'Scan' : 'Letter'
@@ -272,6 +273,11 @@ function LetterItem({
               <span className="letter-body-scan-note">This letter could not be opened.</span>
             </div>
           )}
+          {opened.state === 'old-key' && (
+            <div className="letter-body-scan">
+              <span className="letter-body-scan-note">{oldKeyText(opened.sealedWith, opened.holding).long}</span>
+            </div>
+          )}
           {opened.state === 'open' && (
             <>
               {opened.text && <div className="letter-body-text">{opened.text}</div>}
@@ -402,9 +408,9 @@ function Sidebar({
 
 export default function Thread() {
   const id = Number(useParams().id)
-  const { user, keypair, groupKeypair, isChapter } = useAuth()
+  const { user, keypair, groupKeypair, keys, isChapter } = useAuth()
   const page = useApi(
-    () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair }),
+    () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair, groupKeyVersion: keys?.orgKey?.keyVersion ?? null }),
     [id, user?.id],
   )
   // A returned or declined letter being written again in the reply panel below.

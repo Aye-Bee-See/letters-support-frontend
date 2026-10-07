@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { directionLabel, needsWriter } from './letters'
+import { directionLabel, needsWriter, oldKeyText } from './letters'
 
 describe('directionLabel', () => {
   it('marks anything from the prisoner as received', () => {
@@ -28,5 +28,14 @@ describe('needsWriter', () => {
     // The group settles a block (lifts it, prints or declines), not the writer.
     expect(needsWriter({ heldReasons: ['writer_blocked'] })).toBe(false)
     expect(needsWriter({ heldReasons: [] })).toBe(false)
+  })
+})
+
+describe('oldKeyText (API #198)', () => {
+  it('says an envelope was sealed under an older group key, or a newer one than the session holds', () => {
+    expect(oldKeyText(1, 2).short).toBe('Sealed under an older group key')
+    expect(oldKeyText(1, 2).long).toContain('version 1; your group’s key is now version 2')
+    expect(oldKeyText(3, 2).short).toBe('Sealed under a newer group key')
+    expect(oldKeyText(3, 2).long).toContain('sign in again')
   })
 })

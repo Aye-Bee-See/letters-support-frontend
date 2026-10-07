@@ -14,7 +14,7 @@ import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from
 import type { Attachment, LetterStatus, MailRule, Message, Prison } from '../../types'
 import { addressLines } from '../../utils/facilities'
 import { declineText, footerSentence, heldPrintQuestion, heldReasonText, returnReasonText, writerLabel, type QueueFilter } from '../../utils/groupLetters'
-import { inboxDate } from '../../utils/letters'
+import { inboxDate, oldKeyText } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
 // One letter, for the group that mails it (group-admin-plan.md, WP1), at
@@ -117,6 +117,7 @@ function KeyMissing({ keyState }: { keyState: GroupKeyState }) {
 function Unopened({ opened }: { opened: OpenedLetter }) {
   if (opened.state === 'waiting')
     return <div className="group-message is-error no-print">Your group holds no copy of this letter’s key, so it can’t be opened here.</div>
+  if (opened.state === 'old-key') return <div className="group-message is-error no-print">{oldKeyText(opened.sealedWith, opened.holding).long}</div>
   if (opened.state === 'unreadable')
     return <div className="group-message is-error no-print">This letter couldn’t be opened with your group’s key. Try signing in again.</div>
   return null
@@ -232,10 +233,10 @@ function Sidebar({ page, mine, rules, canRead, onDone }: { page: Page; mine: boo
 
 export default function PrintLetter() {
   const id = Number(useParams().id)
-  const { user, keypair, groupKeypair } = useAuth()
+  const { user, keypair, groupKeypair, keys } = useAuth()
   const group = useGroup()
   const ready = group.keyState === 'ready' && !!keypair && !!groupKeypair
-  const reader: LetterReader | null = ready && user ? { userId: user.id, keypair: keypair!, chapterId: user.chapterId, groupKeypair } : null
+  const reader: LetterReader | null = ready && user ? { userId: user.id, keypair: keypair!, chapterId: user.chapterId, groupKeypair, groupKeyVersion: keys?.orgKey?.keyVersion ?? null } : null
   const page = useApi(() => loadLetter(id, reader), [id, ready, user?.id])
   const [flash, setFlash] = useState<string | null>(null)
 

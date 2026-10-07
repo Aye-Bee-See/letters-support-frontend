@@ -146,12 +146,21 @@ export interface KeyBundle {
   } | null
 }
 
-/** A letter's content key sealed to one reader. */
+/** A letter's content key sealed to one reader, as it is sent: `keyVersion` only for a group's envelope. */
 export interface Envelope {
   readerType: ReaderType
   readerId: number | null
   wrappedKey: string
   keyVersion?: number | null
+}
+
+/**
+ * An envelope as a letter is read (README "Sending and reading letters", API
+ * #198): `keyVersion` is always there, the group key version it was sealed to
+ * for a group's envelope, null for a person's.
+ */
+export interface StoredEnvelope extends Envelope {
+  keyVersion: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -341,7 +350,7 @@ export interface Message extends Timestamps {
   messageText?: string
   ciphertext?: string | null
   nonce?: string | null
-  envelopes?: Envelope[]
+  envelopes?: StoredEnvelope[]
   relayChapter: number | null
   relay_group: { id: number; name: string } | null
   relayNote?: string | null
