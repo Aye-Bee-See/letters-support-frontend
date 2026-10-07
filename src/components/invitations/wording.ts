@@ -2,8 +2,8 @@ import type { ApiError, Invitation, InvitationKind } from '../../types'
 import type { UiClasses } from '../forms/uiClasses'
 
 // Shared by the invitation parts (README "Invitations"): dates, kind labels,
-// state badges, and refusals worded from the status and name, never the API's
-// sentence unless nothing else fits.
+// state badges, and refusals worded from the status, name and condition, never
+// the API's sentence unless nothing else fits.
 
 export const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 export const dateTime = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -22,20 +22,33 @@ export function stateBadge(c: UiClasses, state: State): string {
 }
 
 /**
- * Why creating, renewing or withdrawing an invitation was refused. Every 409
- * is an InvitationError with no condition, so what it means depends on what
- * was asked (README "Invitations").
+ * Why creating, renewing or withdrawing an invitation was refused, worded from
+ * the status, name and condition (README "Invitations", API #197). A 409
+ * InvitationError says why in its condition: `inactive` (the vouching group is
+ * not active), `accepted` or `revoked` (it is no longer pending), or
+ * `changed_meanwhile` (an acceptance gave it back as this was asked: ask again).
+ * An older API sent the family alone, so then what it means depends on what
+ * was asked.
  */
 export function invitationRefusal(err: ApiError, action: 'create' | 'renew' | 'withdraw'): string {
   if (err.errors?.length) return err.errors.join(' ')
+  const verb = action === 'renew' ? 'renewed' : action === 'withdraw' ? 'withdrawn' : 'made'
   if (err.status === 403)
     return action === 'create'
       ? 'Only an active group can invite, and only on its own behalf.'
       : 'Only the inviting group or a site admin can change this invitation.'
+  if (err.status === 409 && err.name === 'InvitationError') {
+    if (err.condition === 'inactive')
+      return 'That group isn’t an active member of the network (it may be waiting for approval or suspended), so it can’t vouch or take new group admins.'
+    if (err.condition === 'accepted') return `This invitation has already been accepted, so it can’t be ${verb}. Reload the page.`
+    if (err.condition === 'revoked')
+      return action === 'withdraw' ? 'This invitation was already withdrawn. Reload the page.' : `This invitation was withdrawn, so it can’t be ${verb}. Reload the page.`
+    if (err.condition === 'changed_meanwhile') return `The invitation changed while this was asked, and nothing was ${verb}. Try again.`
+  }
   if (err.status === 409)
     return action === 'create'
       ? 'That group isn’t an active member of the network, so it can’t vouch or take new group admins.'
-      : `Only a pending invitation can be ${action === 'renew' ? 'renewed' : 'withdrawn'}: this one was already accepted or withdrawn.`
+      : `Only a pending invitation can be ${verb}: this one was already accepted or withdrawn.`
   if (err.status === 404) return 'That invitation isn’t there any more. Reload the page.'
   return err.message
 }
