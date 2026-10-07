@@ -493,7 +493,7 @@ export default function Thread() {
               (README "Reply reference": filing a reply), the writer and prisoner fixed. */}
           {isChapter && prisoner && (
             <RecordReplyPanel
-              writer={{ id: chat.user, name: writerName }}
+              writer={{ id: chat.user, name: writerName, publicKey: chat.user_details?.publicKey }}
               prisoner={{ id: prisoner.id, name: prisonerName }}
               onRecorded={() => page.reload()}
             />

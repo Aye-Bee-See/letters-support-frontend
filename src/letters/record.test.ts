@@ -27,6 +27,7 @@ describe('recordReply', () => {
   beforeEach(async () => {
     posted.length = 0
     uploaded.length = 0
+    vi.mocked(getUserPublicKey).mockClear()
     group = await generateKeypair()
     writer = await generateKeypair()
     vi.mocked(getGroupPublicKey).mockResolvedValue({ chapter: 1, publicKey: group.publicKey, keyVersion: 2 })
@@ -36,7 +37,7 @@ describe('recordReply', () => {
   const draft = { writerId: 9, text: 'Thank you for the letter.', file: null, idempotencyKey: 'r'.repeat(32) }
   const envelopes = () => posted[0].envelopes as Envelope[]
 
-  it('files a reply by reference, sealed to the writer and the group with its key version', async () => {
+  it('files a reply by reference, sealed to the writer and the group with its key version (key fetched when not given)', async () => {
     const { sealedToWriter } = await recordReply({ ...draft, reference: '4827-1935-8' }, { chapterId: 1, keypair: group })
     expect(posted[0]).toMatchObject({ sender: 'prisoner', reference: '482719358' })
     expect(posted[0]).not.toHaveProperty('user')
@@ -50,8 +51,24 @@ describe('recordReply', () => {
     expect((await decryptLetter(posted[0] as { ciphertext: string; nonce: string }, key)).text).toBe('Thank you for the letter.')
   })
 
-  it('files a reply by name with the writer and the prisoner', async () => {
+  it('seals to the key the reference lookup gave, without asking for it again', async () => {
+    const { sealedToWriter } = await recordReply({ ...draft, reference: '4827-1935-8', writerPublicKey: writer.publicKey }, { chapterId: 1, keypair: group })
+    expect(getUserPublicKey).not.toHaveBeenCalled()
+    expect(sealedToWriter).toBe(true)
+    const key = await openEnvelope(envelopes()[0], writer)
+    expect((await decryptLetter(posted[0] as { ciphertext: string; nonce: string }, key)).text).toBe('Thank you for the letter.')
+  })
+
+  it('seals to the group alone when the lookup says the writer has no keys', async () => {
+    const { sealedToWriter } = await recordReply({ ...draft, reference: '4827-1935-8', writerPublicKey: null }, { chapterId: 1, keypair: group })
+    expect(getUserPublicKey).not.toHaveBeenCalled()
+    expect(envelopes().map((e) => e.readerType)).toEqual(['chapter'])
+    expect(sealedToWriter).toBe(false)
+  })
+
+  it('files a reply by name with the writer and the prisoner, fetching the writer’s key', async () => {
     await recordReply({ ...draft, prisonerId: 3 }, { chapterId: 1, keypair: group })
+    expect(getUserPublicKey).toHaveBeenCalledWith(9)
     expect(posted[0]).toMatchObject({ sender: 'prisoner', user: 9, prisoner: 3 })
     expect(posted[0]).not.toHaveProperty('reference')
   })

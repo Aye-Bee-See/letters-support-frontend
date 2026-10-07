@@ -564,7 +564,8 @@ export interface ReferenceLookup {
   mailedAt: string | null
   /** The thread to open; null if it is gone too. */
   chat: number | null
-  writer: { id: number; penName: string | null; name: string | null; anonymous: boolean } | null
+  /** `publicKey` is null for a writer without keys yet: a reply is then sealed to the group alone (API #195). */
+  writer: { id: number; penName: string | null; name: string | null; anonymous: boolean; publicKey: string | null } | null
   prisoner: { id: number; birthName: string | null; chosenName: string | null } | null
   careOf: { id: number; name: string } | null
 }

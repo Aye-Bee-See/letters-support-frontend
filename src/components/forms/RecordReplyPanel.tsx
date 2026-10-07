@@ -36,8 +36,12 @@ export default function RecordReplyPanel({
   reference,
   onRecorded,
 }: {
-  /** Whose thread the reply goes in. */
-  writer: { id: number; name: string }
+  /**
+   * Whose thread the reply goes in. `publicKey` when it is already known (the
+   * reference lookup and the thread give it; null for a writer without keys);
+   * left out, as after a name search, it is fetched (GET /auth/public-key).
+   */
+  writer: { id: number; name: string; publicKey?: string | null }
   /** Who wrote it. */
   prisoner: { id: number; name: string }
   /** The reply reference it was found by; without one it is filed by writer and prisoner. */
@@ -46,7 +50,11 @@ export default function RecordReplyPanel({
 }) {
   const { user, groupKeypair } = useAuth()
   // Null until they set up keys; then the reply is sealed to them as well (README "Account keys").
-  const writerKey = useApi(() => getUserPublicKey(writer.id), [writer.id])
+  const knownKey = writer.publicKey
+  const writerKey = useApi(
+    () => (knownKey !== undefined ? Promise.resolve({ user: writer.id, publicKey: knownKey }) : getUserPublicKey(writer.id)),
+    [writer.id, knownKey],
+  )
   const writerHasKey = writerKey.data ? writerKey.data.publicKey !== null : null
 
   const [text, setText] = useState('')
@@ -88,7 +96,7 @@ export default function RecordReplyPanel({
     setError(null)
     try {
       const reply = await recordReply(
-        { reference, writerId: writer.id, prisonerId: reference ? null : prisoner.id, text, file, idempotencyKey },
+        { reference, writerId: writer.id, writerPublicKey: writerKey.data?.publicKey, prisonerId: reference ? null : prisoner.id, text, file, idempotencyKey },
         { chapterId, keypair: groupKeypair },
       )
       clear()
