@@ -82,7 +82,10 @@ export default function RecordReplyPanel({
   }, [])
 
   const chapterId = user?.chapterId ?? null
-  const canRecord = Boolean(chapterId && groupKeypair && replyHasContent({ text, file })) && !recording && !attachmentFailed
+  // Not before the writer's key is settled: a click while the name-search lookup
+  // is still running would send with no key and fetch it again on the way.
+  const canRecord =
+    Boolean(chapterId && groupKeypair && replyHasContent({ text, file })) && !writerKey.loading && !recording && !attachmentFailed
 
   function clear() {
     setText('')
@@ -96,7 +99,16 @@ export default function RecordReplyPanel({
     setError(null)
     try {
       const reply = await recordReply(
-        { reference, writerId: writer.id, writerPublicKey: writerKey.data?.publicKey, prisonerId: reference ? null : prisoner.id, text, file, idempotencyKey },
+        {
+          reference,
+          writerId: writer.id,
+          // The key as given (null included), so recordReply never fetches one that is already known.
+          writerPublicKey: knownKey !== undefined ? knownKey : writerKey.data?.publicKey,
+          prisonerId: reference ? null : prisoner.id,
+          text,
+          file,
+          idempotencyKey,
+        },
         { chapterId, keypair: groupKeypair },
       )
       clear()
