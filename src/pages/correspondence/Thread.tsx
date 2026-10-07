@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, DeclineReason, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
+import { writerLabel } from '../../utils/groupLetters'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
@@ -344,7 +345,7 @@ function Sidebar({
           <div className="thread-sidebar-section">
             <div className="thread-sidebar-heading">Writer</div>
             <div className="thread-sidebar-info">
-              <strong>{chat.user_details.name ?? chat.user_details.username}</strong>
+              <strong>{writerLabel(chat.user_details)}</strong>
               {chat.user_details.managedBy && !chat.user_details.claimedAt && (
                 <>
                   <br />
@@ -429,7 +430,9 @@ export default function Thread() {
   const prisoner = chat.prisoner_details
   const prisonerName = threadPrisonerName(chat)
   const facility = (prisoner?.prison_details as Prison | null | undefined)?.prisonName
-  const writerName = chat.user === user?.id ? (user.penName ?? user.username) : (chat.user_details?.name ?? chat.user_details?.username ?? 'Writer')
+  // A group admin knows the writer by their pen name, as the letters are signed
+  // (README "GET /chat/chats": `user_details.penName`), else their name, else their username.
+  const writerName = chat.user === user?.id ? (user.penName ?? user.username) : chat.user_details ? writerLabel(chat.user_details) : 'Writer'
   const lastRelayId = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group?.id
   // A group admin may correct or delete a reply their group recorded, or any
   // reply in the thread of a writer it manages (README "PUT /messaging/message").

@@ -321,10 +321,10 @@ export interface Chat extends Timestamps {
   prisoner_details?: (Pick<Prisoner, 'id' | 'birthName' | 'chosenName' | 'status' | 'prison'> & {
     prison_details?: PrisonSummary | null
   }) | Prisoner | null
-  /** full=true */
+  /** full=true. `penName` is what the writer signs with, the name a group knows them by (API #195). */
   user_details?: Pick<
     User,
-    'id' | 'name' | 'username' | 'bio' | 'role' | 'chapterId' | 'managedBy' | 'claimedAt' | 'anonymousForChapter' | 'publicKey'
+    'id' | 'name' | 'penName' | 'username' | 'bio' | 'role' | 'chapterId' | 'managedBy' | 'claimedAt' | 'anonymousForChapter' | 'publicKey'
   >
   messages?: Message[]
 }
