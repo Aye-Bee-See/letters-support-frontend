@@ -42,7 +42,14 @@ export default function UploadZone({
           role="button"
           tabIndex={0}
           onClick={() => input.current?.click()}
-          onKeyDown={(e) => e.key === 'Enter' && input.current?.click()}
+          aria-label={`${label}: ${hint}`}
+          onKeyDown={(e) => {
+            // A button answers Space as well as Enter; Space would otherwise scroll the page.
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              input.current?.click()
+            }
+          }}
           onDragOver={(e) => {
             e.preventDefault()
             setDragOver(true)

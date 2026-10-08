@@ -266,7 +266,20 @@ function LetterItem({
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
-      <div className="letter-collapsed" onClick={() => setOpen((o) => !o)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setOpen((o) => !o)}>
+      <div
+        className="letter-collapsed"
+        onClick={() => setOpen((o) => !o)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onKeyDown={(e) => {
+          // A button answers Space as well as Enter; Space would otherwise scroll the page.
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen((o) => !o)
+          }
+        }}
+      >
         <span className="letter-collapsed-direction">{outbound ? '→' : '←'}</span>
         <span className="letter-collapsed-date">{shortDate(m.createdAt)}</span>
         <span className="letter-collapsed-preview">{previewOf(m, opened)}</span>
@@ -514,6 +527,7 @@ export default function Thread() {
   if (!page.data) {
     return (
       <div className="app-wrap">
+        <title>Conversation · letters.support</title>
         <div className="wrap">
           <LoadState state={page} what="conversation" />
         </div>
@@ -547,6 +561,7 @@ export default function Thread() {
 
   return (
     <div className="app-wrap">
+      <title>{`Letters with ${prisonerName} · letters.support`}</title>
       <div className="app-layout">
         <main className="thread-main">
           <div className="thread-header">

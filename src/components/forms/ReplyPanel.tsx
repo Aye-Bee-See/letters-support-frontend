@@ -92,6 +92,7 @@ export default function ReplyPanel({
       <div className={notesOpen ? 'reply-notes-area is-open' : 'reply-notes-area'}>
         <textarea
           className="reply-notes-textarea"
+          aria-label={`Note to ${group?.name ?? 'the group'}, not sent to the prisoner`}
           placeholder={`Optional note to ${group?.name ?? 'the group'}: not sent to the prisoner.`}
           value={draft.relayNote}
           onChange={(e) => draft.setRelayNote(e.target.value)}
@@ -125,6 +126,7 @@ export default function ReplyPanel({
           <>
             <textarea
               className="reply-textarea"
+              aria-label="Your reply"
               placeholder="Write your reply here. Paragraph breaks will be preserved when printed."
               value={draft.text}
               onChange={(e) => draft.setText(e.target.value)}

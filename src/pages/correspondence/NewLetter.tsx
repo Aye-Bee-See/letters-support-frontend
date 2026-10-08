@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getFacility } from '../../api/facilities'
 import { getAllPrisoners } from '../../api/prisoners'
@@ -93,8 +93,27 @@ export default function NewLetter() {
     if (message) navigate(`/threads/${message.chat}`)
   }
 
+  // The group tiles are one radio group: Tab reaches the chosen tile, the arrows move the choice, Space or Enter picks.
+  const choosable = draft.groups.filter((g) => !draft.blocked.has(g.id))
+  const focusTileId = choosable.some((g) => g.id === draft.relayChapterId) ? draft.relayChapterId : (choosable[0]?.id ?? null)
+  function onTileKey(e: KeyboardEvent<HTMLDivElement>, groupId: number) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      draft.setChosenGroup(groupId)
+      return
+    }
+    const step = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0
+    if (step === 0 || choosable.length === 0) return
+    e.preventDefault()
+    const at = choosable.findIndex((g) => g.id === groupId)
+    const next = choosable[(at + step + choosable.length) % choosable.length]
+    draft.setChosenGroup(next.id)
+    e.currentTarget.parentElement?.querySelector<HTMLElement>(`[data-group="${next.id}"]`)?.focus()
+  }
+
   return (
     <div className="letter-wrap">
+      <title>New letter · letters.support</title>
       <div className="letter-layout">
         {/* LEFT: composition area */}
         <main className="letter-main">
@@ -146,6 +165,7 @@ export default function NewLetter() {
             <>
               <textarea
                 className="letter-textarea"
+                aria-label="Your letter"
                 placeholder={'Write your letter here.\n\nParagraph breaks will be preserved when printed. Facility page limits are shown above.'}
                 value={draft.text}
                 onChange={(e) => draft.setText(e.target.value)}
@@ -176,6 +196,7 @@ export default function NewLetter() {
           <div className={notesOpen && !noGroup ? 'notes-area is-open' : 'notes-area'}>
             <textarea
               className="notes-textarea"
+              aria-label={`Note to ${group?.name ?? 'the group'}, not sent to the prisoner`}
               placeholder='Optional. E.g. "poor scan quality" or "written at the Aug 3 letter night."'
               value={draft.relayNote}
               onChange={(e) => draft.setRelayNote(e.target.value)}
@@ -278,6 +299,8 @@ export default function NewLetter() {
                   <>
                     <AddressSearch
                       placeholder={writers.loading ? 'Loading your writers…' : 'Search your writers…'}
+                      label="Who the letter is from"
+                      loading={writers.loading}
                       options={[
                         { id: ANONYMOUS_OPTION, label: 'Anonymously', sub: "Your group's anonymous writer" },
                         ...managed.map((w) => ({ id: w.id, label: writerLabel(w), sub: w.penName && w.name ? w.name : undefined })),
@@ -335,6 +358,8 @@ export default function NewLetter() {
               {!prisoner && !directory.error && (
                 <AddressSearch
                   placeholder={directory.loading ? 'Loading the directory…' : 'Search by name…'}
+                  label="Prisoner to write to"
+                  loading={directory.loading}
                   options={(directory.data ?? []).map((p) => ({
                     id: p.id,
                     label: displayName(p),
@@ -393,20 +418,21 @@ export default function NewLetter() {
                   </p>
                 ) : (
                   <>
-                    <div className="relay-tiles">
+                    <div className="relay-tiles" role="radiogroup" aria-label="Group that prints and mails this letter">
                       {draft.groups.map((g) => {
                         // A group that has blocked this writer (API #179) can't be chosen; say so, with their reason.
                         const block = draft.blocked.get(g.id)
                         return (
                           <div
                             key={g.id}
+                            data-group={g.id}
                             className={block ? 'relay-option is-blocked' : g.id === draft.relayChapterId ? 'relay-option selected' : 'relay-option'}
                             role="radio"
                             aria-checked={g.id === draft.relayChapterId}
                             aria-disabled={Boolean(block)}
-                            tabIndex={block ? -1 : 0}
+                            tabIndex={!block && g.id === focusTileId ? 0 : -1}
                             onClick={() => !block && draft.setChosenGroup(g.id)}
-                            onKeyDown={(e) => !block && e.key === 'Enter' && draft.setChosenGroup(g.id)}
+                            onKeyDown={(e) => !block && onTileKey(e, g.id)}
                           >
                             <div>
                               <div className="relay-option-name">{g.name}</div>

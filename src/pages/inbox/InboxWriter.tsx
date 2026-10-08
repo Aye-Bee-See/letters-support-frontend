@@ -127,7 +127,12 @@ function ConvoRow({ chat, news }: { chat: Chat; news: string[] }) {
       onClick={open}
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') open()
+        // The row's own keys only: Enter on the prisoner link inside it is the link's (one history entry, not two).
+        if (e.target !== e.currentTarget) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          open()
+        }
       }}
     >
       <td>
@@ -207,6 +212,7 @@ export default function InboxWriter() {
 
   return (
     <AppShell sidebar={sidebar}>
+      <title>Inbox · letters.support</title>
       <div className="inbox-hero">
         <p className="inbox-hero-sub">Signed in as</p>
         <h1 className="inbox-hero-title">{user?.penName ?? user?.username}</h1>
