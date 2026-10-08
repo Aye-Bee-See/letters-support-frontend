@@ -230,9 +230,13 @@ docs/           encryption-guide.md
 
 Three rules hold the shape together:
 
-- **Pages do not do crypto.** They call `src/auth`, `src/letters` and
-  `src/groups`, which call `src/crypto`. Nothing outside `src/crypto` imports
-  libsodium.
+- **Pages leave crypto to the flows, mostly.** They call `src/auth`,
+  `src/letters` and `src/groups`, which call `src/crypto`. A few group-key and
+  token flows call `src/crypto` directly (the group key page, hand-off,
+  sharing with a partner, correcting a reply), and some screens use its code
+  helpers (formatting and normalising codes). Nothing outside `src/crypto`
+  imports libsodium, and nothing imports `src/crypto` except through its
+  `index.ts`.
 - **Wording lives in `src/utils`**, keyed on the API's codes (`heldReason`,
   `returnReason`, `declineReason`, feed events, an error's `name` and
   `condition`), never on its English sentences, which the README says are not
