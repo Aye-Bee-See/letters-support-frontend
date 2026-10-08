@@ -1,4 +1,5 @@
 import type { ApiError, Invitation, InvitationKind } from '../../types'
+import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import type { UiClasses } from '../forms/uiClasses'
 
 // Shared by the invitation parts (README "Invitations"): dates, kind labels,
@@ -34,12 +35,8 @@ export function stateBadge(c: UiClasses, state: State): string {
  * was asked.
  */
 export function invitationRefusal(err: ApiError, action: 'create' | 'renew' | 'withdraw'): string {
-  if (err.errors?.length) return err.errors.join(' ')
+  if (err.status === 400 && err.errors?.length) return err.errors.join(' ')
   const verb = action === 'renew' ? 'renewed' : action === 'withdraw' ? 'withdrawn' : 'made'
-  if (err.status === 403)
-    return action === 'create'
-      ? 'Only an active group can invite, and only on its own behalf.'
-      : 'Only the inviting group or a site admin can change this invitation.'
   if (err.status === 409 && err.name === 'InvitationError') {
     if (err.condition === 'inactive')
       return 'That group isn’t an active member of the network (it may be waiting for approval or suspended), so it can’t vouch or take new group admins.'
@@ -53,5 +50,6 @@ export function invitationRefusal(err: ApiError, action: 'create' | 'renew' | 'w
       ? 'That group isn’t an active member of the network, so it can’t vouch or take new group admins.'
       : `Only a pending invitation can be ${verb}: this one was already accepted or withdrawn.`
   if (err.status === 404) return 'That invitation isn’t there any more. Reload the page.'
-  return err.message
+  // A 403 is a group that isn't active: a group sees and changes only its own invitations.
+  return commonRefusal(err) ?? otherRefusal(err)
 }

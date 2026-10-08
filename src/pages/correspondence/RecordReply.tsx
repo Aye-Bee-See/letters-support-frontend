@@ -5,6 +5,7 @@ import RecordReplyPanel, { type RecordedReply } from '../../components/forms/Rec
 import { useApi } from '../../hooks/useApi'
 import type { Chat, LetterStatus, ReferenceLookup, WriterMatch } from '../../types'
 import { writerInSentence, writerLabel } from '../../utils/groupLetters'
+import { refusalText } from '../../utils/refusals'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 import { checkReference, describeReferenceError, formatReference, normalizeReference, REFERENCE_EXAMPLE } from '../../utils/replyReference'
@@ -228,7 +229,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
       {submitted && matches.loading && <p className="reply-notes-hint">Searching…</p>}
       {submitted && matches.error && (
         <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
-          Couldn't search ({matches.error.message}).
+          Couldn't search. {refusalText(matches.error)}
         </p>
       )}
       {matches.data && matches.data.length === 0 && (
@@ -279,7 +280,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
           {threads.loading && <p className="reply-notes-hint">Loading their conversations…</p>}
           {threads.error && (
             <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
-              Couldn't load their conversations ({threads.error.message}).
+              Couldn't load their conversations. {refusalText(threads.error)}
             </p>
           )}
           {threads.data && threads.data.length === 0 && (

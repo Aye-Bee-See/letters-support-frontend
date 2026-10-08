@@ -150,7 +150,7 @@ describe('batch refusals (README "PUT /messaging/status/batch")', () => {
       /^Letters 41 and 42 aren’t your group’s/,
     )
     expect(statusRefusal(error({ status: 403, name: 'AuthorizationError', message: 'Your group is suspended (3).' }), ids, 'mailed')).toMatch(
-      /^Your group can’t change letters right now/,
+      /^Your group can’t do this right now: only an active group can/,
     )
   })
 

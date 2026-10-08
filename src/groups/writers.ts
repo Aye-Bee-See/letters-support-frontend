@@ -1,9 +1,10 @@
-import { toApiError } from '../api/client'
+import { isApiError, toApiError } from '../api/client'
 import { getGroupPublicKey } from '../api/letters'
 import type { CaughtUp } from '../api/groups'
 import { createWriter, updateWriter, type NewWriter } from '../api/writers'
 import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../crypto'
 import type { Writer } from '../types'
+import { commonRefusal, otherRefusal } from '../utils/refusals'
 
 // A group's managed writers in end-to-end mode (README "Managed writers and
 // claiming", "Latecomers"). The group's browser makes each writer's keypair and
@@ -70,12 +71,14 @@ export async function giveWriterKeys(writerId: number, groupId: number, known: G
 /**
  * A refusal from the managed-writer endpoints, in words. Keyed on status, `name`
  * and `condition` (README "Errors"), never on the sentence; a 400 shows the
- * API's own sentences, which name the field.
+ * API's own sentences, which name the field. The shared cases are
+ * utils/refusals'. An Error thrown here in the browser (a key that won't open)
+ * is this client's own sentence, and is shown as it is.
  */
 export function describeWriterError(err: unknown): string {
+  if (err instanceof Error && !isApiError(err)) return err.message
   const e = toApiError(err)
-  if (e.status === 0) return e.message === 'Could not reach the server.' ? 'Couldn’t reach the server. Check the connection and try again.' : e.message
-  if (e.status === 400) return e.errors.length ? e.errors.join(' ') : e.message
+  if (e.status === 400 && e.errors.length) return e.errors.join(' ')
   if (e.status === 409 && e.name === 'KeyVersionError')
     return 'Your group’s key changed while this was being saved. Sign in again to pick up the new key, then try again.'
   if (e.status === 409 && e.name === 'ClaimError')
@@ -85,12 +88,10 @@ export function describeWriterError(err: unknown): string {
       ? 'Your group’s anonymous writer can’t be deleted: it holds the anonymous letters of everyone the group writes for.'
       : 'This account can’t be deleted.'
   if (e.status === 409 && e.name === 'KeyChangeError') return 'This writer already has keys, and they can’t change.'
-  if (e.status === 409) return 'This writer is no longer one of your group’s unclaimed writers: they may have claimed their account.'
+  if (e.status === 409 && e.condition !== 'changed_meanwhile')
+    return 'This writer is no longer one of your group’s unclaimed writers: they may have claimed their account.'
   if (e.status === 404) return 'This writer is no longer one of your group’s: they may have claimed their account, or been deleted.'
-  if (e.status === 403)
-    return 'Your group can’t do this right now. Only a group admin of an active group may, and giving a writer keys needs the group key.'
-  if (e.status === 429) return 'Too many tries in a row. Wait a minute and try again.'
-  return e.message
+  return commonRefusal(e) ?? otherRefusal(e)
 }
 
 /** The group's shared anonymous writer: listed with the others, never handed off, never keyed. */

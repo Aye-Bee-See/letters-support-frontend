@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import type { ApiError } from '../../types'
+import { commonRefusal, otherRefusal } from '../../utils/refusals'
 
-/** What to say when a link change is refused, from the status (never the API's sentence, except as a last resort). */
+/**
+ * What to say when a link change is refused, from the status, never the API's
+ * sentence. A 403 is a group that isn't active (README "What each role can do":
+ * a group admin links their own group, and only while it is active), worded
+ * with the rest of the shared cases in utils/refusals.
+ */
 export function linkRefusal(err: ApiError): string {
-  // README "What each role can do": a group admin links their own group, and only while it is active.
-  if (err.status === 403) return 'Your group can’t change this link: a group links only itself, and only while it is active.'
   // README "PUT /prison/relay", "PUT /prisoner/support": unlinking what isn't linked, or an unknown id.
   if (err.status === 404) return 'That link, or the record it points at, isn’t there any more. Reload the page to see the current links.'
-  return err.message
+  return commonRefusal(err) ?? otherRefusal(err)
 }
 
 /**
