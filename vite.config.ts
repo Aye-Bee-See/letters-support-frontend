@@ -11,6 +11,11 @@ export default defineConfig({
     port: 3001,
     strictPort: true,
   },
+  build: {
+    // libsodium (the sumo build, 534 kB) is the one chunk over Vite's 500 kB
+    // default; it is loaded on demand, never on the front page.
+    chunkSizeWarningLimit: 600,
+  },
   test: {
     // The app's own tests only, never an agent worktree under .claude/.
     dir: 'src',
