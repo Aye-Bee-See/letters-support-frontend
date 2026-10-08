@@ -38,14 +38,6 @@ export function canActOn(writer: BlockableWriter, chapterId: number | null): boo
   return true
 }
 
-/** How a writer is named on these screens: pen name first, then name, then username. */
-export function writerLabel(
-  writer: { penName?: string | null; name?: string | null; username?: string } | null | undefined,
-  fallback = 'this writer',
-): string {
-  return writer?.penName || writer?.name || writer?.username || fallback
-}
-
 /** One person on a block or a recommendation: `you`, their name, or their username. */
 export function personLabel(person: { id: number; username: string; name: string | null } | null, me: number | undefined): string {
   if (!person) return 'someone no longer here'

@@ -15,7 +15,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
-import { declineReasonForWriter, heldReasonText, returnReasonText, writerLabel } from '../../utils/groupLetters'
+import { declineReasonForWriter, heldReasonText, isGroupAnonymous, returnReasonText, writerInSentence, writerLabel } from '../../utils/groupLetters'
 import { oldKeyText, threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
@@ -601,7 +601,12 @@ export default function Thread() {
               (README "Reply reference": filing a reply), the writer and prisoner fixed. */}
           {isChapter && prisoner && (
             <RecordReplyPanel
-              writer={{ id: chat.user, name: writerName, publicKey: chat.user_details?.publicKey }}
+              writer={{
+                id: chat.user,
+                name: writerInSentence(chat.user_details),
+                publicKey: chat.user_details?.publicKey,
+                anonymous: chat.user_details ? isGroupAnonymous(chat.user_details) : false,
+              }}
               prisoner={{ id: prisoner.id, name: prisonerName }}
               onRecorded={() => page.reload()}
             />

@@ -154,11 +154,46 @@ export function footerSentence(footer: LetterFooter): string {
 
 // --- Who wrote it ---------------------------------------------------------------
 
-/** The writer as the group knows them: the pen name, else the name; "Anonymous" for the group's anonymous writer. */
-export function writerLabel(writer: { name?: string | null; penName?: string | null; username?: string | null; anonymousForChapter?: number | null } | null | undefined): string {
-  if (!writer) return 'Unknown writer'
-  if (writer.anonymousForChapter) return 'Anonymous'
-  return writer.penName || writer.name || writer.username || 'Unknown writer'
+/**
+ * What a writer's name is read from, in any of the API's shapes: a user record
+ * or a thread's `user_details` (`anonymousForChapter`), or a reply-reference
+ * lookup or writer search (`anonymous`).
+ */
+export interface WriterNaming {
+  penName?: string | null
+  name?: string | null
+  username?: string | null
+  anonymousForChapter?: number | null
+  anonymous?: boolean
+}
+
+/** The group's shared anonymous writer, in whichever shape the writer came. */
+export const isGroupAnonymous = (w: WriterNaming) => Boolean(w.anonymous) || (w.anonymousForChapter !== null && w.anonymousForChapter !== undefined)
+
+/** A writer's own name, as the group knows them and the letters are signed: the pen name, else the name, else the username. */
+const ownName = (w: WriterNaming) => w.penName || w.name || w.username || null
+
+/**
+ * A writer as a short label (a table cell, a heading, "Writer: …"): the pen
+ * name, else the name, else the username; "Anonymous" for the group's
+ * anonymous writer; `fallback` when there is no writer (an account gone).
+ */
+export function writerLabel(writer: WriterNaming | null | undefined, fallback = 'Unknown writer'): string {
+  if (!writer) return fallback
+  if (isGroupAnonymous(writer)) return 'Anonymous'
+  return ownName(writer) ?? fallback
+}
+
+/**
+ * A writer named inside a sentence: as writerLabel, but the group's anonymous
+ * writer is "the group's anonymous writer", and no writer is "this writer"
+ * unless `fallback` says otherwise. Don't add "'s" to it: word the sentence
+ * so the name stands alone ("the conversation between … and …").
+ */
+export function writerInSentence(writer: WriterNaming | null | undefined, fallback = 'this writer'): string {
+  if (!writer) return fallback
+  if (isGroupAnonymous(writer)) return 'the group’s anonymous writer'
+  return ownName(writer) ?? fallback
 }
 
 // --- Batch refusals (README "PUT /messaging/status/batch") ------------------------

@@ -3,7 +3,7 @@ import { getAllChats } from '../../api/letters'
 import { getAllWriters } from '../../api/writers'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, PrisonSummary, Writer } from '../../types'
-import { heldReasonShort } from '../../utils/groupLetters'
+import { heldReasonShort, writerLabel } from '../../utils/groupLetters'
 import { directionLabel, inboxDate, threadPrisonerName } from '../../utils/letters'
 import { heldAt, shortDate } from '../../utils/prisoners'
 import LoadState from '../ui/LoadState'
@@ -99,7 +99,7 @@ export default function GroupWriters() {
         return (
           <div key={w.id} className="writer-block">
             <div className="writer-block-header">
-              <span className="writer-name">{w.penName || w.name || w.username}</span>
+              <span className="writer-name">{writerLabel(w)}</span>
               {state && <span className="writer-meta">{state}</span>}
               <div className="writer-block-actions">
                 <Link to={`/letters/new?writer=${w.id}`} className="btn btn-sm writer-new-letter-btn">

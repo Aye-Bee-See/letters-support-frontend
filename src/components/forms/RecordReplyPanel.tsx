@@ -40,8 +40,10 @@ export default function RecordReplyPanel({
    * Whose thread the reply goes in. `publicKey` when it is already known (the
    * reference lookup and the thread give it; null for a writer without keys);
    * left out, as after a name search, it is fetched (GET /auth/public-key).
+   * `name` is for a sentence (utils/groupLetters' writerInSentence);
+   * `anonymous` for the group's anonymous writer, who never has keys.
    */
-  writer: { id: number; name: string; publicKey?: string | null }
+  writer: { id: number; name: string; publicKey?: string | null; anonymous?: boolean }
   /** Who wrote it. */
   prisoner: { id: number; name: string }
   /** The reply reference it was found by; without one it is filed by writer and prisoner. */
@@ -192,7 +194,7 @@ export default function RecordReplyPanel({
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        {writerHasKey === false && (
+        {writerHasKey === false && !writer.anonymous && (
           <p className="reply-notes-hint">
             {writer.name} hasn't set up their keys yet, so this reply is sealed to your group only. They will be able to read
             it once they set up their keys and a group admin of your group signs in, which shares it with them.
@@ -217,8 +219,14 @@ export default function RecordReplyPanel({
 
       <div className="reply-panel-footer">
         <span className="reply-submit-note">
-          <strong>Goes into {writer.name}'s conversation with {prisoner.name}.</strong>{' '}
-          {writerHasKey === false ? 'Only your group can read it for now.' : `Only ${writer.name} and your group can read it.`}
+          <strong>
+            Goes into the conversation between {writer.name} and {prisoner.name}.
+          </strong>{' '}
+          {writer.anonymous
+            ? 'Only your group can read it.'
+            : writerHasKey === false
+              ? 'Only your group can read it for now.'
+              : `Only ${writer.name} and your group can read it.`}
         </span>
         <button type="button" className="reply-submit-btn" disabled={!canRecord} onClick={onRecord}>
           {recording ? 'Recording…' : 'Record reply'}

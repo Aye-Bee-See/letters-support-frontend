@@ -4,6 +4,7 @@ import { getAllChats, lookupReference, searchWriters } from '../../api/letters'
 import RecordReplyPanel, { type RecordedReply } from '../../components/forms/RecordReplyPanel'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, LetterStatus, ReferenceLookup, WriterMatch } from '../../types'
+import { writerInSentence, writerLabel } from '../../utils/groupLetters'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 import { checkReference, describeReferenceError, formatReference, normalizeReference, REFERENCE_EXAMPLE } from '../../utils/replyReference'
@@ -28,16 +29,17 @@ const STATUS_WORDS: Record<LetterStatus, string> = {
 
 const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
-/** A writer as a group admin knows them: their pen name, else their name. */
-function writerName(w: { penName: string | null; name: string | null; anonymous: boolean; id: number }): string {
-  if (w.anonymous) return 'your group’s anonymous writer'
-  return w.penName ?? w.name ?? `Writer ${w.id}`
-}
+/** The reply panel's writer, from the lookup's or the search's: named for a sentence. */
+const panelWriter = (w: { id: number; penName: string | null; name: string | null; anonymous: boolean }) => ({
+  id: w.id,
+  name: writerInSentence(w, `writer ${w.id}`),
+  anonymous: w.anonymous,
+})
 
 /** Who the reply goes to, settled by step 1. */
 interface Target {
   /** `publicKey` from the reference lookup; the name search gives none, so the panel fetches it. */
-  writer: { id: number; name: string; publicKey?: string | null }
+  writer: { id: number; name: string; publicKey?: string | null; anonymous?: boolean }
   prisoner: { id: number; name: string }
   reference: string | null
 }
@@ -50,7 +52,7 @@ function FoundLetter({ found }: { found: ReferenceLookup }) {
       <div>
         <div className="thread-sidebar-heading">Writer</div>
         <div className="thread-sidebar-info">
-          <strong>{found.writer ? writerName(found.writer) : 'No longer on the site'}</strong>
+          <strong>{found.writer ? writerLabel(found.writer, `Writer ${found.writer.id}`) : 'No longer on the site'}</strong>
         </div>
       </div>
       <div>
@@ -126,7 +128,7 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
       ? {
           // The lookup gives the writer's key (README "Reply reference"), so nothing more is fetched;
           // an older API without the field leaves it undefined, and the panel fetches it.
-          writer: { id: found.writer.id, name: writerName(found.writer), publicKey: found.writer.publicKey },
+          writer: { ...panelWriter(found.writer), publicKey: found.writer.publicKey },
           prisoner: { id: found.prisoner.id, name: displayName(found.prisoner) },
           reference: found.reference,
         }
@@ -197,7 +199,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
   function choose(chat: Chat) {
     if (!writer) return
     onTarget({
-      writer: { id: writer.id, name: writerName(writer) },
+      writer: panelWriter(writer),
       prisoner: { id: chat.prisoner, name: threadPrisonerName(chat) },
       reference: null,
     })
@@ -245,7 +247,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
             {matches.data.map((m) => (
               <tr key={m.id} className="convo-row">
                 <td>
-                  <span className="convo-prisoner">{writerName(m)}</span>
+                  <span className="convo-prisoner">{writerLabel(m, `Writer ${m.id}`)}</span>
                 </td>
                 <td>
                   <span className="convo-facility">
@@ -274,14 +276,14 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
       {writer && (
         <div style={{ marginTop: '1rem' }}>
           <div className="thread-sidebar-heading">Who wrote the reply?</div>
-          {threads.loading && <p className="reply-notes-hint">Loading {writerName(writer)}'s conversations…</p>}
+          {threads.loading && <p className="reply-notes-hint">Loading their conversations…</p>}
           {threads.error && (
             <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
               Couldn't load their conversations ({threads.error.message}).
             </p>
           )}
           {threads.data && threads.data.length === 0 && (
-            <p className="reply-notes-hint">Your group can't see any conversation of {writerName(writer)}'s.</p>
+            <p className="reply-notes-hint">Your group can't see any of their conversations.</p>
           )}
           {threads.data && threads.data.length > 0 && (
             <table className="convo-table">
@@ -351,7 +353,7 @@ export default function RecordReply() {
                 <p>
                   {recorded.target.prisoner.name}'s reply is in their conversation with {recorded.target.writer.name}.
                 </p>
-                {!recorded.sealedToWriter && (
+                {!recorded.sealedToWriter && !recorded.target.writer.anonymous && (
                   <p className="reply-notes-hint">
                     {recorded.target.writer.name} hasn't set up their keys yet, so it is sealed to your group only. They will be able
                     to read it once they set up their keys and a group admin of your group signs in.

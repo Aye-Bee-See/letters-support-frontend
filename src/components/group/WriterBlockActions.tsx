@@ -14,9 +14,9 @@ import {
   letterCount,
   longDate,
   personLabel,
-  writerLabel,
   type BlockableWriter,
 } from '../../utils/blocks'
+import { writerInSentence } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 
 // A group admin's two ways to deal with a writer who is misusing the system
@@ -65,7 +65,7 @@ export default function WriterBlockActions({
   // Quiet until we know whether the group has blocked them; a failure says so.
   if (blocks.loading && !notice) return null
 
-  const name = writerLabel(writer)
+  const name = writerInSentence(writer)
   const block = blockOf(blocks.data, writer.id)
   const waiting = recommendations.data?.find((r) => r.userId === writer.id) ?? null
 

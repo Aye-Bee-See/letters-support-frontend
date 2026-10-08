@@ -99,7 +99,3 @@ export const isAnonymousWriter = (w: Pick<Writer, 'anonymousForChapter'>) => w.a
 /** Unclaimed managed writers who still need keys: made before encryption, not the anonymous one. */
 export const writersNeedingKeys = <W extends Pick<Writer, 'publicKey' | 'anonymousForChapter' | 'managedBy' | 'claimedAt'>>(writers: W[]) =>
   writers.filter((w) => !w.publicKey && !isAnonymousWriter(w) && w.managedBy !== null && !w.claimedAt)
-
-/** What to call a writer on the group's pages: pen name, else name, else the username. */
-export const writerLabel = (w: Pick<Writer, 'penName' | 'name' | 'username' | 'anonymousForChapter'>) =>
-  isAnonymousWriter(w) ? 'Anonymous writer' : w.penName || w.name || w.username

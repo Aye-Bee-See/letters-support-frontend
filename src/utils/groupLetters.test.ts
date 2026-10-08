@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, LetterFooter, MailRule, Message } from '../types'
-import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
+import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerInSentence, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -82,6 +82,30 @@ describe('writerLabel', () => {
     expect(writerLabel({ penName: 'Hollow', name: 'James', username: 'j' })).toBe('Hollow')
     expect(writerLabel({ penName: null, name: 'James', username: 'j' })).toBe('James')
     expect(writerLabel({ name: 'Test Chapter anonymous', anonymousForChapter: 1 })).toBe('Anonymous')
+  })
+
+  it('falls back to the username, then to the fallback', () => {
+    expect(writerLabel({ penName: '', name: null, username: 'j' })).toBe('j')
+    expect(writerLabel(null)).toBe('Unknown writer')
+    expect(writerLabel(null, 'A writer whose account is gone')).toBe('A writer whose account is gone')
+  })
+
+  it('reads the anonymous flag of a reference lookup or a writer search', () => {
+    expect(writerLabel({ penName: null, name: 'PDX anonymous', anonymous: true })).toBe('Anonymous')
+    expect(writerLabel({ penName: 'Hollow', name: null, anonymous: false })).toBe('Hollow')
+  })
+})
+
+describe('writerInSentence', () => {
+  it('names the anonymous writer as the group’s, so no sentence reads “Anonymous’s”', () => {
+    expect(writerInSentence({ name: 'Test Chapter anonymous', anonymousForChapter: 1 })).toBe('the group’s anonymous writer')
+    expect(writerInSentence({ penName: null, name: null, anonymous: true })).toBe('the group’s anonymous writer')
+  })
+
+  it('otherwise names the writer as writerLabel does, and “this writer” when there is none', () => {
+    expect(writerInSentence({ penName: 'Hollow', name: 'James', username: 'j' })).toBe('Hollow')
+    expect(writerInSentence(null)).toBe('this writer')
+    expect(writerInSentence({ penName: null, name: null, anonymous: false }, 'writer 7')).toBe('writer 7')
   })
 })
 
