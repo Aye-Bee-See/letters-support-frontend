@@ -1,7 +1,7 @@
 // Invitations (/invitation): how groups join the network, and how a group adds
 // members. Superadmins see and manage every invitation. The token is shown once,
 // in the create or renew answer; the API stores only its hash and never sends it.
-import { del, getList, getOne, post, put } from './client'
+import { del, getList, getOne, post, PUBLIC, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
 import type { AccountStatus, Invitation, InvitationKind, InvitationStatus, ListParams, User } from '../types'
 
@@ -43,7 +43,7 @@ export interface InvitationInfo {
   groupFields: string[]
 }
 
-export const getInvitationInfo = (token: string) => getOne<InvitationInfo>('/invitation/invitation', { token })
+export const getInvitationInfo = (token: string) => getOne<InvitationInfo>('/invitation/invitation', { token }, PUBLIC)
 
 export interface AcceptRequest {
   token: string
@@ -73,4 +73,6 @@ export const acceptInvitation = (req: AcceptRequest) =>
       ...req.keyFields,
       ...(req.group ? { group: req.group } : {}),
     },
+    undefined,
+    PUBLIC,
   )

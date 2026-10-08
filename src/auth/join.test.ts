@@ -18,6 +18,7 @@ const api = vi.hoisted(() => ({
   loginNewAccount: vi.fn(),
   getKeys: vi.fn(),
   acceptInvitation: vi.fn(),
+  logout: vi.fn(),
 }))
 vi.mock('../api/auth', () => ({
   ...api,
@@ -39,6 +40,7 @@ beforeEach(() => {
   api.finishRecovery.mockResolvedValue(undefined)
   api.loginNewAccount.mockResolvedValue(signedInAnswer)
   api.login.mockResolvedValue(signedInAnswer)
+  api.logout.mockResolvedValue(undefined)
 })
 
 describe('join', () => {
@@ -56,6 +58,7 @@ describe('join', () => {
     expect(api.joinWithCode).toHaveBeenCalledOnce()
     expect(joined.signedIn).toBeNull()
     expect(joined.signInError).toMatchObject({ status: 429 })
+    expect(api.logout).not.toHaveBeenCalled()
     expect(joined.recoveryCode).toMatch(/\S/)
   })
 
@@ -65,6 +68,8 @@ describe('join', () => {
     const joined = await join(joinInput)
     expect(joined.signedIn).toBeNull()
     expect(joined.signInError).toMatchObject({ status: 0 })
+    // The token the sign-in got is never used: it is revoked.
+    expect(api.logout).toHaveBeenCalledWith('t')
     expect(joined.recoveryCode).toMatch(/\S/)
   })
 

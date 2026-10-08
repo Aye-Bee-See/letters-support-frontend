@@ -32,11 +32,47 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * A public sign-in call (signing in, recovery, claiming, joining, accepting
+     * an invitation): sent without the session's token, so a person signed in
+     * who recovers or claims an account in this tab keeps their session, and a
+     * 401 it gets is the form's to word, not a signal the session is over.
+     */
+    skipAuth?: boolean
+  }
+}
+
+/** Config for a public call: see `skipAuth`. */
+export const PUBLIC = { skipAuth: true } as const
+
+/**
+ * The Authorization header a request goes with. A request that names its own
+ * token (sign-in fetching the new account's keys before the session exists)
+ * keeps it: the session's would fetch another account's keys. A public call
+ * goes without; anything else carries the session's token, if there is one.
+ */
+export function authorizationFor(request: { skipAuth?: boolean; own?: unknown }, sessionToken: string | null): string | null {
+  if (typeof request.own === 'string' && request.own) return request.own
+  if (request.skipAuth || !sessionToken) return null
+  return `Bearer ${sessionToken}`
+}
+
+/**
+ * Whether a 401 means this session is over: only when the request carried the
+ * session's current token. A wrong password at sign-in, a token named for
+ * another account, or a token this session has since replaced (a password
+ * change) says nothing about the session.
+ */
+export function endsSession(status: number, sentAuthorization: unknown, sessionToken: string | null): boolean {
+  return status === 401 && sessionToken !== null && sentAuthorization === `Bearer ${sessionToken}`
+}
+
 client.interceptors.request.use((config) => {
-  // A request that names its own token (sign-in fetching the new account's keys
-  // before the session exists) keeps it; overriding it with the current session's
-  // would fetch another account's keys.
-  if (authToken && !config.headers.Authorization) config.headers.Authorization = `Bearer ${authToken}`
+  const authorization = authorizationFor({ skipAuth: config.skipAuth, own: config.headers.Authorization }, authToken)
+  if (authorization) config.headers.Authorization = authorization
+  else delete config.headers.Authorization
   return config
 })
 
@@ -44,9 +80,8 @@ client.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     const apiError = toApiError(error)
-    // Only a request that carried a token can mean "your session is over".
-    // A 401 from sign-in itself is a wrong password, handled by the form.
-    if (apiError.status === 401 && authToken && onUnauthorized) onUnauthorized()
+    const sent = error instanceof AxiosError ? error.config?.headers?.Authorization : undefined
+    if (endsSession(apiError.status, sent, authToken) && onUnauthorized) onUnauthorized()
     if (
       apiError.status === 403 &&
       apiError.name === 'TwoFactorRequiredError' &&
@@ -129,8 +164,8 @@ function toQuery(params?: ListParams | Record<string, unknown>) {
   return query
 }
 
-export async function getOne<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-  const response = await client.get<ApiEnvelope<T>>(url, { params: toQuery(params) })
+export async function getOne<T>(url: string, params?: Record<string, unknown>, config?: typeof PUBLIC): Promise<T> {
+  const response = await client.get<ApiEnvelope<T>>(url, { ...config, params: toQuery(params) })
   return response.data.data
 }
 
@@ -154,8 +189,8 @@ export async function getAllPages<T>(url: string, params?: Omit<ListParams, 'pag
   }
 }
 
-export async function post<T>(url: string, body?: unknown, headers?: Record<string, string>): Promise<T> {
-  const response = await client.post<ApiEnvelope<T>>(url, body, { headers })
+export async function post<T>(url: string, body?: unknown, headers?: Record<string, string>, config?: typeof PUBLIC): Promise<T> {
+  const response = await client.post<ApiEnvelope<T>>(url, body, { ...config, headers })
   return response.data.data
 }
 

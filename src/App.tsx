@@ -26,7 +26,9 @@ const AdminStyles = lazy(() =>
 )
 
 const Login = lazy(() => import('./pages/auth/Login'))
+const ChangePassword = lazy(() => import('./pages/account/ChangePassword'))
 const PenName = lazy(() => import('./pages/account/PenName'))
+const RecoveryCode = lazy(() => import('./pages/account/RecoveryCode'))
 const Security = lazy(() => import('./pages/account/Security'))
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const Claim = lazy(() => import('./pages/auth/Claim'))
@@ -114,6 +116,8 @@ export default function App() {
             {/* Every signed-in account, superadmins included: two-factor sign-in. */}
             <Route element={<RequireAuth />}>
               <Route path="account/security" element={<Security />} />
+              <Route path="account/recovery-code" element={<RecoveryCode />} />
+              <Route path="account/password" element={<ChangePassword />} />
             </Route>
             <Route element={<RequireAuth roles={['user']} />}>
               <Route path="account/pen-name" element={<PenName />} />

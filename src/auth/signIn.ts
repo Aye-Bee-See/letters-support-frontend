@@ -1,4 +1,4 @@
-import { getKeys, getLoginParams, isTwoFactorChallenge, login } from '../api/auth'
+import { getKeys, getLoginParams, isTwoFactorChallenge, login, logout } from '../api/auth'
 import { loginTwoFactor, type SecondFactor } from '../api/twoFactor'
 import { toApiError } from '../api/client'
 import { KdfParamsError, signInKeys, unlockAccount, unlockGroupKey, wipe, type Keypair } from '../crypto'
@@ -59,6 +59,19 @@ export interface CodeNeeded {
   codeNeeded: true
   challenge: string
   expiresAt: string
+  /**
+   * The wrap key derived from the password, for the second step, so the
+   * password itself need not be kept and Argon2id need not run again. The
+   * caller owns it: pass it back with each code, and wipe it (`wipe` from
+   * src/crypto) once signed in, on starting again, when the challenge expires,
+   * and on leaving the page.
+   */
+  wrapKey: Uint8Array
+}
+
+/** The second step's input: the wrap key from CodeNeeded (an object with more in it, such as SplitKeys, will do). */
+export interface DerivedKeys {
+  wrapKey: Uint8Array
 }
 
 export interface SignedIn {
@@ -80,6 +93,17 @@ function fail(err: unknown): never {
   throw new SignInError('other', e.message)
 }
 
+/**
+ * Revoke a token no session will use (POST /auth/logout), without waiting: a
+ * sign-in refused after the API issued it. Best effort; a failure changes
+ * nothing for the person, and the token expires within a week regardless.
+ */
+export function revoke(token: string): void {
+  Promise.resolve()
+    .then(() => logout(token))
+    .catch(() => null)
+}
+
 /** The second step's failures: a wrong code leaves the challenge usable; an expired or used one does not. */
 function failCode(err: unknown): never {
   const e = toApiError(err)
@@ -97,74 +121,94 @@ function failCode(err: unknown): never {
  *    the device (one Argon2id run) and send only authKey. Costs below the
  *    agreed ones, or above the cap, are refused, sending nothing.
  * 3. POST /auth/login. For an account with two-factor sign-in on, that answers
- *    only a challenge: return CodeNeeded, and the caller calls again with the
- *    challenge and a code (POST /auth/login/two-factor).
+ *    only a challenge: return CodeNeeded with the wrap key, and the caller
+ *    calls again with that key, the challenge and a code
+ *    (POST /auth/login/two-factor). The second step derives nothing: the
+ *    password is not needed again, and Argon2id runs once per sign-in.
  * 4. GET /auth/keys (or the bundle the sign-in answered with), and open the
- *    private key (and the group key) with wrapKey. wrapKey is wiped either way.
+ *    private key (and the group key) with wrapKey. The wrap key derived here
+ *    is wiped either way (unless handed over with CodeNeeded); the second
+ *    step works on a copy of the caller's, which the caller wipes.
  * 5. An account without keys is refused: every account has keys, made when it
  *    is created (owner's decision, 25 September). There is no key set-up at
  *    sign-in.
  */
+export async function signIn(username: string, password: string): Promise<SignedIn | CodeNeeded>
+export async function signIn(username: string, keys: DerivedKeys, second: { challenge: string; factor: SecondFactor }): Promise<SignedIn>
 export async function signIn(
   username: string,
-  password: string,
+  secret: string | DerivedKeys,
   second?: { challenge: string; factor: SecondFactor },
 ): Promise<SignedIn | CodeNeeded> {
   const name = username.trim()
+  // Owned by this call, and wiped when it ends.
   let wrapKey: Uint8Array | null = null
   try {
-    const params = await getLoginParams(name).catch(fail)
-    if (params.scheme !== 'split') {
-      throw new SignInError(
-        'plain_account',
-        'This account still uses an older sign-in that sends your password to the server, which letters.support no longer does. ' +
-          'Your password was not sent. Ask a network admin to move your account.',
-      )
-    }
-
-    // The second step derives the keys again (a second or so) rather than holding
-    // wrapKey in memory while the person fetches their code.
-    // Costs outside the agreed bounds are refused here, before anything derived
-    // from the password exists, let alone is sent (see checkKdfParams).
-    const keys = await signInKeys(password, params).catch((err: unknown) => {
-      if (err instanceof KdfParamsError) {
-        throw new SignInError(err.kind === 'weak' ? 'weak_params' : 'heavy_params', err.message)
-      }
-      throw err
-    })
-    wrapKey = keys.wrapKey
     let result: LoginResult
-    if (second) {
+    if (typeof secret !== 'string') {
+      if (!second) throw new Error('signIn: derived keys are for the second step only.')
+      // A copy: if this code is wrong, the caller's key is still good for the next.
+      wrapKey = secret.wrapKey.slice()
       result = await loginTwoFactor(second.challenge, second.factor).catch(failCode)
     } else {
+      const params = await getLoginParams(name).catch(fail)
+      if (params.scheme !== 'split') {
+        throw new SignInError(
+          'plain_account',
+          'This account still uses an older sign-in that sends your password to the server, which letters.support no longer does. ' +
+            'Your password was not sent. Ask a network admin to move your account.',
+        )
+      }
+
+      // Costs outside the agreed bounds are refused here, before anything derived
+      // from the password exists, let alone is sent (see checkKdfParams).
+      const keys = await signInKeys(secret, params).catch((err: unknown) => {
+        if (err instanceof KdfParamsError) {
+          throw new SignInError(err.kind === 'weak' ? 'weak_params' : 'heavy_params', err.message)
+        }
+        throw err
+      })
+      wrapKey = keys.wrapKey
       const answer = await login(name, keys.authKey).catch(fail)
-      if (isTwoFactorChallenge(answer)) return { codeNeeded: true, ...answer.twoFactor }
+      if (isTwoFactorChallenge(answer)) {
+        // Handed over: the caller holds the wrap key, not the password, until the code.
+        const handed = wrapKey
+        wrapKey = null
+        return { codeNeeded: true, ...answer.twoFactor, wrapKey: handed }
+      }
       result = answer
     }
-    const bundle = result.keys ?? (await getKeys(result.token.token).catch(fail))
-
-    if (!bundle.wrappedPrivateKey || !bundle.publicKey) {
-      throw new SignInError('no_keys', "This account isn't fully set up, so it can't be used yet. Please contact a network admin.")
-    }
-
-    let keypair: Keypair
     try {
-      keypair = await unlockAccount(bundle, wrapKey) // wipes wrapKey
-      wrapKey = null
-    } catch {
-      throw new SignInError('keys', "Signed in, but we couldn't open your letters with this password. Try your recovery code.")
-    }
+      const bundle = result.keys ?? (await getKeys(result.token.token).catch(fail))
 
-    let groupKeypair: Keypair | null = null
-    const org = bundle.orgKey
-    if (org?.wrappedOrgPrivateKey && org.chapterPublicKey) {
-      groupKeypair = await unlockGroupKey(
-        { wrappedOrgPrivateKey: org.wrappedOrgPrivateKey, chapterPublicKey: org.chapterPublicKey },
-        keypair,
-      ).catch(() => null) // a stale hand-out must not block sign-in; the group key is handed out again later
-    }
+      if (!bundle.wrappedPrivateKey || !bundle.publicKey) {
+        throw new SignInError('no_keys', "This account isn't fully set up, so it can't be used yet. Please contact a network admin.")
+      }
 
-    return { result, bundle, keypair, groupKeypair }
+      let keypair: Keypair
+      try {
+        keypair = await unlockAccount(bundle, wrapKey) // wipes wrapKey
+        wrapKey = null
+      } catch {
+        throw new SignInError('keys', "Signed in, but we couldn't open your letters with this password. Try your recovery code.")
+      }
+
+      let groupKeypair: Keypair | null = null
+      const org = bundle.orgKey
+      if (org?.wrappedOrgPrivateKey && org.chapterPublicKey) {
+        groupKeypair = await unlockGroupKey(
+          { wrappedOrgPrivateKey: org.wrappedOrgPrivateKey, chapterPublicKey: org.chapterPublicKey },
+          keypair,
+        ).catch(() => null) // a stale hand-out must not block sign-in; the group key is handed out again later
+      }
+
+      return { result, bundle, keypair, groupKeypair }
+    } catch (err) {
+      // The API issued a token, but no session starts with it: end it on the
+      // server too (best effort; it would otherwise stay good for a week).
+      revoke(result.token.token)
+      throw err
+    }
   } finally {
     await wipe(wrapKey)
   }

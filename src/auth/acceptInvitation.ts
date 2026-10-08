@@ -35,8 +35,9 @@ export async function accept(input: AcceptInput): Promise<Joined & { activation:
   })
   // The account exists and the invitation is spent: from here a failed sign-in
   // is returned with the recovery code, not thrown (see join.ts).
-  const session = await signInAfterWrite(async () => {
+  const session = await signInAfterWrite(async (issued) => {
     const result = await loginNewAccount(username, account.authKey)
+    issued(result.token.token)
     const bundle = result.keys ?? (await getKeys(result.token.token))
     // As at sign-in: open the group key if the bundle carries one. A new group has
     // none yet, and a new member's is handed over later, but nothing here assumes so.

@@ -1,4 +1,4 @@
-import client, { getOne, post, put } from './client'
+import client, { getOne, post, PUBLIC, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
 import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFactorChallenge, User, WriterBlock } from '../types'
 
@@ -11,17 +11,20 @@ import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFa
 /**
  * POST /auth/logout: revoke a session's token on the server, so it can't be
  * used again even if it was copied. Takes the token itself: signing out clears
- * the session's own before this answers. (`{ everywhere: true }` would end every
- * session of the account; not used yet.)
+ * the session's own before this answers. With `everywhere`, every token of the
+ * account stops working: every browser and app signed in to it, this one too.
  */
-export const logout = (token: string) => post('/auth/logout', {}, { Authorization: `Bearer ${token}` })
+export const logout = (token: string, options: { everywhere?: boolean } = {}) =>
+  post<{ signedOut: boolean; everywhere: boolean }>('/auth/logout', options.everywhere ? { everywhere: true } : {}, {
+    Authorization: `Bearer ${token}`,
+  })
 
 export const getLoginParams = (username: string) =>
-  getOne<LoginParams>('/auth/login-params', { username })
+  getOne<LoginParams>('/auth/login-params', { username }, PUBLIC)
 
 /** `authKey` is base64 of the derived auth key (44 characters), never the password. */
 export const login = (username: string, authKey: string) =>
-  post<LoginResult | TwoFactorChallenge>('/auth/login', { username, password: authKey })
+  post<LoginResult | TwoFactorChallenge>('/auth/login', { username, password: authKey }, undefined, PUBLIC)
 
 /** The password was right, and the account uses two-factor sign-in: no session yet, only a challenge for the code. */
 export const isTwoFactorChallenge = (answer: LoginResult | TwoFactorChallenge): answer is TwoFactorChallenge =>
@@ -61,9 +64,13 @@ export const setKeys = (fields: PasswordKeyFields & RecoveryKeyFields & { public
  * change, and how an account moves from plain to split. The API requires the
  * private key re-wrapped under the new password in the same request, so an
  * account needs keys (setKeys) before it can become split.
+ *
+ * A new password ends every session of the account, this one included; on the
+ * account holder's own change the answer carries a fresh `token` for this one
+ * (README "Signing out and revoking tokens"), which the session must switch to.
  */
 export const setSplitPassword = (id: number, creds: { authKey: string } & PasswordKeyFields) =>
-  put('/auth/user', {
+  put<{ token?: { token: string; expires: number } }>('/auth/user', {
     id,
     authScheme: 'split',
     password: creds.authKey,
@@ -107,7 +114,7 @@ export interface RecoveryStart {
   expiresIn: number
 }
 
-export const startRecovery = (username: string) => getOne<RecoveryStart>('/auth/recover', { username })
+export const startRecovery = (username: string) => getOne<RecoveryStart>('/auth/recover', { username }, PUBLIC)
 
 /**
  * POST /auth/recover: the opened challenge proves the recovery code opened the
@@ -126,7 +133,7 @@ export const finishRecovery = (req: {
     authScheme: 'split',
     password: req.authKey,
     ...req.keyFields,
-  })
+  }, undefined, PUBLIC)
 
 // --- Claiming a managed account ---------------------------------------------
 
@@ -146,7 +153,7 @@ export interface ClaimInfo {
   claimKdfParams?: KdfParams | null
 }
 
-export const getClaimInfo = (token: string) => getOne<ClaimInfo>('/auth/claim', { token })
+export const getClaimInfo = (token: string) => getOne<ClaimInfo>('/auth/claim', { token }, PUBLIC)
 
 export interface ClaimRequest {
   token: string
@@ -166,7 +173,7 @@ export const claimAccount = (req: ClaimRequest) =>
     authScheme: 'split',
     password: req.authKey,
     ...req.keyFields,
-  })
+  }, undefined, PUBLIC)
 
 // --- Invite codes (joining) ---------------------------------------------------
 
@@ -176,7 +183,7 @@ export const claimAccount = (req: ClaimRequest) =>
  * cancelled, expired or inactive otherwise.
  */
 export const checkInviteCode = (code: string) =>
-  getOne<{ chapter: { id: number; name: string }; expiresAt: string }>('/auth/join', { code })
+  getOne<{ chapter: { id: number; name: string }; expiresAt: string }>('/auth/join', { code }, PUBLIC)
 
 export interface JoinRequest {
   code: string
@@ -196,4 +203,4 @@ export const joinWithCode = (req: JoinRequest) =>
     authScheme: 'split',
     password: req.authKey,
     ...req.keyFields,
-  })
+  }, undefined, PUBLIC)
