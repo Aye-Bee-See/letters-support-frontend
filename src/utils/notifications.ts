@@ -81,8 +81,96 @@ export const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n
       : 'A site admin dismissed your group’s recommendation to block a writer from the whole site',
 }
 
-/** One feed entry in words. An event this client doesn't know yet still reads as something. */
-export function wordEvent(n: Notification): string {
-  const word = EVENT_WORDING[n.event]
-  return word ? word(n.detail ?? {}, n) : 'Something changed'
+/**
+ * Who reads the line, and about whom. A writer's feed (README "The feed":
+ * `letter.reply`, `letter.status`, `prisoner.moved`, `prisoner.status`,
+ * `writer.block`) is about their own letters and the people they write to, so
+ * it is worded as theirs; `prisonerName` names the person, when the page knows
+ * the thread.
+ */
+export interface WordingContext {
+  forWriter?: boolean
+  prisonerName?: string | null
 }
+
+/** A writer's letter moving on: one letter, several. */
+const WRITER_STATUS_WORDS: Record<string, [string, string]> = {
+  printed: ['was printed', 'were printed'],
+  mailed: ['was mailed', 'were mailed'],
+  returned: ['came back in the post', 'came back in the post'],
+  declined: ['wasn’t sent', 'weren’t sent'],
+}
+
+/** "Your letter to Jane was mailed", "3 of your letters to Jane were mailed". */
+function writerStatusLine(d: Detail, to: string): string {
+  const status = str(d.status)
+  const count = num(d.count)
+  const many = count !== null && count > 1
+  const subject = many ? `${count} of your letters${to}` : `Your letter${to}`
+  const words = status ? WRITER_STATUS_WORDS[status] : undefined
+  if (!words) return `${subject} moved on`
+  const label = status === 'declined' ? str(d.ruleLabel) : null
+  return `${subject} ${words[many ? 1 : 0]}${label ? `: “${label}”` : ''}`
+}
+
+/** A held count, as the writer reads it: "; 1 of your letters to them is on hold". */
+const writerHeldClause = (held: number | null) =>
+  held ? `; ${held === 1 ? '1 of your letters to them is' : `${held} of your letters to them are`} on hold` : ''
+
+const WRITER_WORDING: Partial<Record<NotificationEvent, (detail: Detail, name: string | null) => string>> = {
+  'letter.reply': (_d, name) => (name ? `${name} wrote back` : 'A reply to your letter arrived'),
+  'letter.status': (d, name) => writerStatusLine(d, name ? ` to ${name}` : ''),
+  'prisoner.moved': (d, name) => `${name ?? 'Someone you write to'} was moved to another facility${writerHeldClause(num(d.held))}`,
+  'prisoner.status': (d, name) =>
+    d.status === 'free'
+      ? `${name ?? 'Someone you write to'} has been released${writerHeldClause(num(d.held))}`
+      : `${name ?? 'Someone you write to'} has a new status`,
+  // README "The feed": `chapter` carries the group's id and name.
+  'writer.block': (d) => {
+    const chapter = d.chapter && typeof d.chapter === 'object' ? str((d.chapter as Detail).name) : null
+    if (d.action === 'lifted') return chapter ? `${chapter} is mailing your letters again` : 'A group is mailing your letters again'
+    return chapter ? `${chapter} has stopped mailing your letters` : 'A group has stopped mailing your letters'
+  },
+}
+
+/** One feed entry in words. An event this client doesn't know yet still reads as something. */
+export function wordEvent(n: Notification, context: WordingContext = {}): string {
+  const detail = n.detail ?? {}
+  const forWriter = context.forWriter ? WRITER_WORDING[n.event] : undefined
+  if (forWriter) return forWriter(detail, context.prisonerName ?? null)
+  const word = EVENT_WORDING[n.event]
+  return word ? word(detail, n) : 'Something changed'
+}
+
+/**
+ * What is new on a writer's conversation, in a word for its inbox row
+ * ("Mailed", "Returned"); null for an entry that isn't about one letter or person.
+ */
+export function writerEventTag(n: Notification): string | null {
+  switch (n.event) {
+    case 'letter.reply':
+      return 'New reply'
+    case 'letter.status':
+      switch (n.detail?.status) {
+        case 'printed':
+          return 'Printed'
+        case 'mailed':
+          return 'Mailed'
+        case 'returned':
+          return 'Returned'
+        case 'declined':
+          return 'Not sent'
+        default:
+          return 'Updated'
+      }
+    case 'prisoner.moved':
+      return 'Moved'
+    case 'prisoner.status':
+      return n.detail?.status === 'free' ? 'Released' : 'Updated'
+    default:
+      return null
+  }
+}
+
+/** Tags that need the writer (a letter came back or wasn't sent, the person moved or was freed), as against good news. */
+export const isWorryingTag = (tag: string) => ['Returned', 'Not sent', 'Moved', 'Released'].includes(tag)

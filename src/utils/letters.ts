@@ -55,8 +55,10 @@ export function oldKeyText(sealedWith: number, holding: number): { short: string
 }
 
 // --- The writer's own queued letter (README "Letter lifecycle", "Moved and freed") ---
-// While a letter is queued its writer may delete it, and for a `choose_relay`
-// hold choose the group that mails it (PUT /messaging/message { relayChapter }).
+// While a letter is queued its writer may edit or delete it, and for a
+// `choose_relay` hold choose the group that mails it (PUT /messaging/message
+// { relayChapter }). Editing sends new ciphertext and nonce under the same
+// content key ("Sending and reading letters").
 
 /**
  * What Delete asks first, by the letter's hold. `rewrite`: its text then goes
@@ -71,16 +73,18 @@ export function deleteQuestion(heldReason: HeldReason | null, prisonerName: stri
 }
 
 /**
- * Why deleting a queued letter, or choosing its group, was refused, worded from
- * the status, `name` and the 400's field and code (never the API's sentence).
- * Nothing was changed. `group`: the chosen group's name.
+ * Why deleting, editing or choosing the group of a queued letter was refused,
+ * worded from the status, `name` and the 400's field and code (never the API's
+ * sentence). Nothing was changed. `group`: the chosen group's name.
  */
-export function queuedLetterRefusal(error: ApiError, action: 'delete' | 'choose', group?: string): string {
+export function queuedLetterRefusal(error: ApiError, action: 'delete' | 'edit' | 'choose', group?: string): string {
   const problem = error.problems?.[0]
   if (error.status === 0) return 'Couldn’t reach the server. Nothing was changed; try again.'
   if (error.status === 403 && error.name === 'GroupBlockError')
     return `${group ?? 'That group'} isn’t mailing your letters, so it can’t take this one. Choose another group, or delete the letter.`
   // Printed (or mailed) meanwhile: from then on only a site admin can change it.
+  if (error.status === 403 && action === 'edit')
+    return 'This letter can’t be edited any more: the group has printed it, and a printed letter stays as it was printed. Your changes weren’t saved. Reload to see where it is.'
   if (error.status === 403)
     return `This letter can’t be ${action === 'delete' ? 'deleted' : 'changed'} any more: the group may have printed it meanwhile. Reload to see where it is.`
   if (error.status === 404) return 'This letter is gone already. Reload the conversation.'

@@ -10,9 +10,12 @@ import type { Notification } from '../types'
  */
 export const getUnreadNotifications = () => getAllPages<Notification>('/auth/notifications', { unread: true })
 
-/** Mark entries read. */
-export const markNotificationsRead = (ids: number[]) =>
-  put<{ marked: number; unread: number }>('/auth/notifications/read', { ids })
+/** How many entries are unread, from one small page of the unread feed (its `total`). */
+export const getUnreadCount = () => getList<Notification>('/auth/notifications', { unread: true, page_size: 1 }).then((r) => r.total)
+
+/** Mark entries read; `undefined` marks every entry. Answers how many are still unread. */
+export const markNotificationsRead = (ids?: number[]) =>
+  put<{ marked: number; unread: number }>('/auth/notifications/read', ids ? { ids } : {})
 
 /** The newest entries, read or not (README "The feed"): a page of the caller's feed, newest first. */
 export const getNotifications = (pageSize = 20) =>

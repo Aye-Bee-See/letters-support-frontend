@@ -12,6 +12,7 @@ import WriterBlockActions from '../../components/group/WriterBlockActions'
 import LoadState from '../../components/ui/LoadState'
 import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
+import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
@@ -64,10 +65,11 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
       return { message, opened: kept && unchanged(kept.message, message) ? kept.opened : await openLetter(message, reader) }
     }),
   )
-  // Opening the thread reads it. Failure here must not break the page.
+  // Opening the thread reads it, and the header's count drops. Failure here must not break the page.
   getUnreadNotifications()
     .then((items) => items.filter((n) => n.chat === id).map((n) => n.id))
     .then((ids) => (ids.length ? markNotificationsRead(ids) : null))
+    .then((result) => result && announceUnreadCount(result.unread))
     .catch(() => null)
   return { chat, letters }
 }
@@ -264,7 +266,20 @@ function LetterItem({
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
-      <div className="letter-collapsed" onClick={() => setOpen((o) => !o)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setOpen((o) => !o)}>
+      <div
+        className="letter-collapsed"
+        onClick={() => setOpen((o) => !o)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onKeyDown={(e) => {
+          // A button answers Space as well as Enter; Space would otherwise scroll the page.
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen((o) => !o)
+          }
+        }}
+      >
         <span className="letter-collapsed-direction">{outbound ? '→' : '←'}</span>
         <span className="letter-collapsed-date">{shortDate(m.createdAt)}</span>
         <span className="letter-collapsed-preview">{previewOf(m, opened)}</span>
@@ -297,6 +312,12 @@ function LetterItem({
                   : undefined
               }
               mayReplaceReply={queued.mayReplaceReply}
+              // Edit needs the content key (the writer's own envelope opened) and a typed body.
+              editable={
+                opened.state === 'open' && opened.text !== null && !m.paper
+                  ? { text: opened.text, relayNote: opened.relayNote, contentKey: opened.contentKey }
+                  : undefined
+              }
               onChanged={queued.onChanged}
             />
           )}
@@ -506,6 +527,7 @@ export default function Thread() {
   if (!page.data) {
     return (
       <div className="app-wrap">
+        <title>Conversation · letters.support</title>
         <div className="wrap">
           <LoadState state={page} what="conversation" />
         </div>
@@ -539,6 +561,7 @@ export default function Thread() {
 
   return (
     <div className="app-wrap">
+      <title>{`Letters with ${prisonerName} · letters.support`}</title>
       <div className="app-layout">
         <main className="thread-main">
           <div className="thread-header">

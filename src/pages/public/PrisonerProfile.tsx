@@ -126,10 +126,16 @@ export default function PrisonerProfile() {
 
             <div className="profile-actions">
               {/* Not in the prototype: the way into New Letter for a signed-in writer. */}
-              {isWriter && (
+              {/* Only with a facility on record: without one there is nowhere to mail a letter. */}
+              {isWriter && p.prison && (
                 <Link to={`/letters/new?prisoner=${p.id}`} className="btn btn-sm btn-primary" style={{ marginBottom: '0.5rem' }}>
                   Write a letter
                 </Link>
+              )}
+              {isWriter && !p.prison && (
+                <p className="verified-note" style={{ marginBottom: '0.5rem' }}>
+                  No facility is on record for {name} at the moment, so letters can’t be sent through this site.
+                </p>
               )}
               <a
                 href="#"
