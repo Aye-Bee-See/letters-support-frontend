@@ -18,6 +18,7 @@ import About from './pages/public/About'
 
 import Login from './pages/auth/Login'
 import PenName from './pages/account/PenName'
+import RecoveryCode from './pages/account/RecoveryCode'
 import Security from './pages/account/Security'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import Claim from './pages/auth/Claim'
@@ -101,6 +102,7 @@ export default function App() {
             {/* Every signed-in account, superadmins included: two-factor sign-in. */}
             <Route element={<RequireAuth />}>
               <Route path="account/security" element={<Security />} />
+              <Route path="account/recovery-code" element={<RecoveryCode />} />
             </Route>
             <Route element={<RequireAuth roles={['user']} />}>
               <Route path="account/pen-name" element={<PenName />} />

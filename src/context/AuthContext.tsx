@@ -51,6 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession((s) => (s && s.keys ? { ...s, keys: { ...s.keys, orgKey }, groupKeypair } : s))
   }, [])
 
+  const keysChanged = useCallback((changes: Partial<Omit<KeyBundle, 'orgKey'>>) => {
+    setSession((s) => (s && s.keys ? { ...s, keys: { ...s.keys, ...changes } } : s))
+  }, [])
+
   const endSession = useCallback(() => {
     setAuthToken(null)
     // Keys are base64 strings, which JavaScript cannot overwrite; dropping every
@@ -106,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       twoFactorSetUp,
       penNameChosen,
       groupKeySet,
+      keysChanged,
       isAuthenticated: session !== null,
       isAdmin: role === 'admin',
       isChapter: role === 'chapter',
@@ -113,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       startSession,
       endSession,
     }
-  }, [session, startSession, endSession, twoFactorSetUp, penNameChosen, groupKeySet])
+  }, [session, startSession, endSession, twoFactorSetUp, penNameChosen, groupKeySet, keysChanged])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

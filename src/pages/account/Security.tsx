@@ -108,11 +108,42 @@ export default function Security() {
             </div>
           </div>
         </div>
+        {/* Only two-factor set-up works while it is required and not on. */}
+        {!twoFactorSetupRequired && <AccountKeys />}
         {!twoFactorSetupRequired && (
           <Link to={home} className="claim-back">
             ← Back
           </Link>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** The account's password and recovery code, each on its own page. */
+function AccountKeys() {
+  const { keys } = useAuth()
+  return (
+    <div className="claim-box" style={{ marginTop: '1.5rem' }}>
+      <div className="claim-state is-active">
+        <div className="claim-header">
+          <h2 className="claim-title">Recovery code</h2>
+          <p className="claim-org-note">
+            If you forget your password, your recovery code is the only way back into your account and your letters.
+          </p>
+        </div>
+        <div className="claim-body">
+          {keys && !keys.hasRecovery && (
+            <div className="claim-encryption-note security-required">
+              <p>
+                <strong>Your account has no recovery code.</strong> Make one now, while you still know your password.
+              </p>
+            </div>
+          )}
+          <p className="claim-org-note">
+            <Link to="/account/recovery-code">Make a new recovery code</Link> if you lost yours or never saved it. The old one stops working.
+          </p>
+        </div>
       </div>
     </div>
   )
