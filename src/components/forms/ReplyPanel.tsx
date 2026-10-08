@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { getFacility } from '../../api/facilities'
-import { useApi } from '../../hooks/useApi'
+import type { ApiState } from '../../hooks/useApi'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useLetterDraft } from '../../hooks/useLetterDraft'
-import type { Message } from '../../types'
+import type { Message, Prison } from '../../types'
 import { mailRuleLines } from '../../utils/facilities'
 import AttachmentRetry from './AttachmentRetry'
 import UploadZone from './UploadZone'
@@ -13,7 +12,7 @@ import UploadZone from './UploadZone'
 // with the prisoner fixed and the group that mailed the last letter preferred.
 export default function ReplyPanel({
   prisonerId,
-  prisonId,
+  facility,
   preferredGroup,
   resend,
   onCancelResend,
@@ -21,7 +20,8 @@ export default function ReplyPanel({
   onSent,
 }: {
   prisonerId: number
-  prisonId: number
+  /** The prisoner's facility with its relay groups (full=true), loaded once by the thread and shared with its group picker. */
+  facility: ApiState<Prison | null>
   preferredGroup?: number
   /**
    * Writing a letter again (the panel is keyed on it, so this is read once): a
@@ -34,7 +34,6 @@ export default function ReplyPanel({
   onDraftChange?: (hasContent: boolean) => void
   onSent: (message: Message) => void
 }) {
-  const facility = useApi(() => getFacility(prisonId, true), [prisonId])
   const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup, resend ? { text: resend.text, resendOf: resend.kind === 'resend' ? resend.id : null } : undefined)
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility.data ? mailRuleLines(facility.data) : []

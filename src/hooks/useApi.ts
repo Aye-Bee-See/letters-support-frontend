@@ -60,13 +60,15 @@ export function apiView<T>(
  * previous record, so a page never shows one prisoner's data under another's
  * URL. By default `reload()` clears it too. With `{ keepPrevious: true }` the
  * last answer stays while the same deps are asked again, `reloading` says so,
- * and whatever the reload brings (data or an error) then replaces it.
+ * and the reload's own answer then replaces it; a reload that fails keeps the
+ * last answer and reports its `error` beside it, for the page to show as a line.
  */
 export function useApi<T>(request: () => Promise<T>, deps: Primitive[], options: ApiOptions = {}): ApiState<T> {
   const [attempt, setAttempt] = useState(0)
   const [settled, setSettled] = useState<Settled<T> | null>(null)
   const depsKey = JSON.stringify(deps)
   const key = JSON.stringify([...deps, attempt])
+  const keepPrevious = options.keepPrevious ?? false
 
   useEffect(() => {
     let current = true
@@ -75,7 +77,14 @@ export function useApi<T>(request: () => Promise<T>, deps: Primitive[], options:
         if (current) setSettled({ key, depsKey, data, error: null })
       })
       .catch((err: unknown) => {
-        if (current) setSettled({ key, depsKey, data: null, error: toApiError(err) })
+        // With keepPrevious, a failed reload keeps what was on screen beside its error.
+        if (current)
+          setSettled((prev) => ({
+            key,
+            depsKey,
+            data: keepPrevious && prev?.depsKey === depsKey ? prev.data : null,
+            error: toApiError(err),
+          }))
       })
     return () => {
       current = false
@@ -86,5 +95,5 @@ export function useApi<T>(request: () => Promise<T>, deps: Primitive[], options:
 
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
 
-  return { ...apiView(settled, key, depsKey, options.keepPrevious ?? false), reload }
+  return { ...apiView(settled, key, depsKey, keepPrevious), reload }
 }

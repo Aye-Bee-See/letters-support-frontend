@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { toApiError } from '../../api/client'
-import { getFacility } from '../../api/facilities'
 import { deleteLetter, updateLetter } from '../../api/letters'
-import { useApi } from '../../hooks/useApi'
-import type { Message, WriterBlock } from '../../types'
+import type { ApiState } from '../../hooks/useApi'
+import type { Message, Prison, WriterBlock } from '../../types'
 import { deleteQuestion, queuedLetterRefusal } from '../../utils/letters'
 
 // The writer's own queued letter, on the thread page (README "Letter
@@ -16,17 +15,16 @@ import { deleteQuestion, queuedLetterRefusal } from '../../utils/letters'
 /** The groups that mail to the prisoner's facility now, to choose from for a `choose_relay` hold. */
 function ChooseGroup({
   message,
-  prisonId,
+  facility,
   blocks,
   onChanged,
 }: {
   message: Message
-  prisonId: number
+  /** The prisoner's facility with its relay groups (full=true), loaded once by the thread for the reply panel and this. */
+  facility: ApiState<Prison | null>
   blocks: Map<number, WriterBlock>
   onChanged: () => void
 }) {
-  // The thread's prisoner_details carries a summary of the facility; its relay groups come with full=true.
-  const facility = useApi(() => getFacility(prisonId, true), [prisonId])
   // Not the group it is with: one that serves the new facility keeps the letter, so it isn't the question
   // (and in end-to-end mode naming it again changes nothing, the hold included).
   const groups = (facility.data?.relay_groups ?? []).filter((g) => g.accountStatus === 'active' && !blocks.has(g.id) && g.id !== message.relayChapter)
@@ -99,6 +97,7 @@ export default function QueuedLetterActions({
   message,
   prisonerName,
   prisonId,
+  facility,
   blocks,
   onRewrite,
   mayReplaceReply,
@@ -108,6 +107,8 @@ export default function QueuedLetterActions({
   prisonerName: string
   /** The prisoner's facility now; null when they aren't in the directory (then no group can be chosen). */
   prisonId: number | null
+  /** That facility's record with its relay groups: the thread loads it once, for the reply panel and this. */
+  facility: ApiState<Prison | null>
   /** Groups not mailing this writer's letters (GET /auth/blocks), left out of the choice. */
   blocks: Map<number, WriterBlock>
   /**
@@ -147,7 +148,7 @@ export default function QueuedLetterActions({
   return (
     <div style={{ marginBottom: '0.75rem' }}>
       {held === 'choose_relay' && prisonId !== null && !confirming && (
-        <ChooseGroup message={message} prisonId={prisonId} blocks={blocks} onChanged={onChanged} />
+        <ChooseGroup message={message} facility={facility} blocks={blocks} onChanged={onChanged} />
       )}
       {confirming ? (
         <p className="letter-body-scan-note">

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
+import { getFacility } from '../../api/facilities'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import CorrectReply from '../../components/forms/CorrectReply'
@@ -9,7 +10,7 @@ import RecordReplyPanel from '../../components/forms/RecordReplyPanel'
 import ReplyPanel from '../../components/forms/ReplyPanel'
 import WriterBlockActions from '../../components/group/WriterBlockActions'
 import LoadState from '../../components/ui/LoadState'
-import { useApi } from '../../hooks/useApi'
+import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
@@ -43,8 +44,9 @@ interface OpenedMessage {
 }
 
 /** The same letter, unchanged since it was opened: its body, relay note and update time. */
+// Not `updatedAt`: a status move bumps it, and the body and content key are the same.
 const unchanged = (a: Message, b: Message) =>
-  a.id === b.id && a.updatedAt === b.updatedAt && a.ciphertext === b.ciphertext && a.nonce === b.nonce && a.relayNoteCiphertext === b.relayNoteCiphertext
+  a.id === b.id && a.ciphertext === b.ciphertext && a.nonce === b.nonce && a.relayNoteCiphertext === b.relayNoteCiphertext
 
 /**
  * The thread with every letter opened, oldest first; marks this thread's
@@ -131,10 +133,13 @@ function groupHeldText(m: Message, chapterId: number | null): ReactNode {
 }
 
 /** Why a queued letter is held, as its writer reads it, with what they can do about it below. */
-function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>): ReactNode {
+function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>, canChoose: boolean): ReactNode {
   switch (m.heldReason) {
     case 'choose_relay':
-      return `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now: choose below.`
+      // The picker below needs the prisoner's facility; out of the directory, there is none to choose from.
+      return canChoose
+        ? `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now: choose below.`
+        : `${prisonerName} has been moved, and isn’t in the directory at the moment, so no group can be chosen for this letter. You can delete it.`
     case 'reseal_needed':
       return `${prisonerName} has been moved, and the group that was going to mail this letter doesn’t serve their new facility. To send it, delete it and write it again.`
     case 'prisoner_free':
@@ -242,14 +247,20 @@ function LetterItem({
   onWriteAgain?: (resend: Resend) => void
   /** Group admins, on a reply their group may correct: Edit transcription and Delete, then this. */
   onCorrected?: () => void
-  /** The writer, on their own queued letter: Delete, and choosing its group for a choose_relay hold. */
-  queued?: { prisonId: number | null; onRewrite?: (rewrite: Resend) => void; mayReplaceReply: () => boolean; onChanged: () => void }
+  /** The writer, on their own queued letter: Delete, and choosing its group for a choose_relay hold (from `facility`'s relay groups). */
+  queued?: {
+    prisonId: number | null
+    facility: ApiState<Prison | null>
+    onRewrite?: (rewrite: Resend) => void
+    mayReplaceReply: () => boolean
+    onChanged: () => void
+  }
 }) {
   const [open, setOpen] = useState(initiallyOpen)
   const { message: m, opened } = item
   const outbound = m.sender === 'user'
   const status = statusOf(m)
-  const held = forGroup ? groupHeldText(m, forGroup.chapterId) : heldText(m, prisonerName, blocks)
+  const held = forGroup ? groupHeldText(m, forGroup.chapterId) : heldText(m, prisonerName, blocks, queued?.prisonId != null)
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
@@ -278,6 +289,7 @@ function LetterItem({
               message={m}
               prisonerName={prisonerName}
               prisonId={queued.prisonId}
+              facility={queued.facility}
               blocks={blocks}
               onRewrite={
                 queued.onRewrite && opened.state === 'open'
@@ -469,6 +481,10 @@ export default function Thread() {
     // After a reply, a block or a correction the thread stays on screen while it loads again.
     { keepPrevious: true },
   )
+  // The prisoner's facility with its relay groups (full=true), for the writer's
+  // reply panel and a held letter's group picker: fetched once here for both.
+  const prisonId = !isChapter ? ((page.data?.chat.prisoner_details as Pick<Prisoner, 'prison'> | null | undefined)?.prison ?? null) : null
+  const facilityState = useApi<Prison | null>(() => (prisonId !== null ? getFacility(prisonId, true) : Promise.resolve(null)), [prisonId])
   // A returned or declined letter being written again in the reply panel below.
   const [resend, setResend] = useState<Resend | null>(null)
   // A block or unblock from the sidebar holds or releases this writer's letters,
@@ -549,6 +565,15 @@ export default function Thread() {
                 Updating…
               </p>
             )}
+            {/* A reload that failed: what was on screen stays (useApi keepPrevious), with the reason. */}
+            {page.error && (
+              <p className="thread-updating" role="alert">
+                Couldn’t update the conversation ({page.error.message}).{' '}
+                <button type="button" className="btn btn-sm" onClick={page.reload}>
+                  Try again
+                </button>
+              </p>
+            )}
           </div>
 
           <div className="letter-chain">
@@ -566,7 +591,7 @@ export default function Thread() {
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
                 queued={
                   !isChapter && chat.user === user?.id
-                    ? { prisonId: prisoner?.prison ?? null, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
+                    ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
                     : undefined
                 }
               />
@@ -586,7 +611,7 @@ export default function Thread() {
             <ReplyPanel
               key={resend?.id ?? 'reply'}
               prisonerId={prisoner.id}
-              prisonId={prisoner.prison}
+              facility={facilityState}
               preferredGroup={lastRelayId}
               resend={resend ?? undefined}
               onCancelResend={() => setResend(null)}
