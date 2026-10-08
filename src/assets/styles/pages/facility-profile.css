@@ -222,47 +222,6 @@
 }
 
 /* ============================================================
-   HISTORY LOG
-   ============================================================ */
-.history-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.history-item {
-  display: grid;
-  grid-template-columns: 7rem 1fr;
-  gap: 1rem;
-  padding: 0.7rem 0;
-  border-bottom: 1px solid var(--off-white);
-  font-size: 0.85rem;
-}
-
-.history-item:last-child { border-bottom: none; }
-
-.history-date {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--mid);
-  padding-top: 0.1rem;
-  flex-shrink: 0;
-}
-
-.history-event {
-  font-family: var(--sans);
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: var(--text);
-}
-
-.history-by {
-  font-size: 0.72rem;
-  color: var(--mid);
-  margin-top: 0.1rem;
-}
-
-/* ============================================================
    PRISONER GRID — 2-col, same as group profile
    ============================================================ */
 .facility-prisoner-grid {

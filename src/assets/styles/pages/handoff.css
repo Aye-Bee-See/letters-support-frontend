@@ -186,13 +186,6 @@
 
 .token-regenerate:hover { color: var(--text); }
 
-/* ── DIVIDER ── */
-.handoff-divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 2rem 0;
-}
-
 /* ── PENDING STATE (already has a token out) ── */
 .pending-banner {
   display: flex;

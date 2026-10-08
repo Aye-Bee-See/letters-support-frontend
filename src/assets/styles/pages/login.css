@@ -7,10 +7,7 @@
 /* ============================================================
    LOGIN PAGE — centered, minimal
    ============================================================ */
-/* React port: .login-page and .login-box are scoped with :has(.login-form).
-   admin.css defines the same two classes for the admin sign-in page, and both
-   stylesheets are loaded in the admin area. Only the public page has .login-form. */
-.login-page:has(.login-form) {
+.login-page {
   min-height: calc(100vh - 60px);
   display: flex;
   align-items: center;
@@ -19,7 +16,7 @@
   background: var(--off-white);
 }
 
-.login-box:has(.login-form) {
+.login-box {
   background: var(--white);
   border: 1px solid var(--border);
   width: 100%;
@@ -172,12 +169,6 @@
 }
 
 .login-footer-note a:hover { color: var(--text); }
-
-.login-footer-divider {
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  color: var(--border);
-}
 
 /* ── BACK LINK ── */
 .login-back {

@@ -225,7 +225,6 @@
   color: var(--mid);
 }
 
-
 /* ============================================================
    NOTES TO RELAY
    ============================================================ */
@@ -438,14 +437,6 @@
   flex-wrap: wrap;
   gap: 0.2rem;
   margin-top: 0.3rem;
-}
-
-.addr-anon {
-  font-family: var(--sans);
-  font-size: 0.8rem;
-  color: var(--border);
-  font-style: italic;
-  padding: 0.15rem 0 0.4rem;
 }
 
 /* Relay tiles */
