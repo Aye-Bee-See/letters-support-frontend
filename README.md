@@ -45,8 +45,9 @@ group small.
 
 ## Running it
 
-You need Node 20.19 or later (CI uses the current LTS) and a running copy of
-the API. The API's own README covers its install; its development server
+You need Node 20.19 or later in the 20 line, or 22.12 or later (Vite's range,
+in `package.json` under `engines`; `.nvmrc` names 24, and CI uses the current
+LTS), and a running copy of the API. The API's own README covers its install; its development server
 listens on `3069` and allows the origin `http://localhost:3001` by default,
 which is where this app's dev server runs.
 
