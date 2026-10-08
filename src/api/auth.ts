@@ -11,10 +11,13 @@ import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFa
 /**
  * POST /auth/logout: revoke a session's token on the server, so it can't be
  * used again even if it was copied. Takes the token itself: signing out clears
- * the session's own before this answers. (`{ everywhere: true }` would end every
- * session of the account; not used yet.)
+ * the session's own before this answers. With `everywhere`, every token of the
+ * account stops working: every browser and app signed in to it, this one too.
  */
-export const logout = (token: string) => post('/auth/logout', {}, { Authorization: `Bearer ${token}` })
+export const logout = (token: string, options: { everywhere?: boolean } = {}) =>
+  post<{ signedOut: boolean; everywhere: boolean }>('/auth/logout', options.everywhere ? { everywhere: true } : {}, {
+    Authorization: `Bearer ${token}`,
+  })
 
 export const getLoginParams = (username: string) =>
   getOne<LoginParams>('/auth/login-params', { username })

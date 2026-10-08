@@ -1,6 +1,7 @@
 import qrcode from 'qrcode-generator'
-import { useMemo, useState, type SubmitEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { startTransition, useMemo, useState, type SubmitEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { logout } from '../../api/auth'
 import { confirmTwoFactor, disableTwoFactor, getTwoFactor, newRecoveryCodes, setupTwoFactor } from '../../api/twoFactor'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
@@ -110,6 +111,7 @@ export default function Security() {
         </div>
         {/* Only two-factor set-up works while it is required and not on. */}
         {!twoFactorSetupRequired && <AccountKeys />}
+        {!twoFactorSetupRequired && <SignOutEverywhere />}
         {!twoFactorSetupRequired && (
           <Link to={home} className="claim-back">
             ← Back
@@ -146,6 +148,93 @@ function AccountKeys() {
           <p className="claim-org-note">
             <Link to="/account/recovery-code">Make a new recovery code</Link> if you lost yours or never saved it. The old one stops working.
           </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * POST /auth/logout { everywhere: true }: every token of the account stops
+ * working, this session's too, then this session ends as "Sign out" ends it.
+ * For a lost phone or a computer left signed in.
+ */
+function SignOutEverywhere() {
+  const { token, endSession } = useAuth()
+  const navigate = useNavigate()
+  const [asking, setAsking] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function signOutEverywhere() {
+    if (!token) return
+    setBusy(true)
+    setError(null)
+    try {
+      await logout(token, { everywhere: true })
+    } catch (err) {
+      const e = err as ApiError
+      setError(
+        e.status === 0
+          ? 'The server couldn’t be reached, so other devices may still be signed in. Try again.'
+          : `Couldn’t sign out everywhere (${errorText(err)}).`,
+      )
+      setBusy(false)
+      return
+    }
+    // As useSignOut: one transition, so this page's guard doesn't send the visitor to /login first.
+    startTransition(() => {
+      endSession()
+      navigate('/')
+    })
+  }
+
+  return (
+    <div className="claim-box" style={{ marginTop: '1.5rem' }}>
+      <div className="claim-state is-active">
+        <div className="claim-header">
+          <h2 className="claim-title">Sign out everywhere</h2>
+          <p className="claim-org-note">
+            Signs out every device signed in to your account, the apps included, and this one. For a lost phone, or a computer you left signed
+            in.
+          </p>
+        </div>
+        <div className="claim-body">
+          {error && (
+            <div className="claim-error" role="alert">
+              {error}
+            </div>
+          )}
+          {asking ? (
+            <>
+              <div className="claim-encryption-note security-required">
+                <p>
+                  <strong>Sign out on every device?</strong> Every browser and app signed in to your account, this one included, will need your
+                  password again.
+                </p>
+              </div>
+              <button type="button" className="claim-submit" disabled={busy} onClick={signOutEverywhere}>
+                {busy ? 'Signing out…' : 'Yes, sign out everywhere'}
+              </button>
+              <p className="claim-org-note" style={{ textAlign: 'center' }}>
+                <button
+                  type="button"
+                  className="claim-show-pw security-link"
+                  disabled={busy}
+                  onClick={() => {
+                    setAsking(false)
+                    setError(null)
+                  }}
+                >
+                  Cancel
+                </button>
+              </p>
+            </>
+          ) : (
+            <button type="button" className="claim-submit" onClick={() => setAsking(true)}>
+              Sign out everywhere
+            </button>
+          )}
         </div>
       </div>
     </div>
