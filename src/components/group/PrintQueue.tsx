@@ -4,6 +4,7 @@ import { toApiError } from '../../api/client'
 import { getMessages, setLetterStatusBatch } from '../../api/letters'
 import { useApi } from '../../hooks/useApi'
 import type { GroupKeyState } from '../../hooks/useGroup'
+import { usePageClamp } from '../../hooks/useListParams'
 import type { DeclineReason, Message, Prison } from '../../types'
 import {
   batchDeclineRules,
@@ -37,6 +38,8 @@ import { DeclineForm } from './DeclineLetter'
 // letters"): queued, held or printed, held ones without `release`.
 
 const PAGE_SIZE = 50
+
+type Notice = { kind: 'error' | 'done'; text: string }
 
 /** What a filter's selected letters can be marked as, if anything. These filters' letters can be declined too; mailed and later can't. */
 const BATCH_MOVE: Partial<Record<QueueFilter, { target: 'printed' | 'mailed'; label: string; release?: true }>> = {
@@ -124,8 +127,27 @@ function QueueRow({
   )
 }
 
-/** One filter's page of letters, with selection and the batch move. Keyed on the filter and page, so both reset. */
-function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; filter: QueueFilter; page: number; keyState: GroupKeyState }) {
+/**
+ * One filter's page of letters, with selection and the batch move. Keyed on the
+ * filter and page, so both reset. Moving the last letters off a later page goes
+ * back to the last page there is, carrying the notice of what was done.
+ */
+function QueueList({
+  chapterId,
+  filter,
+  page,
+  keyState,
+  carried,
+  onClamp,
+}: {
+  chapterId: number
+  filter: QueueFilter
+  page: number
+  keyState: GroupKeyState
+  /** The notice from the page this list was moved back from. */
+  carried: Notice | null
+  onClamp: (last: number, notice: Notice | null) => void
+}) {
   const [, setParams] = useSearchParams()
   const spec = queueFilter(filter)
   const list = useApi(
@@ -136,13 +158,14 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
   const [confirming, setConfirming] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<{ kind: 'error' | 'done'; text: string } | null>(null)
+  const [notice, setNotice] = useState<Notice | null>(carried)
   // The letters the last refusal named, from its `ids` (README "PUT /messaging/status/batch"), marked in the list.
   const [refused, setRefused] = useState<Set<number>>(new Set())
 
   const move = BATCH_MOVE[filter]
   const rows = list.data?.items ?? []
   const pages = list.data ? Math.max(1, Math.ceil(list.data.total / PAGE_SIZE)) : 1
+  usePageClamp(page, list.data ? pages : null, (last) => onClamp(last, notice))
   // Printing needs the letters open; marking mailed only needs them on paper already.
   const canMove = !!move && (move.target === 'mailed' || keyState === 'ready')
   const chosenRows = rows.filter((m) => selected.has(m.id))
@@ -351,9 +374,26 @@ function QueueList({ chapterId, filter, page, keyState }: { chapterId: number; f
 }
 
 export default function PrintQueue({ chapterId, keyState }: { chapterId: number; keyState: GroupKeyState }) {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const filter = queueFilter(params.get('filter')).key
   const page = Math.max(1, Number(params.get('page')) || 1)
+  const at = `${filter}:${page}`
+  // A notice carried to the page a list was moved back to; dropped once the list is elsewhere.
+  const [carried, setCarried] = useState<{ from: string; at: string; notice: Notice } | null>(null)
+  if (carried && at !== carried.at && at !== carried.from) setCarried(null)
+
+  const clamp = (last: number, notice: Notice | null) => {
+    if (notice) setCarried({ from: at, at: `${filter}:${last}`, notice })
+    setParams(
+      (p) => {
+        const next = new URLSearchParams(p)
+        if (last > 1) next.set('page', String(last))
+        else next.delete('page')
+        return next
+      },
+      { replace: true },
+    )
+  }
 
   return (
     <div className="inbox-section">
@@ -364,7 +404,15 @@ export default function PrintQueue({ chapterId, keyState }: { chapterId: number;
           </FilterChip>
         ))}
       </div>
-      <QueueList key={`${filter}:${page}`} chapterId={chapterId} filter={filter} page={page} keyState={keyState} />
+      <QueueList
+        key={at}
+        chapterId={chapterId}
+        filter={filter}
+        page={page}
+        keyState={keyState}
+        carried={carried?.at === at ? carried.notice : null}
+        onClamp={clamp}
+      />
     </div>
   )
 }

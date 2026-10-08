@@ -52,7 +52,8 @@ export default function Invitations() {
       </div>
 
       <div className="admin-content">
-        {issued && <TokenNotice classes={ADMIN_UI} {...issued} group={issued.invitation.chapterId ? groupById.get(issued.invitation.chapterId) : undefined} onDone={() => setIssued(null)} />}
+        {/* Keyed by the code (a renewal keeps the id), so a new one starts with nothing copied. */}
+        {issued && <TokenNotice key={`${issued.invitation.id}:${issued.invitation.token}`} classes={ADMIN_UI} {...issued} group={issued.invitation.chapterId ? groupById.get(issued.invitation.chapterId) : undefined} onDone={() => setIssued(null)} />}
 
         <InviteForm
           classes={ADMIN_UI}
@@ -63,6 +64,7 @@ export default function Invitations() {
             setIssued({ invitation, renewed: false })
             list.reload()
           }}
+          codeOnScreen={issued !== null}
         />
 
         <div className="admin-table-toolbar list-toolbar invite-list-toolbar">
@@ -104,6 +106,7 @@ export default function Invitations() {
                 list.reload()
               }}
               onChanged={list.reload}
+              codeOnScreen={issued !== null}
             />
           )}
         </div>

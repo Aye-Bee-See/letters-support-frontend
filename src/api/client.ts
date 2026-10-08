@@ -25,8 +25,10 @@ export const setTwoFactorSetupRequiredHandler = (handler: (() => void) | null) =
   onTwoFactorSetupRequired = handler
 }
 
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3069'
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3069',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -56,6 +58,16 @@ client.interceptors.response.use(
     return Promise.reject(apiError)
   },
 )
+
+/**
+ * An address on the API for a plain browser request (an `<img src>`): a path
+ * the API gives, such as a prisoner photo's `url`, used exactly as given and
+ * put after the API's base. An absolute URL is returned unchanged.
+ */
+export function apiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path
+  return API_BASE.replace(/\/+$/, '') + (path.startsWith('/') ? path : `/${path}`)
+}
 
 /** Normalise any failure into ApiError. Pages key behaviour on status, name and condition. */
 export function toApiError(error: unknown): ApiError {

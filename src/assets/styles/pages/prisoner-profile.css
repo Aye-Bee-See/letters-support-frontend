@@ -115,6 +115,17 @@
     border-bottom: 2px solid #000;
   }
 
+  .profile-photo {
+    width: 90pt;
+    flex-shrink: 0;
+    margin: 0;
+  }
+
+  .profile-photo-credit {
+    font-size: 7pt;
+    color: #000;
+  }
+
   .profile-sidebar-img-placeholder {
     width: 90pt !important;
     height: 110pt !important;

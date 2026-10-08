@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { apiUrl } from '../../api/client'
 import type { Prisoner, PrisonSummary } from '../../types'
 import { displayName, estimatedRelease, heldAt, otherNames, shortDate, yearOf } from '../../utils/prisoners'
 import StatusNotice from './StatusNotice'
@@ -23,8 +24,8 @@ export default function PrisonerTile({ prisoner, since = 'year', compact = false
 
   return (
     <Link to={`/prisoners/${prisoner.id}`} className="prisoner-tile">
-      {prisoner.photoUrl ? (
-        <img className="prisoner-tile-img" src={prisoner.photoUrl} alt={name} loading="lazy" />
+      {prisoner.photo ? (
+        <img className="prisoner-tile-img" src={apiUrl(prisoner.photo.url)} alt={name} loading="lazy" />
       ) : (
         <div className="prisoner-tile-img-placeholder">Photo</div>
       )}

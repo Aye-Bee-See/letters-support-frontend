@@ -40,6 +40,22 @@ export function useListParams() {
 }
 
 /**
+ * A reload that leaves the page past the end (its last items decided, moved or
+ * deleted meanwhile) goes to the last page instead of showing an empty one with
+ * no pager. `pages` is null until the list has loaded, so a page still loading
+ * is left alone; `toPage` should replace the history entry.
+ */
+export function usePageClamp(page: number, pages: number | null, toPage: (page: number) => void) {
+  const toPageRef = useRef(toPage)
+  useEffect(() => {
+    toPageRef.current = toPage
+  })
+  useEffect(() => {
+    if (pages !== null && page > pages) toPageRef.current(pages)
+  }, [page, pages])
+}
+
+/**
  * The search box's text. It writes `q` to the URL once typing pauses, and
  * follows `q` when the URL changes some other way (back, forward, a link), so a
  * stale box can't write an old query back.

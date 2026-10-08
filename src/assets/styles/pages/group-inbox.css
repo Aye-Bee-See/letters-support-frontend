@@ -262,7 +262,9 @@
 
 /* ============================================================
    PRINT: only the sheet. PrintLetter puts `printing-letter` on
-   <body> while it is open, so no other page is affected.
+   <body> while it is open, so no other page is affected. The sheet
+   holds the letter text, the footer and the enclosed images; every
+   note on screen around it carries no-print.
    No QR code or barcode is ever on this sheet (README "Reply reference").
    ============================================================ */
 @media print {
@@ -300,7 +302,8 @@
 
   body.printing-letter .print-sheet-image { page-break-before: always; max-height: 100vh; }
 
-  @page { margin: 2cm; }
+  /* The sheet's margins (2cm) are set by PrintLetter while it is open: an
+     @page rule cannot be scoped to body.printing-letter here. */
 }
 
 @media (max-width: 640px) {

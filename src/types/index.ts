@@ -247,6 +247,19 @@ export interface Prison extends Timestamps {
 /** The small prison summary embedded in prisoner and chat rows. */
 export type PrisonSummary = Pick<Prison, 'id' | 'prisonName' | 'country'> & Partial<Pick<Prison, 'routing'>>
 
+/**
+ * A prisoner's photo, hosted by the API (#130, #137, #151). `url` is a path on
+ * the API whose `v` changes with every upload: use it as given, through apiUrl.
+ * `credit` is shown beside the picture when set.
+ */
+export interface PrisonerPhoto {
+  url: string
+  /** Always true; kept by the API for older clients. */
+  hosted: boolean
+  credit: string | null
+  updatedAt: string
+}
+
 export interface Prisoner extends Timestamps {
   id: number
   birthName: string | null
@@ -262,7 +275,8 @@ export interface Prisoner extends Timestamps {
   estimatedRelease: string | null
   bio: string | null
   interests: string[] | null
-  photoUrl: string | null
+  /** Read-only; null when the record has no photo (API README "Photos"). */
+  photo: PrisonerPhoto | null
   supportWebsite: string | null
   donationInfo: string | null
   status: PrisonerStatus | null

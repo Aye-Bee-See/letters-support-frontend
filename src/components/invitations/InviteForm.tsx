@@ -3,7 +3,7 @@ import { createInvitation } from '../../api/invitations'
 import type { ApiError, Chapter, Invitation, InvitationKind } from '../../types'
 import { Field } from '../forms/ClassedParts'
 import type { UiClasses } from '../forms/uiClasses'
-import { invitationRefusal } from './wording'
+import { invitationRefusal, REPLACE_CODE_QUESTION } from './wording'
 
 // Create an invitation (POST /invitation/invitation, README "Invitations").
 // Two callers:
@@ -28,10 +28,12 @@ interface GroupProps {
 type Props = (AdminProps | GroupProps) & {
   classes: UiClasses
   onCreated: (invitation: Invitation) => void
+  /** A code from an earlier create or renew is still on screen: ask before replacing it. */
+  codeOnScreen?: boolean
 }
 
 export default function InviteForm(props: Props) {
-  const { classes: c, onCreated, ownGroup } = props
+  const { classes: c, onCreated, ownGroup, codeOnScreen = false } = props
   const admin = ownGroup === undefined ? (props as AdminProps) : null
   // A group adds its own group admins more often than it vouches for a new group.
   const [kind, setKind] = useState<InvitationKind>(ownGroup ? 'member' : 'group')
@@ -89,7 +91,9 @@ export default function InviteForm(props: Props) {
       className={c.invitePanel}
       onSubmit={(e) => {
         e.preventDefault()
-        if (ready && !busy) void submit()
+        if (!ready || busy) return
+        if (codeOnScreen && !window.confirm(REPLACE_CODE_QUESTION)) return
+        void submit()
       }}
     >
       <h2 className={c.heading}>Invite</h2>

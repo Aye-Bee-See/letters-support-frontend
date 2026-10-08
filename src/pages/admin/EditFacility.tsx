@@ -102,6 +102,11 @@ function problems(v: FormValues, rules: Set<string>, list: MailRuleList | null):
     if (raw && !(/^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) && Number(raw) >= 1))
       out.push(`${label} must be a whole number of at least 1, or blank for no limit.`)
   }
+  // The API refuses a photo limit on a facility that takes no photos at all.
+  if (v.photoLimit.trim() && rules.has('no_photos')) {
+    const label = list?.rules.find((r) => r.tag === 'no_photos')?.label ?? 'No photos'
+    out.push(`A facility with “${label}” takes no photos, so it can’t have a photo limit: clear one or the other.`)
+  }
   const codes = toCodes(v.mailLanguages)
   const bad = codes.filter((c) => !/^[a-z]{2}$/.test(c))
   if (bad.length) out.push(`Languages are two-letter codes, like en or es: ${bad.join(', ')} isn't one.`)

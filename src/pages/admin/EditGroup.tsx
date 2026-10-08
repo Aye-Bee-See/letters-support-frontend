@@ -134,6 +134,11 @@ function GroupForm({ group: g, others, relayCount, onSaved, onEdit }: FormProps)
   const [services, setServices] = useState(() => new Set(g.services ?? []))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Activating a pending group publishes it too, as the groups list's Approve
+  // does, unless the admin chose the record status themselves: an active group
+  // left unpublished stays out of the public directory with nothing saying so.
+  const [recordChosen, setRecordChosen] = useState(false)
+  const [publishedWithActivation, setPublishedWithActivation] = useState(false)
 
   const diff = useMemo(() => adminChanges(g, initial, values, services), [g, initial, values, services])
   const dirty = Object.keys(diff).length > 0
@@ -306,7 +311,19 @@ function GroupForm({ group: g, others, relayCount, onSaved, onEdit }: FormProps)
               className="form-select"
               value={values.accountStatus}
               disabled={busy}
-              onChange={(e) => set({ accountStatus: e.target.value as AccountStatus })}
+              onChange={(e) => {
+                const accountStatus = e.target.value as AccountStatus
+                const activating = initial.accountStatus === 'pending' && accountStatus === 'active'
+                if (recordChosen) set({ accountStatus })
+                else if (activating && values.recordStatus !== 'published') {
+                  set({ accountStatus, recordStatus: 'published' })
+                  setPublishedWithActivation(true)
+                } else if (publishedWithActivation && !activating) {
+                  // Not activating after all: the record status goes back to what it was.
+                  set({ accountStatus, recordStatus: initial.recordStatus })
+                  setPublishedWithActivation(false)
+                } else set({ accountStatus })
+              }}
             >
               {ACCOUNT_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -323,8 +340,24 @@ function GroupForm({ group: g, others, relayCount, onSaved, onEdit }: FormProps)
           </div>
         )}
         <div className="form-row">
-          <Field label="Record status" htmlFor="f-recordStatus" hint="Only published groups appear in the public directory.">
-            <select className="form-select" {...field('recordStatus')}>
+          <Field
+            label="Record status"
+            htmlFor="f-recordStatus"
+            hint={
+              publishedWithActivation
+                ? 'Set to published with activating the group, as Approve on the groups list does: an active group that isn’t published stays out of the public directory. Change it if it should.'
+                : 'Only published groups appear in the public directory.'
+            }
+          >
+            <select
+              className="form-select"
+              {...field('recordStatus')}
+              onChange={(e) => {
+                set({ recordStatus: e.target.value })
+                setRecordChosen(true)
+                setPublishedWithActivation(false)
+              }}
+            >
               {RECORD_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {capitalise(s)}

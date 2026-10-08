@@ -62,7 +62,8 @@ export default function GroupInvitations() {
           nothing is sent by email.
         </p>
 
-        {issued && <TokenNotice classes={GROUP_UI} {...issued} group={group} onDone={() => setIssued(null)} />}
+        {/* Keyed by the code (a renewal keeps the id), so a new one starts with nothing copied. */}
+        {issued && <TokenNotice key={`${issued.invitation.id}:${issued.invitation.token}`} classes={GROUP_UI} {...issued} group={group} onDone={() => setIssued(null)} />}
 
         <InviteForm
           classes={GROUP_UI}
@@ -71,6 +72,7 @@ export default function GroupInvitations() {
             setIssued({ invitation, renewed: false })
             list.reload()
           }}
+          codeOnScreen={issued !== null}
         />
 
         <section className="settings-section">
@@ -105,6 +107,7 @@ export default function GroupInvitations() {
                   list.reload()
                 }}
                 onChanged={list.reload}
+                codeOnScreen={issued !== null}
               />
             </div>
           )}
