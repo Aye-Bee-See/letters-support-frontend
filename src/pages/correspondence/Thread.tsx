@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
@@ -71,6 +71,8 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
 }
 
 const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+const NO_BLOCKS: WriterBlock[] = []
+
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
@@ -166,13 +168,18 @@ function LetterAttachments({ message, contentKey }: { message: Message; contentK
 
   useEffect(() => {
     let current = true
+    // Revoked when the letter is collapsed. A file still decrypting then gets
+    // no URL at all: one made after this cleanup ran would never be revoked.
     const urls: string[] = []
     getAttachments(message.id)
       .then((rows) =>
         Promise.all(
           rows.map(async (attachment) => {
             try {
-              const url = URL.createObjectURL(await openAttachment(attachment, contentKey))
+              if (!current) return { attachment, url: null }
+              const blob = await openAttachment(attachment, contentKey)
+              if (!current) return { attachment, url: null }
+              const url = URL.createObjectURL(blob)
               urls.push(url)
               return { attachment, url }
             } catch {
@@ -236,7 +243,7 @@ function LetterItem({
   /** Group admins, on a reply their group may correct: Edit transcription and Delete, then this. */
   onCorrected?: () => void
   /** The writer, on their own queued letter: Delete, and choosing its group for a choose_relay hold. */
-  queued?: { prisonId: number | null; onRewrite?: (rewrite: Resend) => void; onChanged: () => void }
+  queued?: { prisonId: number | null; onRewrite?: (rewrite: Resend) => void; mayReplaceReply: () => boolean; onChanged: () => void }
 }) {
   const [open, setOpen] = useState(initiallyOpen)
   const { message: m, opened } = item
@@ -277,6 +284,7 @@ function LetterItem({
                   ? () => queued.onRewrite?.({ id: m.id, date: m.createdAt, text: opened.text ?? '', kind: 'rewrite' })
                   : undefined
               }
+              mayReplaceReply={queued.mayReplaceReply}
               onChanged={queued.onChanged}
             />
           )}
@@ -466,8 +474,14 @@ export default function Thread() {
   // A block or unblock from the sidebar holds or releases this writer's letters,
   // so the thread loads again; the sidebar's notice is kept across that reload.
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
+  // Whether the writer's reply panel holds a draft, so "Write it again" asks before replacing it.
+  const replyHasContent = useRef(false)
+  const onReplyDraftChange = useCallback((hasContent: boolean) => {
+    replyHasContent.current = hasContent
+  }, [])
   // Groups not mailing this writer's letters, and why (empty for anyone else).
-  const blocksState = useApi(getMyBlocks, [])
+  // A writer's own only (README "GET /auth/blocks"): a group admin's would always be empty.
+  const blocksState = useApi(() => (isChapter ? Promise.resolve(NO_BLOCKS) : getMyBlocks()), [isChapter])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
   useEffect(() => {
     opened.current = page.data?.letters ?? null
@@ -494,10 +508,15 @@ export default function Thread() {
   // A group admin may correct or delete a reply their group recorded, or any
   // reply in the thread of a writer it manages (README "PUT /messaging/message").
   const managedHere = chat.user_details?.managedBy != null && chat.user_details.managedBy === user?.chapterId && !chat.user_details.claimedAt
+  /** Replacing the reply panel's draft loses what is typed there: ask first. */
+  const mayReplaceReply = () => !replyHasContent.current || window.confirm('Discard the reply you’re writing, and start again from this letter?')
   /** Start the reply panel from a letter's text (the panel is below the letters). */
-  const writeAgain = (r: Resend) => {
+  const startFrom = (r: Resend) => {
     setResend(r)
     window.setTimeout(() => document.querySelector('.reply-panel')?.scrollIntoView({ behavior: 'smooth' }), 0)
+  }
+  const writeAgain = (r: Resend) => {
+    if (mayReplaceReply()) startFrom(r)
   }
   const canCorrect = (m: Message) =>
     isChapter && m.sender === 'prisoner' && m.status === 'received' && (managedHere || (m.relayChapter !== null && m.relayChapter === user?.chapterId))
@@ -547,7 +566,7 @@ export default function Thread() {
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
                 queued={
                   !isChapter && chat.user === user?.id
-                    ? { prisonId: prisoner?.prison ?? null, onRewrite: prisoner?.prison ? writeAgain : undefined, onChanged: page.reload }
+                    ? { prisonId: prisoner?.prison ?? null, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
                     : undefined
                 }
               />
@@ -571,6 +590,7 @@ export default function Thread() {
               preferredGroup={lastRelayId}
               resend={resend ?? undefined}
               onCancelResend={() => setResend(null)}
+              onDraftChange={onReplyDraftChange}
               onSent={() => {
                 setResend(null)
                 page.reload()

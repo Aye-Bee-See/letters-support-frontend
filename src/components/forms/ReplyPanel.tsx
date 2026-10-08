@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getFacility } from '../../api/facilities'
 import { useApi } from '../../hooks/useApi'
+import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useLetterDraft } from '../../hooks/useLetterDraft'
 import type { Message } from '../../types'
 import { mailRuleLines } from '../../utils/facilities'
@@ -16,6 +17,7 @@ export default function ReplyPanel({
   preferredGroup,
   resend,
   onCancelResend,
+  onDraftChange,
   onSent,
 }: {
   prisonerId: number
@@ -28,6 +30,8 @@ export default function ReplyPanel({
    */
   resend?: { id: number; date: string; text: string; kind: 'resend' | 'rewrite' }
   onCancelResend?: () => void
+  /** Whether the reply has anything typed or attached, so the thread can ask before replacing it. */
+  onDraftChange?: (hasContent: boolean) => void
   onSent: (message: Message) => void
 }) {
   const facility = useApi(() => getFacility(prisonId, true), [prisonId])
@@ -35,6 +39,10 @@ export default function ReplyPanel({
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility.data ? mailRuleLines(facility.data) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
+  useLeaveGuard(draft.hasContent, 'Leave without sending your letter?')
+  useEffect(() => {
+    onDraftChange?.(draft.hasContent)
+  }, [draft.hasContent, onDraftChange])
 
   async function onSend() {
     const message = await draft.send()

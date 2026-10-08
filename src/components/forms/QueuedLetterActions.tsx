@@ -101,6 +101,7 @@ export default function QueuedLetterActions({
   prisonId,
   blocks,
   onRewrite,
+  mayReplaceReply,
   onChanged,
 }: {
   message: Message
@@ -114,6 +115,8 @@ export default function QueuedLetterActions({
    * be sent: put its text in the reply box, once it is deleted.
    */
   onRewrite?: () => void
+  /** Before a rewrite deletes the letter: false when the writer would rather keep the reply they are writing. */
+  mayReplaceReply?: () => boolean
   onChanged: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
@@ -123,6 +126,10 @@ export default function QueuedLetterActions({
   const rewrite = held === 'reseal_needed' && Boolean(onRewrite)
 
   async function remove() {
+    if (rewrite && mayReplaceReply && !mayReplaceReply()) {
+      setConfirming(false)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
