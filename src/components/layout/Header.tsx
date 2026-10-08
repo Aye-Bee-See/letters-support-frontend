@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignOut } from '../../hooks/useSignOut'
+import { useUnreadCount } from '../../hooks/useUnreadCount'
 
 // Markup and classes from solidarity-site/index.html and inbox-writer.html.
 // The hamburger behaviour replaces solidarity-site/site.js.
@@ -23,6 +24,8 @@ export default function Header() {
   }, [open])
 
   const signOut = useSignOut()
+  // Writers and group admins: what their feed holds unread (one request per page, no polling).
+  const unread = useUnreadCount(isAuthenticated && !isAdmin)
 
   return (
     <header className="site-header">
@@ -58,8 +61,21 @@ export default function Header() {
           <div className="nav-auth">
             {isAuthenticated ? (
               <>
-                <Link to={isAdmin ? '/admin' : '/inbox'} className="btn btn-primary btn-sm">
+                <Link
+                  to={isAdmin ? '/admin' : '/inbox'}
+                  className="btn btn-primary btn-sm"
+                  aria-label={!isAdmin && unread ? `Inbox, ${unread} unread` : undefined}
+                >
                   {isAdmin ? 'Admin' : 'Inbox'}
+                  {/* Inline: style.css has no class for the count yet. */}
+                  {!isAdmin && unread ? (
+                    <span
+                      aria-hidden="true"
+                      style={{ marginLeft: '0.4em', padding: '0 0.45em', borderRadius: '999px', background: 'var(--alert)', color: '#fff', fontSize: '0.85em' }}
+                    >
+                      {unread > 99 ? '99+' : unread}
+                    </span>
+                  ) : null}
                 </Link>
                 {/* A group admin's own pages; writers have only their inbox, superadmins /admin. */}
                 {isChapter && (

@@ -12,6 +12,7 @@ import WriterBlockActions from '../../components/group/WriterBlockActions'
 import LoadState from '../../components/ui/LoadState'
 import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
+import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
@@ -64,10 +65,11 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
       return { message, opened: kept && unchanged(kept.message, message) ? kept.opened : await openLetter(message, reader) }
     }),
   )
-  // Opening the thread reads it. Failure here must not break the page.
+  // Opening the thread reads it, and the header's count drops. Failure here must not break the page.
   getUnreadNotifications()
     .then((items) => items.filter((n) => n.chat === id).map((n) => n.id))
     .then((ids) => (ids.length ? markNotificationsRead(ids) : null))
+    .then((result) => result && announceUnreadCount(result.unread))
     .catch(() => null)
   return { chat, letters }
 }

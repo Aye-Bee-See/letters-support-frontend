@@ -1,28 +1,117 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAllChats } from '../../api/letters'
-import { getUnreadNotifications } from '../../api/notifications'
+import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import AppShell from '../../components/layout/AppShell'
 import LoadState from '../../components/ui/LoadState'
 import StatusNotice from '../../components/ui/StatusNotice'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignOut } from '../../hooks/useSignOut'
-import type { Chat, PrisonSummary } from '../../types'
+import { announceUnreadCount } from '../../hooks/useUnreadCount'
+import type { Chat, Notification, PrisonSummary } from '../../types'
 import { directionLabel, inboxDate, needsWriter, threadPrisonerName } from '../../utils/letters'
+import { isWorryingTag, wordEvent, writerEventTag } from '../../utils/notifications'
 import { heldAt } from '../../utils/prisoners'
 
 // Markup and classes from solidarity-site/inbox-writer.html (inbox.css). The
 // list needs no decryption: who, where, and the last letter's direction and
-// state. Letters are opened on the thread page.
+// state. Letters are opened on the thread page. Above it, what the feed holds
+// unread (README "The feed": a letter printed, mailed, returned or declined; the
+// person moved or freed; a reply), and each row says what is new on it.
 
-/** Threads, and which have a reply not yet seen (an unread `letter.reply` notification). */
+/** Unread entries listed above the conversations; the rest are counted. */
+const SHOWN = 8
+
+/** Threads, and the unread feed: what happened to the writer's letters and the people they write to. */
 async function loadInbox() {
-  const [chats, unread] = await Promise.all([getAllChats(), getUnreadNotifications().catch(() => [])])
-  const unreadChats = new Set(unread.filter((n) => n.event === 'letter.reply' && n.chat != null).map((n) => n.chat as number))
-  return { chats, unreadChats }
+  const [chats, unread] = await Promise.all([getAllChats(), getUnreadNotifications().catch(() => [] as Notification[])])
+  return { chats, unread }
 }
 
-function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
+/** What is new on each conversation, newest first, one tag each ("Returned", "Mailed"). */
+function tagsByChat(unread: Notification[]): Map<number, string[]> {
+  const tags = new Map<number, string[]>()
+  for (const n of unread) {
+    const tag = writerEventTag(n)
+    if (n.chat == null || !tag) continue
+    const list = tags.get(n.chat) ?? []
+    if (!list.includes(tag)) list.push(tag)
+    tags.set(n.chat, list)
+  }
+  return tags
+}
+
+/** The tags on a row: worrying ones in the thread's amber, the rest as its green "Mailed" pill. */
+function NewsTags({ tags }: { tags: string[] }) {
+  return (
+    <div style={{ marginTop: '0.25rem' }}>
+      {tags.map((tag) => (
+        // Inline spacing: inbox.css has no class for these yet; the colours are thread.css's status pills.
+        <span key={tag} className={`letter-collapsed-status ${isWorryingTag(tag) ? 'status-pending' : 'status-mailed'}`} style={{ marginRight: '0.6rem' }}>
+          {tag}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** Unread entries, worded for the writer, each linking to its conversation. Shown only when there are some. */
+function WhatsNew({ unread, chats, onMarkedRead }: { unread: Notification[]; chats: Chat[]; onMarkedRead: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(false)
+  const names = new Map(chats.map((c) => [c.id, threadPrisonerName(c)]))
+  const shown = unread.slice(0, SHOWN)
+
+  async function markAll() {
+    setBusy(true)
+    setError(false)
+    try {
+      const result = await markNotificationsRead()
+      announceUnreadCount(result.unread)
+      onMarkedRead()
+    } catch {
+      setError(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="inbox-section">
+      <div className="inbox-section-header">
+        <span className="inbox-section-title">What’s new</span>
+        <button type="button" className="btn btn-sm" disabled={busy} onClick={markAll}>
+          {busy ? 'Marking…' : 'Mark all as read'}
+        </button>
+      </div>
+      <div className="inbox-card" style={{ padding: '0.25rem 1.25rem' }}>
+        <ul className="activity-list" style={{ margin: 0 }}>
+          {shown.map((n) => {
+            const name = n.chat != null ? names.get(n.chat) : undefined
+            const text = wordEvent(n, { forWriter: true, prisonerName: name })
+            return (
+              <li key={n.id} className="activity-item unread">
+                {name ? <Link to={`/threads/${n.chat}`}>{text}</Link> : text}
+                <span className="activity-date">{inboxDate(n.createdAt)}</span>
+              </li>
+            )
+          })}
+        </ul>
+        {unread.length > shown.length && (
+          <p className="sidebar-info">And {unread.length - shown.length} more: open a conversation to read what happened in it.</p>
+        )}
+        {error && (
+          <p className="sidebar-info" role="alert" style={{ color: 'var(--alert)' }}>
+            Couldn’t mark them read. Try again.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ConvoRow({ chat, news }: { chat: Chat; news: string[] }) {
   const navigate = useNavigate()
   const last = chat.last_message
   const direction = last ? directionLabel(last.sender, last.status, last.heldReason) : null
@@ -34,7 +123,7 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
 
   return (
     <tr
-      className={unread ? 'convo-row unread' : 'convo-row'}
+      className={news.length > 0 ? 'convo-row unread' : 'convo-row'}
       onClick={open}
       tabIndex={0}
       onKeyDown={(e) => {
@@ -42,7 +131,6 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
       }}
     >
       <td>
-        {unread && <span className="unread-dot"></span>}
         {prisoner ? (
           <Link to={`/prisoners/${prisoner.id}`} className="convo-prisoner-link" onClick={(e) => e.stopPropagation()}>
             <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
@@ -51,6 +139,8 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
           <span className="convo-prisoner">{threadPrisonerName(chat)}</span>
         )}
         {facility && <div className="convo-facility">{facility}</div>}
+        {/* What happened since the writer last looked (unread feed entries on this thread). */}
+        {news.length > 0 && <NewsTags tags={news} />}
         {/* Letters held until the writer acts (the prisoner moved, or the group changed); other holds are the group's to settle. */}
         {needsWriter(chat) ? <StatusNotice text="Needs your attention" /> : chat.heldCount > 0 && <StatusNotice text="A letter is on hold" />}
       </td>
@@ -73,6 +163,8 @@ export default function InboxWriter() {
   const signOut = useSignOut()
   const inbox = useApi(loadInbox, [])
   const chats = { ...inbox, data: inbox.data?.chats ?? null }
+  const unread = inbox.data?.unread ?? []
+  const news = tagsByChat(unread)
 
   const sidebar = (
     <>
@@ -120,6 +212,8 @@ export default function InboxWriter() {
         <h1 className="inbox-hero-title">{user?.penName ?? user?.username}</h1>
       </div>
 
+      {inbox.data && unread.length > 0 && <WhatsNew unread={unread} chats={inbox.data.chats} onMarkedRead={inbox.reload} />}
+
       <div className="inbox-section">
         <div className="inbox-section-header">
           <span className="inbox-section-title">Your conversations</span>
@@ -144,7 +238,7 @@ export default function InboxWriter() {
               </thead>
               <tbody>
                 {chats.data.map((chat) => (
-                  <ConvoRow key={chat.id} chat={chat} unread={inbox.data?.unreadChats.has(chat.id) ?? false} />
+                  <ConvoRow key={chat.id} chat={chat} news={news.get(chat.id) ?? []} />
                 ))}
               </tbody>
             </table>
