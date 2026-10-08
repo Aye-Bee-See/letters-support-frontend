@@ -66,7 +66,7 @@ export default function Security() {
 
               {status.loading && <p className="claim-org-note">Loading…</p>}
               {status.error && (
-                <div className="claim-error" role="alert">
+                <div className="claim-error is-visible" role="alert">
                   Couldn’t load your two-factor settings ({status.error.message}).{' '}
                   <button type="button" className="claim-show-pw security-link" onClick={status.reload}>
                     Try again
@@ -201,7 +201,7 @@ function SignOutEverywhere() {
         </div>
         <div className="claim-body">
           {error && (
-            <div className="claim-error" role="alert">
+            <div className="claim-error is-visible" role="alert">
               {error}
             </div>
           )}
@@ -254,7 +254,7 @@ function StartSetup({ onStarted, resuming }: { onStarted: (s: { secret: string; 
         {resuming && <p>You started setting it up before. Starting again gives you a new code to scan; the old one won’t work.</p>}
       </div>
       {error && (
-        <div className="claim-error" role="alert">
+        <div className="claim-error is-visible" role="alert">
           {error}
         </div>
       )}
@@ -338,7 +338,7 @@ function Scan({ secret, otpauthUri, onConfirmed, onCancel }: { secret: string; o
         />
       </div>
       {error && (
-        <div className="claim-error" role="alert">
+        <div className="claim-error is-visible" role="alert">
           {error}
         </div>
       )}
@@ -510,7 +510,7 @@ function Enabled(props: { enabledAt: string | null; codesLeft: number; required:
             />
           </div>
           {error && (
-            <div className="claim-error" role="alert">
+            <div className="claim-error is-visible" role="alert">
               {error}
             </div>
           )}

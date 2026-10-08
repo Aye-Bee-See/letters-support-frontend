@@ -154,7 +154,7 @@ export default function RecoveryCode() {
                   </p>
                 </div>
                 {error && (
-                  <div className="claim-error" role="alert">
+                  <div className="claim-error is-visible" role="alert">
                     {error}
                   </div>
                 )}
