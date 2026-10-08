@@ -8,7 +8,7 @@ import type { KeyBundle } from '../types'
 const api = vi.hoisted(() => ({ setKeys: vi.fn(), setSplitPassword: vi.fn() }))
 vi.mock('../api/auth', () => api)
 
-const { CurrentPasswordError, keysChangedElsewhere, prepareRecoveryCode } = await import('./account')
+const { changePassword, CurrentPasswordError, keysChangedElsewhere, openWithPassword, prepareRecoveryCode } = await import('./account')
 
 const password = 'the current password'
 let account: NewAccount
@@ -25,7 +25,7 @@ beforeEach(() => {
   api.setKeys.mockResolvedValue({})
 })
 
-describe('a new recovery code', () => {
+describe('the account’s own keys', () => {
   it('sends the password-locked fields unchanged, and a new code that opens the same key', async () => {
     const prepared = await prepareRecoveryCode(keys, password)
     expect(api.setKeys).not.toHaveBeenCalled()
@@ -44,6 +44,23 @@ describe('a new recovery code', () => {
   it('refuses a password that does not open the key, sending nothing', async () => {
     await expect(prepareRecoveryCode(keys, 'not the password')).rejects.toBeInstanceOf(CurrentPasswordError)
     expect(api.setKeys).not.toHaveBeenCalled()
+  })
+
+  it('changing the password: a new salt, the same key, and the fresh token handed back', async () => {
+    api.setSplitPassword.mockResolvedValue({ token: { token: 'fresh', expires: 123 } })
+    const changed = await changePassword(7, keys, password, 'a new long password')
+    const [id, creds] = api.setSplitPassword.mock.calls[0]
+    expect(id).toBe(7)
+    expect(creds.kdfSalt).not.toBe(keys.kdfSalt)
+    expect(creds.authKey).toMatch(/^[A-Za-z0-9+/]{43}=$/)
+    expect(changed.token).toEqual({ token: 'fresh', expires: 123 })
+    const reopened = await openWithPassword({ ...keys, ...changed.fields }, 'a new long password')
+    expect(reopened.privateKey).toBe(account.keypair.privateKey)
+  })
+
+  it('changing the password refuses a wrong current one, sending nothing', async () => {
+    await expect(changePassword(7, keys, 'not the password', 'a new long password')).rejects.toBeInstanceOf(CurrentPasswordError)
+    expect(api.setSplitPassword).not.toHaveBeenCalled()
   })
 
   it('knows a password changed elsewhere', () => {

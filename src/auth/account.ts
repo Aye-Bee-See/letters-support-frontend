@@ -1,6 +1,6 @@
-import { setKeys } from '../api/auth'
+import { setKeys, setSplitPassword } from '../api/auth'
 import { toApiError } from '../api/client'
-import { recoveryKeys, signInKeys, unlockAccount, type Keypair } from '../crypto'
+import { passwordKeys, recoveryKeys, signInKeys, unlockAccount, type Keypair, type PasswordKeyFields } from '../crypto'
 import type { KdfParams, KeyBundle } from '../types'
 
 // The signed-in account's own keys (README "End-to-end mode": "Account keys").
@@ -76,6 +76,26 @@ export async function prepareRecoveryCode(keys: KeyBundle | null, password: stri
       await setKeys({ ...locked, ...rc.fields })
     },
   }
+}
+
+export interface PasswordChanged {
+  /** This session's new token: the change ended every session, this one's old token included. Null if the API sent none. */
+  token: { token: string; expires: number } | null
+  /** The private key re-wrapped under the new password, for the session's key bundle. */
+  fields: PasswordKeyFields
+}
+
+/**
+ * Change the password (PUT /auth/user, split): the current password opens the
+ * private key, which is locked under the new one with a new salt, and only the
+ * new auth key and the locked copy are sent. The keypair and the recovery code
+ * stay as they are. Every other session of the account ends.
+ */
+export async function changePassword(userId: number, keys: KeyBundle | null, current: string, next: string): Promise<PasswordChanged> {
+  const keypair = await openWithPassword(keys, current)
+  const { authKey, fields } = await passwordKeys(keypair.privateKey, next)
+  const answer = await setSplitPassword(userId, { authKey, ...fields })
+  return { token: answer?.token ?? null, fields }
 }
 
 /**

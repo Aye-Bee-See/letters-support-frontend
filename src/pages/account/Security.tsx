@@ -120,19 +120,22 @@ export default function Security() {
   )
 }
 
-/** The account's password and recovery code, each on its own page. */
+/** Links to the password and recovery-code pages. */
 function AccountKeys() {
   const { keys } = useAuth()
   return (
     <div className="claim-box" style={{ marginTop: '1.5rem' }}>
       <div className="claim-state is-active">
         <div className="claim-header">
-          <h2 className="claim-title">Recovery code</h2>
+          <h2 className="claim-title">Password and recovery code</h2>
           <p className="claim-org-note">
             If you forget your password, your recovery code is the only way back into your account and your letters.
           </p>
         </div>
         <div className="claim-body">
+          <p className="claim-org-note">
+            <Link to="/account/password">Change your password</Link>. Every other device signed in to your account is signed out.
+          </p>
           {keys && !keys.hasRecovery && (
             <div className="claim-encryption-note security-required">
               <p>

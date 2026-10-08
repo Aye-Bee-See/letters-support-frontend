@@ -40,6 +40,12 @@ export interface AuthState {
    * its new salt and parameters). Merged into `keys`; the keypair is unchanged.
    */
   keysChanged: (changes: Partial<Omit<KeyBundle, 'orgKey'>>) => void
+  /**
+   * The API issued this session a new token (a password change ends every
+   * session and answers a fresh one for the account holder's own). Every request
+   * from now on carries it; the old one is already refused.
+   */
+  tokenRefreshed: (token: string, expires: number) => void
   isAuthenticated: boolean
   isAdmin: boolean
   isChapter: boolean

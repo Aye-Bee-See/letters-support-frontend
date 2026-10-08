@@ -61,9 +61,13 @@ export const setKeys = (fields: PasswordKeyFields & RecoveryKeyFields & { public
  * change, and how an account moves from plain to split. The API requires the
  * private key re-wrapped under the new password in the same request, so an
  * account needs keys (setKeys) before it can become split.
+ *
+ * A new password ends every session of the account, this one included; on the
+ * account holder's own change the answer carries a fresh `token` for this one
+ * (README "Signing out and revoking tokens"), which the session must switch to.
  */
 export const setSplitPassword = (id: number, creds: { authKey: string } & PasswordKeyFields) =>
-  put('/auth/user', {
+  put<{ token?: { token: string; expires: number } }>('/auth/user', {
     id,
     authScheme: 'split',
     password: creds.authKey,

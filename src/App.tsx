@@ -17,6 +17,7 @@ import GroupProfile from './pages/public/GroupProfile'
 import About from './pages/public/About'
 
 import Login from './pages/auth/Login'
+import ChangePassword from './pages/account/ChangePassword'
 import PenName from './pages/account/PenName'
 import RecoveryCode from './pages/account/RecoveryCode'
 import Security from './pages/account/Security'
@@ -103,6 +104,7 @@ export default function App() {
             <Route element={<RequireAuth />}>
               <Route path="account/security" element={<Security />} />
               <Route path="account/recovery-code" element={<RecoveryCode />} />
+              <Route path="account/password" element={<ChangePassword />} />
             </Route>
             <Route element={<RequireAuth roles={['user']} />}>
               <Route path="account/pen-name" element={<PenName />} />
