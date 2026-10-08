@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
@@ -36,11 +36,26 @@ interface OpenedMessage {
   opened: OpenedLetter
 }
 
-/** The thread with every letter opened, oldest first; marks this thread's notifications read. */
-async function loadThread(id: number, reader: LetterReader) {
+/** The same letter, unchanged since it was opened: its body, relay note and update time. */
+const unchanged = (a: Message, b: Message) =>
+  a.id === b.id && a.updatedAt === b.updatedAt && a.ciphertext === b.ciphertext && a.nonce === b.nonce && a.relayNoteCiphertext === b.relayNoteCiphertext
+
+/**
+ * The thread with every letter opened, oldest first; marks this thread's
+ * notifications read. On a reload, a letter opened last time and unchanged
+ * since keeps what was opened (its content key too, so an expanded letter's
+ * files aren't fetched again); the rest are opened afresh.
+ */
+async function loadThread(id: number, reader: LetterReader, previous: OpenedMessage[] | null) {
   const chat = await getChat(id, true)
   const messages = [...(chat.messages ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-  const letters: OpenedMessage[] = await Promise.all(messages.map(async (message) => ({ message, opened: await openLetter(message, reader) })))
+  const before = new Map((previous ?? []).filter((l) => l.opened.state === 'open').map((l) => [l.message.id, l]))
+  const letters: OpenedMessage[] = await Promise.all(
+    messages.map(async (message) => {
+      const kept = before.get(message.id)
+      return { message, opened: kept && unchanged(kept.message, message) ? kept.opened : await openLetter(message, reader) }
+    }),
+  )
   // Opening the thread reads it. Failure here must not break the page.
   getUnreadNotifications()
     .then((items) => items.filter((n) => n.chat === id).map((n) => n.id))
@@ -409,9 +424,18 @@ function Sidebar({
 export default function Thread() {
   const id = Number(useParams().id)
   const { user, keypair, groupKeypair, keys, isChapter } = useAuth()
+  // The letters as last opened, so a reload opens only what changed.
+  const opened = useRef<OpenedMessage[] | null>(null)
   const page = useApi(
-    () => loadThread(id, { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair, groupKeyVersion: keys?.orgKey?.keyVersion ?? null }),
+    () =>
+      loadThread(
+        id,
+        { userId: user!.id, keypair: keypair!, chapterId: user!.chapterId, groupKeypair, groupKeyVersion: keys?.orgKey?.keyVersion ?? null },
+        opened.current,
+      ),
     [id, user?.id],
+    // After a reply, a block or a correction the thread stays on screen while it loads again.
+    { keepPrevious: true },
   )
   // A returned or declined letter being written again in the reply panel below.
   const [resend, setResend] = useState<Resend | null>(null)
@@ -421,6 +445,9 @@ export default function Thread() {
   // Groups not mailing this writer's letters, and why (empty for anyone else).
   const blocksState = useApi(getMyBlocks, [])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
+  useEffect(() => {
+    opened.current = page.data?.letters ?? null
+  }, [page.data])
 
   if (!page.data) {
     return (
@@ -469,6 +496,11 @@ export default function Thread() {
                 </>
               )}
             </div>
+            {page.reloading && (
+              <p className="thread-updating" role="status">
+                Updating…
+              </p>
+            )}
           </div>
 
           <div className="letter-chain">

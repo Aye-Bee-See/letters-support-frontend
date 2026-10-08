@@ -2,7 +2,7 @@ import type { ApiState } from '../../hooks/useApi'
 
 // Loading and error lines for a useApi request. The prototype has no design for
 // either, so these stay plain until one is decided.
-export default function LoadState({ state, what }: { state: ApiState<unknown>; what: string }) {
+export default function LoadState({ state, what }: { state: Omit<ApiState<unknown>, 'reloading'>; what: string }) {
   if (state.loading) return <p>Loading {what}…</p>
   // A missing or unpublished record is a 404 from the API: nothing to retry.
   if (state.error?.status === 404) return <p>This {what} is not in the directory.</p>
