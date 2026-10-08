@@ -138,7 +138,7 @@
 
 .upload-compact:hover, .upload-compact.drag-over {
   border-color: #888;
-  background: #eeedea;
+  background: #efeeeb;
 }
 
 .upload-compact-icon {
@@ -206,7 +206,6 @@
   padding: 1.25rem 1.5rem;
   resize: vertical;
   background: var(--white);
-  outline: none;
 }
 
 .letter-textarea:focus { border-color: #888; }
@@ -225,7 +224,6 @@
   font-size: 0.68rem;
   color: var(--mid);
 }
-
 
 /* ============================================================
    NOTES TO RELAY
@@ -260,7 +258,6 @@
   resize: vertical;
   min-height: 60px;
   background: var(--off-white);
-  outline: none;
 }
 
 .notes-textarea:focus { border-color: #888; background: var(--white); }
@@ -349,7 +346,6 @@
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--text);
-  outline: none;
 }
 
 .addr-search:focus { border-color: #888; }
@@ -441,14 +437,6 @@
   flex-wrap: wrap;
   gap: 0.2rem;
   margin-top: 0.3rem;
-}
-
-.addr-anon {
-  font-family: var(--sans);
-  font-size: 0.8rem;
-  color: var(--border);
-  font-style: italic;
-  padding: 0.15rem 0 0.4rem;
 }
 
 /* Relay tiles */

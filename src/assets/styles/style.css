@@ -5,7 +5,7 @@
   --white:       #ffffff;
   --off-white:   #f2f0ed;
   --text:        #1a1a1a;
-  --mid:         #767676;
+  --mid:         #6c6c6c;
   --border:      #d4d0ca;
   --alert:       #b33a3a;
   --alert-bg:    #fdf0f0;
@@ -39,6 +39,23 @@ a { color: var(--link); }
 a:hover { text-decoration: none; }
 
 img { display: block; max-width: 100%; }
+
+/* One focus ring for every focusable thing, links, fields, buttons and the
+   role="button"/"radio" divs alike. Fields keep their #888 border on :focus
+   as well; nothing sets outline: none. White where the ground is black. */
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.site-header :focus-visible,
+.site-footer :focus-visible,
+.admin-edit-bar :focus-visible,
+.token-box :focus-visible,
+.letter-item.inbound :focus-visible {
+  outline-color: var(--white);
+}
+/* A table row's ring sits inside it, where the table can't clip it. */
+tr:focus-visible { outline-offset: -2px; }
 
 /* ============================================================
    LAYOUT
@@ -357,17 +374,6 @@ img { display: block; max-width: 100%; }
 /* ============================================================
    STATS BAR
    ============================================================ */
-.stats-bar {
-  background: var(--off-white);
-  border-bottom: 1px solid var(--border);
-  padding: 1.25rem 0;
-}
-
-.stats-bar .wrap {
-  display: flex;
-  gap: 3rem;
-  flex-wrap: wrap;
-}
 
 .stat {
   display: flex;
@@ -516,51 +522,6 @@ img { display: block; max-width: 100%; }
   background: var(--off-white);
   border: 1px solid var(--border);
   padding: 0.15rem 0.45rem;
-}
-
-/* ============================================================
-   SECTION: CTA / GET INVOLVED
-   ============================================================ */
-.cta-section {
-  background: var(--off-white);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 3.5rem 0;
-}
-
-.cta-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  margin-top: 2rem;
-}
-
-.cta-card {
-  padding: 1.5rem;
-  background: var(--white);
-  border: 1px solid var(--border);
-}
-
-.cta-card-number {
-  font-family: var(--sans);
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--border);
-  line-height: 1;
-  margin-bottom: 0.75rem;
-}
-
-.cta-card-title {
-  font-family: var(--sans);
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.cta-card-body {
-  font-size: 0.875rem;
-  color: #3a3a3a;
-  margin-bottom: 1rem;
 }
 
 /* ============================================================
@@ -1086,7 +1047,6 @@ img { display: block; max-width: 100%; }
   .site-nav { gap: 1.1rem; }
   .nav-auth { margin-left: 0.25rem; padding-left: 1rem; }
   .prisoner-grid { grid-template-columns: repeat(2, 1fr); }
-  .cta-grid { grid-template-columns: 1fr; }
   .profile-layout { grid-template-columns: 1fr; }
   .profile-sidebar img, .profile-sidebar-img-placeholder, .profile-photo { max-width: 240px; }
   .groups-grid { grid-template-columns: 1fr; }
@@ -1149,3 +1109,15 @@ img { display: block; max-width: 100%; }
 }
 .attachment-retry p + p { margin-top: 0.4rem; }
 .attachment-retry-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+/* No transitions and no spinning for anyone who asks the system for less
+   motion. !important because it has to beat every rule that sets one. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
