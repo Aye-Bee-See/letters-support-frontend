@@ -64,6 +64,7 @@ describe('queuedLetterRefusal', () => {
   it('reads any other 403 as printed meanwhile', () => {
     expect(queuedLetterRefusal(error({ status: 403 }), 'delete')).toMatch(/^This letter can’t be deleted any more/)
     expect(queuedLetterRefusal(error({ status: 403 }), 'choose')).toMatch(/^This letter can’t be changed any more/)
+    expect(queuedLetterRefusal(error({ status: 403 }), 'edit')).toMatch(/^This letter can’t be edited any more: the group has printed it/)
   })
 
   it('words the relay group refusals by field and code, never the sentence', () => {

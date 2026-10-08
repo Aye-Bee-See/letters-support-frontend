@@ -299,6 +299,12 @@ function LetterItem({
                   : undefined
               }
               mayReplaceReply={queued.mayReplaceReply}
+              // Edit needs the content key (the writer's own envelope opened) and a typed body.
+              editable={
+                opened.state === 'open' && opened.text !== null && !m.paper
+                  ? { text: opened.text, relayNote: opened.relayNote, contentKey: opened.contentKey }
+                  : undefined
+              }
               onChanged={queued.onChanged}
             />
           )}
