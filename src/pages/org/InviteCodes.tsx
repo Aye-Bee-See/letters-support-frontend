@@ -353,7 +353,7 @@ function Slips({ issued, groupName, preview }: { issued: IssuedInviteCodes; grou
         <div key={s.code} className="invite-slip">
           <div className="invite-slip-group">{groupName}</div>
           <div className="invite-slip-what">
-            An invitation to write to people in prison through letters.support. Open the link or scan the QR code, then choose a username and password:
+            An invitation to write to people in prison through letters.support. Open the link or scan the QR code, then choose a username, a pen name and a password:
             the account is yours alone.
           </div>
           <div className="invite-slip-code">{s.code}</div>

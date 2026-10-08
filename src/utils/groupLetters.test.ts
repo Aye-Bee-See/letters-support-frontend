@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, LetterFooter, MailRule, Message } from '../types'
-import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerInSentence, writerLabel } from './groupLetters'
+import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lastLetterLine, lettersNamed, queueFilter, statusRefusal, writerInSentence, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -93,6 +93,18 @@ describe('writerLabel', () => {
   it('reads the anonymous flag of a reference lookup or a writer search', () => {
     expect(writerLabel({ penName: null, name: 'PDX anonymous', anonymous: true })).toBe('Anonymous')
     expect(writerLabel({ penName: 'Hollow', name: null, anonymous: false })).toBe('Hollow')
+  })
+})
+
+describe('lastLetterLine', () => {
+  const last = (over: Partial<NonNullable<Parameters<typeof lastLetterLine>[0]>>) =>
+    ({ id: 1, sender: 'user', status: 'queued', heldReason: null, createdAt: '2026-10-01T00:00:00Z', ...over }) as Parameters<typeof lastLetterLine>[0]
+  it('words a reply, a held letter by its hold, and the rest by where it stands', () => {
+    expect(lastLetterLine(null)).toBeNull()
+    expect(lastLetterLine(last({ sender: 'prisoner', status: 'received' }))).toEqual({ inbound: true, text: 'reply from the prisoner' })
+    expect(lastLetterLine(last({ heldReason: 'writer_blocked' }))).toEqual({ inbound: false, text: 'held: writer blocked' })
+    expect(lastLetterLine(last({ status: 'mailed' }))).toEqual({ inbound: false, text: 'mailed' })
+    expect(lastLetterLine(last({}))).toEqual({ inbound: false, text: 'waiting to print' })
   })
 })
 

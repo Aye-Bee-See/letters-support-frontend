@@ -1,4 +1,5 @@
-import type { ApiError, DeclineReason, HeldReason, LetterFooter, LetterStatus, MailRule, Message, Prison, ReturnReason } from '../types'
+import type { ApiError, Chat, DeclineReason, HeldReason, LetterFooter, LetterStatus, MailRule, Message, Prison, ReturnReason } from '../types'
+import { directionLabel } from './letters'
 import { commonRefusal, otherRefusal } from './refusals'
 
 // Wording for the group inbox and the one-letter print page (group-admin-plan.md,
@@ -77,6 +78,18 @@ const HELD_SHORT: Record<HeldReason, string> = {
 
 export const heldReasonShort = (reason: string | null | undefined): string | null =>
   reason ? (HELD_SHORT[reason as HeldReason] ?? 'Held') : null
+
+/**
+ * A thread's newest letter, from the group's side, for the "Last letter" column
+ * of the Conversations and Writers tabs: a reply recorded from the prisoner, a
+ * held letter by its hold (API #178), else where the letter stands.
+ */
+export function lastLetterLine(last: Chat['last_message']): { inbound: boolean; text: string } | null {
+  if (!last) return null
+  if (last.sender === 'prisoner') return { inbound: true, text: 'reply from the prisoner' }
+  if (last.status === 'queued' && last.heldReason) return { inbound: false, text: (heldReasonShort(last.heldReason) ?? 'Held').toLowerCase() }
+  return directionLabel(last.sender, last.status, last.heldReason)
+}
 
 // --- Returns and declines (README "Letter lifecycle": "Returned mail", "Declined letters") ---
 

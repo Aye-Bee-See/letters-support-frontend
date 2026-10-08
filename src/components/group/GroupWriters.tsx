@@ -3,10 +3,11 @@ import { getAllChats } from '../../api/letters'
 import { getAllWriters } from '../../api/writers'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, PrisonSummary, Writer } from '../../types'
-import { heldReasonShort, writerLabel } from '../../utils/groupLetters'
-import { directionLabel, inboxDate, threadPrisonerName } from '../../utils/letters'
+import { writerLabel } from '../../utils/groupLetters'
+import { inboxDate, threadPrisonerName } from '../../utils/letters'
 import { heldAt, shortDate } from '../../utils/prisoners'
 import LoadState from '../ui/LoadState'
+import LastLetter from './LastLetter'
 
 // The group's managed writers (group-admin-plan.md, WP1 "Writers"), as the
 // prototype's org inbox shows them: one block per writer with their threads,
@@ -34,9 +35,6 @@ function WriterThreads({ chats }: { chats: Chat[] }) {
       </thead>
       <tbody>
         {chats.map((chat) => {
-          const last = chat.last_message
-          const direction = last ? directionLabel(last.sender, last.status, last.heldReason) : null
-          const held = last?.sender === 'user' && last.status === 'queued' ? heldReasonShort(last.heldReason) : null
           const facility = heldAt((chat.prisoner_details?.prison_details ?? null) as PrisonSummary | null)
           const open = () => {
             navigate(`/threads/${chat.id}`)
@@ -56,11 +54,7 @@ function WriterThreads({ chats }: { chats: Chat[] }) {
                 {facility && <div className="convo-facility">{facility}</div>}
               </td>
               <td>
-                {direction && (
-                  <span className={direction.inbound ? 'convo-direction inbound' : 'convo-direction outbound'}>
-                    <span className="arrow">{direction.inbound ? '←' : '→'}</span> {held ? held.toLowerCase() : direction.text}
-                  </span>
-                )}
+                <LastLetter chat={chat} />
               </td>
               <td>
                 <span className="convo-date">{inboxDate(chat.lastMessageAt)}</span>

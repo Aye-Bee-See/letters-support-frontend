@@ -145,10 +145,14 @@ export default function GroupKeys() {
           <section className="settings-section">
             <h2 className="settings-section-heading">You don't hold the key yet</h2>
             <p className="settings-hint">
-              {owner && owner.id !== user.id
-                ? `${adminName(owner)}, the group-owner admin, hands the key to group admins. You're on their list of admins waiting for it.`
-                : 'The group-owner admin hands the key to group admins.'}{' '}
-              Once they have, it opens here without signing in again.
+              {owner && owner.id !== user.id ? `${adminName(owner)}, the group-owner admin,` : 'The group-owner admin'} hands the key to group
+              admins.{' '}
+              {/* Only what the roster says: waiting is an admin with keys of their own and no copy of the group's. */}
+              {data.members.some((m) => m.id === user.id && m.holdsGroupKey)
+                ? 'You were handed it, but your copy didn’t open in this session: check again, or sign out and in again.'
+                : data.waiting.includes(user.id)
+                  ? 'You’re on their list of admins waiting for it. Once they have handed it to you, it opens here without signing in again.'
+                  : 'Once they have handed it to you, it opens here without signing in again.'}
             </p>
             <p>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => void reloadAll(true)}>

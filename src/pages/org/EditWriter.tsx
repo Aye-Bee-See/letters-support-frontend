@@ -111,8 +111,10 @@ function EditForm({
   if (penName.trim() && penName.trim().replace(/\s+/g, ' ') !== (writer.penName ?? '')) changes.penName = penName.trim()
   if (email.trim() && email.trim() !== writer.email) changes.email = email.trim()
   if (managerNote.trim() !== (writer.managerNote ?? '').trim()) changes.managerNote = managerNote.trim() || null
-  const dirty = Object.keys(changes).length > 0
-  const canSave = dirty && !nameProblem && !penNameRefused && !saving
+  // Cleared: nothing would be sent for it, so Save would keep the old one without a word. Say so, and wait.
+  const penNameCleared = Boolean(writer.penName) && !penName.trim()
+  const dirty = Object.keys(changes).length > 0 || penNameCleared
+  const canSave = dirty && !nameProblem && !penNameRefused && !penNameCleared && !saving
 
   async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
@@ -209,6 +211,11 @@ function EditForm({
           </button>
           <span className={saved && !dirty ? 'settings-saved-note is-visible' : 'settings-saved-note'}>Saved.</span>
         </div>
+        {penNameCleared && (
+          <p className="cw-hint" role="status">
+            A pen name can be changed but not removed: type a new one, or put back “{writer.penName}”, to save.
+          </p>
+        )}
       </form>
 
       <hr className="cw-divider" style={{ margin: '2.5rem 0 1.5rem' }} />

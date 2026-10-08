@@ -218,13 +218,18 @@ export default function WriterBlockActions({
             required
             onChange={(e) => setReason(e.target.value)}
           />
-          <p className="settings-hint">
-            <strong>
-              {form === 'block'
-                ? 'The writer will see this reason, and so will every admin of your group.'
-                : 'Only a site admin reads this; the writer is not told.'}
-            </strong>
-          </p>
+          {/* As NoteField says of a return or decline note: who reads it, that it is not encrypted, and not to quote a letter. */}
+          {form === 'block' ? (
+            <p className="settings-hint">
+              The writer reads this reason, and so does every admin of your group, and it is <strong>not encrypted</strong>: say why, and
+              don’t quote their letters.
+            </p>
+          ) : (
+            <p className="settings-hint">
+              Only a site admin reads this; the writer is not told. It is <strong>not encrypted</strong>, and a site admin never reads a
+              letter: say what happened, and don’t quote any letter.
+            </p>
+          )}
           <span className={`block-form-count${length > max ? ' is-over' : ''}`}>
             {length} / {max}
           </span>
