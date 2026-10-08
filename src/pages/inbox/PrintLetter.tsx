@@ -22,8 +22,9 @@ import { displayName } from '../../utils/prisoners'
 // /messaging/message"): the prisoner and facility with its mail rules, the
 // writer, the status history, and `footer` (README "Reply reference"). It is
 // opened with the group key (src/letters/open.ts). The print sheet is the
-// letter's text and then the footer sentence, and nothing else: no QR code or
-// barcode ever goes inside a prison. The sidebar has the address for the
+// letter's text, the footer sentence and the enclosed images, and nothing
+// else (every note around it is no-print): no QR code or barcode ever goes
+// inside a prison. The sidebar has the address for the
 // envelope and the actions: mark printed or mailed, it came back, don't send,
 // share with a partner group.
 
@@ -239,11 +240,24 @@ export default function PrintLetter() {
   const reader: LetterReader | null = ready && user ? { userId: user.id, keypair: keypair!, chapterId: user.chapterId, groupKeypair, groupKeyVersion: keys?.orgKey?.keyVersion ?? null } : null
   const page = useApi(() => loadLetter(id, reader), [id, ready, user?.id])
   const [flash, setFlash] = useState<string | null>(null)
+  // The letter as re-read after an action (its status, history and footer), so
+  // marking it keeps the opened text and attachments rather than reloading and
+  // decrypting the whole page again. Tied to the load it updates, so a later
+  // reload of the page (keys arriving, another letter) is not overridden.
+  const [fresh, setFresh] = useState<{ base: Page; message: Message } | null>(null)
 
   // The print stylesheet applies only while this page is open (group-inbox.css).
+  // `@page` cannot sit under a selector, so the sheet's margins are a <style>
+  // added here and removed on leaving: no other page's printing is affected.
   useEffect(() => {
     document.body.classList.add('printing-letter')
-    return () => document.body.classList.remove('printing-letter')
+    const margins = document.createElement('style')
+    margins.textContent = '@media print { @page { margin: 2cm; } }'
+    document.head.appendChild(margins)
+    return () => {
+      document.body.classList.remove('printing-letter')
+      margins.remove()
+    }
   }, [])
 
   const opened = page.data?.opened ?? null
@@ -260,7 +274,9 @@ export default function PrintLetter() {
     )
   }
 
-  const { message: m, facility } = page.data
+  const { facility } = page.data
+  const base = page.data
+  const m = fresh?.base === base ? fresh.message : base.message
   const mine = m.relayChapter !== null && m.relayChapter === group.chapterId
   const prisoner = m.prisoner_details
   const prison = (prisoner?.prison_details ?? facility) as Prison | null
@@ -275,9 +291,10 @@ export default function PrintLetter() {
     window.print()
   }
 
+  // Only the letter's record changes on an action; a failed re-read falls back to reloading the page.
   const done = (text: string) => {
     setFlash(text)
-    page.reload()
+    getMessage(id, true).then((message) => setFresh({ base, message }), () => page.reload())
   }
 
   return (
@@ -342,8 +359,9 @@ export default function PrintLetter() {
 
               {m.status !== 'declined' && (
                 <div className="print-toolbar no-print">
-                  <button type="button" className="btn btn-sm btn-primary" onClick={printLetter}>
-                    Print
+                  {/* Printing before the images are decrypted would leave them off the sheet. */}
+                  <button type="button" className="btn btn-sm btn-primary" onClick={printLetter} disabled={files === null}>
+                    {files === null ? 'Preparing attachments…' : 'Print'}
                   </button>
                   <span>
                     {m.paper
@@ -370,14 +388,14 @@ export default function PrintLetter() {
                 ) : opened.text ? (
                   <div className="print-sheet-body">{opened.text}</div>
                 ) : (
-                  <p className="print-sheet-empty">This letter has no typed text.</p>
+                  <p className="print-sheet-empty no-print">This letter has no typed text.</p>
                 )}
                 {m.footer && <p className="print-sheet-footer">{footerSentence(m.footer)}</p>}
                 {!m.paper &&
                   images.map((f) => <img key={f.attachment.id} className="print-sheet-image" src={f.url!} alt={f.attachment.originalName ?? 'Enclosed image'} />)}
               </article>
 
-              {files === null && <p className="print-note no-print">Opening attachments…</p>}
+              {files === null && m.status === 'declined' && <p className="print-note no-print">Opening attachments…</p>}
               {(others.length > 0 || (m.paper && images.length > 0)) && (
                 <div className="no-print">
                   <p className="thread-sidebar-heading">Attachments</p>
@@ -403,7 +421,7 @@ export default function PrintLetter() {
           )}
         </main>
 
-        <Sidebar page={page.data} mine={mine} rules={rules} canRead={opened?.state === 'open'} onDone={done} />
+        <Sidebar page={{ ...page.data, message: m }} mine={mine} rules={rules} canRead={opened?.state === 'open'} onDone={done} />
       </div>
     </div>
   )
