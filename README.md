@@ -296,6 +296,14 @@ only under `/admin`, so its class names must not leak into other pages.
 Components shared by both (the invitation parts) take a class set rather than
 assuming one.
 
+**Fonts.** Nothing is loaded from a third party, fonts included: a visitor's
+browser talks only to this site and the API. The logo's face, Protest
+Guerrilla, used to come from Google Fonts on every page and no longer does;
+`.site-logo` still names it first and falls back to Arial Black. To
+self-host it (it is under the SIL Open Font License), put a `woff2` under
+`public/fonts/` and add an `@font-face` for it at the top of `style.css`,
+with `font-display: swap`.
+
 **Tests.** Vitest in Node, with no DOM: tests cover the crypto core (including
 cross-client vectors), the sending and recording flows, rotation, housekeeping,
 and the pure wording helpers. Component behaviour is checked by hand against a

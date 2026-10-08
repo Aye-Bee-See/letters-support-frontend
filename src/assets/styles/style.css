@@ -68,8 +68,11 @@ img { display: block; max-width: 100%; }
   gap: 1rem;
 }
 
+/* Protest Guerrilla is not fetched from anywhere: it shows only where it is
+   installed, or once self-hosted with an @font-face here (see the README,
+   "Styles"). Otherwise the logo falls back to a heavy system face. */
 .site-logo {
-  font-family: 'Protest Guerrilla', var(--sans);
+  font-family: 'Protest Guerrilla', 'Arial Black', var(--sans);
   font-size: 1.1rem;
   font-weight: 400;
   letter-spacing: 0.02em;
