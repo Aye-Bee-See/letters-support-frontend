@@ -21,13 +21,17 @@ export default function ReplyPanel({
   prisonerId: number
   prisonId: number
   preferredGroup?: number
-  /** Writing a returned or declined letter again (the panel is keyed on it, so this is read once). */
-  resend?: { id: number; date: string; text: string }
+  /**
+   * Writing a letter again (the panel is keyed on it, so this is read once): a
+   * returned or declined one (`resend`, sent as replacing it), or a held one
+   * just deleted (`rewrite`, a new letter).
+   */
+  resend?: { id: number; date: string; text: string; kind: 'resend' | 'rewrite' }
   onCancelResend?: () => void
   onSent: (message: Message) => void
 }) {
   const facility = useApi(() => getFacility(prisonId, true), [prisonId])
-  const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup, resend ? { text: resend.text, resendOf: resend.id } : undefined)
+  const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup, resend ? { text: resend.text, resendOf: resend.kind === 'resend' ? resend.id : null } : undefined)
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility.data ? mailRuleLines(facility.data) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
@@ -90,6 +94,13 @@ export default function ReplyPanel({
                 Cancel
               </button>
             )}
+          </p>
+        )}
+        {/* A held letter deleted to be sent again: its text is here, and the letter is gone from the queue. */}
+        {resend?.kind === 'rewrite' && (
+          <p className="reply-notes-hint reply-resend">
+            Your letter of {new Date(resend.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} was deleted; its
+            text is below to send again. Change anything you need to.
           </p>
         )}
         {draft.paper ? (

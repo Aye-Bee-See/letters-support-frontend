@@ -4,6 +4,7 @@ import { getMyBlocks } from '../../api/auth'
 import { getAttachments, getChat } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import CorrectReply from '../../components/forms/CorrectReply'
+import QueuedLetterActions from '../../components/forms/QueuedLetterActions'
 import RecordReplyPanel from '../../components/forms/RecordReplyPanel'
 import ReplyPanel from '../../components/forms/ReplyPanel'
 import WriterBlockActions from '../../components/group/WriterBlockActions'
@@ -24,11 +25,16 @@ import { displayName } from '../../utils/prisoners'
 // when the page loads (collapsed rows show a preview); attachments are fetched
 // and decrypted only when a letter is expanded.
 
-/** A returned or declined letter being written again: sent with resendOf, its text to start from. */
+/**
+ * A letter being written again, its text to start from: a returned or declined
+ * one (`resend`, sent with resendOf), or a held one just deleted to send again
+ * (`rewrite`, a new letter).
+ */
 interface Resend {
   id: number
   date: string
   text: string
+  kind: 'resend' | 'rewrite'
 }
 
 interface OpenedMessage {
@@ -121,11 +127,11 @@ function DeclinedNote({ m }: { m: Message }) {
 function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>, forGroup: boolean): ReactNode {
   switch (m.heldReason) {
     case 'choose_relay':
-      return `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now.`
+      return `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now: choose below.`
     case 'reseal_needed':
-      return `${prisonerName} has been moved. This letter is waiting to be shared with the group that now serves their facility.`
+      return `${prisonerName} has been moved, and the group that was going to mail this letter doesn’t serve their new facility. To send it, delete it and write it again.`
     case 'prisoner_free':
-      return `${prisonerName} has been released. The group will decide whether this letter can still be sent.`
+      return `${prisonerName} has been released. The group will decide whether this letter can still be sent, or you can delete it.`
     case 'writer_blocked': {
       // A group admin reads this in the thread of a writer their group blocked
       // (README "Blocking a writer"); unblocking is on Blocked writers or in the sidebar.
@@ -219,6 +225,7 @@ function LetterItem({
   forGroup,
   onWriteAgain,
   onCorrected,
+  queued,
 }: {
   item: OpenedMessage
   initiallyOpen: boolean
@@ -231,6 +238,8 @@ function LetterItem({
   onWriteAgain?: (resend: Resend) => void
   /** Group admins, on a reply their group may correct: Edit transcription and Delete, then this. */
   onCorrected?: () => void
+  /** The writer, on their own queued letter: Delete, and choosing its group for a choose_relay hold. */
+  queued?: { prisonId: number | null; onRewrite?: (rewrite: Resend) => void; onChanged: () => void }
 }) {
   const [open, setOpen] = useState(initiallyOpen)
   const { message: m, opened } = item
@@ -260,6 +269,20 @@ function LetterItem({
           </div>
 
           {held && <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>{held}</p>}
+          {queued && outbound && m.status === 'queued' && (
+            <QueuedLetterActions
+              message={m}
+              prisonerName={prisonerName}
+              prisonId={queued.prisonId}
+              blocks={blocks}
+              onRewrite={
+                queued.onRewrite && opened.state === 'open'
+                  ? () => queued.onRewrite?.({ id: m.id, date: m.createdAt, text: opened.text ?? '', kind: 'rewrite' })
+                  : undefined
+              }
+              onChanged={queued.onChanged}
+            />
+          )}
           {m.status === 'returned' && (
             <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
               This letter came back: {RETURN_REASONS[m.returnReason ?? 'unknown']}.{m.returnNote ? ` The envelope said: “${m.returnNote}”.` : ''}
@@ -271,7 +294,7 @@ function LetterItem({
               <button
                 type="button"
                 className="btn btn-sm"
-                onClick={() => onWriteAgain({ id: m.id, date: m.createdAt, text: opened.state === 'open' ? (opened.text ?? '') : '' })}
+                onClick={() => onWriteAgain({ id: m.id, date: m.createdAt, text: opened.state === 'open' ? (opened.text ?? '') : '', kind: 'resend' })}
               >
                 Write it again
               </button>
@@ -470,6 +493,11 @@ export default function Thread() {
   // A group admin may correct or delete a reply their group recorded, or any
   // reply in the thread of a writer it manages (README "PUT /messaging/message").
   const managedHere = chat.user_details?.managedBy != null && chat.user_details.managedBy === user?.chapterId && !chat.user_details.claimedAt
+  /** Start the reply panel from a letter's text (the panel is below the letters). */
+  const writeAgain = (r: Resend) => {
+    setResend(r)
+    window.setTimeout(() => document.querySelector('.reply-panel')?.scrollIntoView({ behavior: 'smooth' }), 0)
+  }
   const canCorrect = (m: Message) =>
     isChapter && m.sender === 'prisoner' && m.status === 'received' && (managedHere || (m.relayChapter !== null && m.relayChapter === user?.chapterId))
 
@@ -514,16 +542,13 @@ export default function Thread() {
                 writerName={writerName}
                 blocks={blocks}
                 forGroup={isChapter}
-                onWriteAgain={
-                  !isChapter && prisoner?.prison
-                    ? (r) => {
-                        setResend(r)
-                        // The reply panel is below the letters.
-                        window.setTimeout(() => document.querySelector('.reply-panel')?.scrollIntoView({ behavior: 'smooth' }), 0)
-                      }
+                onWriteAgain={!isChapter && prisoner?.prison ? writeAgain : undefined}
+                onCorrected={canCorrect(item.message) ? page.reload : undefined}
+                queued={
+                  !isChapter && chat.user === user?.id
+                    ? { prisonId: prisoner?.prison ?? null, onRewrite: prisoner?.prison ? writeAgain : undefined, onChanged: page.reload }
                     : undefined
                 }
-                onCorrected={canCorrect(item.message) ? page.reload : undefined}
               />
             ))}
           </div>

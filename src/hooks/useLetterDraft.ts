@@ -41,8 +41,8 @@ export function useLetterDraft(
   prisonerId: number | null,
   facility: Prison | null,
   preferredGroup?: number,
-  /** Writing a returned or declined letter again: its text, and its id to send as resendOf. */
-  initial?: { text: string; resendOf: number },
+  /** Writing a letter again: its text, and for a returned or declined one its id to send as resendOf. */
+  initial?: { text: string; resendOf: number | null },
   /** A group admin's letter: the writer it is written as; nothing can be sent until one is chosen. Ignored for writers. */
   writeAs?: WriteAs | null,
 ) {
