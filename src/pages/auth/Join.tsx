@@ -196,6 +196,8 @@ function JoinForm({
     try {
       onJoined(await join({ code, username: values.username, penName: values.penName, password: values.password }))
     } catch (err) {
+      // Only a failure before the account is made lands here; the code still
+      // works. Once it is made, a failed sign-in comes back in the result.
       const apiError = toApiError(err)
       // The code was used or cancelled in the meantime.
       if (apiError.status === 404 || apiError.status === 410) return onCodeRefused(apiError)

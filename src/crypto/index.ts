@@ -1,7 +1,7 @@
 // The end-to-end crypto core. Pages and components import from here only, and
 // never touch libsodium directly (CLAUDE.md, "Encryption").
 
-export { KDF_PARAMS, normalizeCode } from './kdf'
+export { KDF_MAX, KDF_PARAMS, KdfParamsError, normalizeCode } from './kdf'
 export { CODE_LENGTH, formatCode, generateCode, hashCode, INVITE_CODE_LENGTH } from './codes'
 export { generateKeypair, type Keypair } from './primitives'
 export {

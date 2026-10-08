@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getClaimInfo, type ClaimInfo } from '../../api/auth'
 import { toApiError } from '../../api/client'
 import { claim, claimIsUsable } from '../../auth/claim'
+import { codeParamsRefusal } from '../../auth/signIn'
 import { INVITE_CODE_LENGTH, normalizeCode } from '../../crypto'
 import type { Joined } from '../../auth/join'
 import AccountFields from '../../components/forms/AccountFields'
@@ -155,7 +156,13 @@ export default function Claim() {
             />
           )}
 
-          {step.name === 'recovery' && <RecoveryCodeStep joined={step.joined} eyebrow="Account claimed" />}
+          {step.name === 'recovery' && (
+            <RecoveryCodeStep
+              joined={step.joined}
+              eyebrow="Account claimed"
+              signInNotice="The account is yours now. Sign in with your username and password."
+            />
+          )}
         </div>
 
         <Link to="/" className="claim-back">
@@ -192,6 +199,14 @@ function ClaimForm({
     try {
       onClaimed(await claim(info, { token, username: values.username, penName: values.penName, password: values.password }))
     } catch (err) {
+      // Only a failure before the account is taken lands here; the code still
+      // works. Once it is taken, a failed sign-in comes back in the result.
+      const refused = codeParamsRefusal(err)
+      if (refused) {
+        setErrors([refused])
+        setBusy(false)
+        return
+      }
       const apiError = toApiError(err)
       if (apiError.status === 404 || apiError.status === 410) return onCodeRefused(apiError)
       // status 0 with no API body: the code did not open the account (see src/auth/claim.ts).

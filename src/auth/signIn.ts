@@ -1,7 +1,7 @@
 import { getKeys, getLoginParams, isTwoFactorChallenge, login } from '../api/auth'
 import { loginTwoFactor, type SecondFactor } from '../api/twoFactor'
 import { toApiError } from '../api/client'
-import { signInKeys, unlockAccount, unlockGroupKey, wipe, type Keypair } from '../crypto'
+import { KdfParamsError, signInKeys, unlockAccount, unlockGroupKey, wipe, type Keypair } from '../crypto'
 import type { KeyBundle, LoginResult } from '../types'
 
 // Signing in without sending the password (password-split-proposal §5, README
@@ -21,6 +21,10 @@ export type SignInFailure =
   | 'keys'
   /** The account has no keys. Every account must (owner's decision, 25 Sept), so this is refused. */
   | 'no_keys'
+  /** The server named key derivation costs below the agreed ones (KDF_PARAMS). Refused before sending anything. */
+  | 'weak_params'
+  /** The server named costs above what this client runs (KDF_MAX). Refused before sending anything. */
+  | 'heavy_params'
   /** Second step: the authenticator or recovery code was wrong. The challenge is still good. */
   | 'wrong_code'
   /** Second step: the challenge expired or was used. Start again from the password. */
@@ -36,6 +40,18 @@ export class SignInError extends Error {
     this.kind = kind
     this.retryAfter = retryAfter
   }
+}
+
+/**
+ * The wording for a recovery or claim code refused before use because the
+ * server named key derivation costs out of bounds (KdfParamsError); null for
+ * any other error. The sign-in page words its own (weak_params, heavy_params).
+ */
+export function codeParamsRefusal(err: unknown): string | null {
+  if (!(err instanceof KdfParamsError)) return null
+  return err.kind === 'weak'
+    ? 'This server asked for weaker protection for your code than this site uses, so your code was not used. Please tell a network admin.'
+    : 'This server asked for more work than this browser can safely do, so your code was not used. Please tell a network admin.'
 }
 
 /** The password was right and the account uses two-factor sign-in: ask for a code, then call signIn again with it. */
@@ -78,7 +94,8 @@ function failCode(err: unknown): never {
  * 1. GET /auth/login-params: the scheme, salt and KDF parameters. Unknown
  *    usernames get a stable fake salt, so this reveals nothing.
  * 2. `plain`: refuse, sending nothing. `split`: derive wrapKey and authKey on
- *    the device (one Argon2id run) and send only authKey.
+ *    the device (one Argon2id run) and send only authKey. Costs below the
+ *    agreed ones, or above the cap, are refused, sending nothing.
  * 3. POST /auth/login. For an account with two-factor sign-in on, that answers
  *    only a challenge: return CodeNeeded, and the caller calls again with the
  *    challenge and a code (POST /auth/login/two-factor).
@@ -107,7 +124,14 @@ export async function signIn(
 
     // The second step derives the keys again (a second or so) rather than holding
     // wrapKey in memory while the person fetches their code.
-    const keys = await signInKeys(password, params)
+    // Costs outside the agreed bounds are refused here, before anything derived
+    // from the password exists, let alone is sent (see checkKdfParams).
+    const keys = await signInKeys(password, params).catch((err: unknown) => {
+      if (err instanceof KdfParamsError) {
+        throw new SignInError(err.kind === 'weak' ? 'weak_params' : 'heavy_params', err.message)
+      }
+      throw err
+    })
     wrapKey = keys.wrapKey
     let result: LoginResult
     if (second) {

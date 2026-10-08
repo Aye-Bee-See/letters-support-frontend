@@ -1,7 +1,7 @@
 import { finishRecovery, getKeys, isTwoFactorChallenge, login, startRecovery } from '../api/auth'
 import { toApiError } from '../api/client'
-import { lockKeys, openChallenge, unlockGroupKey, unlockWithRecoveryCode, type Keypair } from '../crypto'
-import type { Joined } from './join'
+import { KdfParamsError, lockKeys, openChallenge, unlockGroupKey, unlockWithRecoveryCode, type Keypair } from '../crypto'
+import { signInAfterWrite, type Joined } from './join'
 
 // Recovery with a recovery code (README "End-to-end mode: Recovery").
 // The recovery code never leaves the device. It opens the copy of the private
@@ -27,7 +27,9 @@ export async function openRecovery(username: string, recoveryCode: string): Prom
   let keypair: Keypair
   try {
     keypair = await unlockWithRecoveryCode(start, recoveryCode)
-  } catch {
+  } catch (err) {
+    // Costs out of bounds are the server's doing, not a mistyped code.
+    if (err instanceof KdfParamsError) throw err
     throw new RecoveryCodeError('That recovery code does not match this account.')
   }
   return { username: name, keypair, challenge: await openChallenge(start.sealedChallenge, keypair) }
@@ -36,7 +38,8 @@ export async function openRecovery(username: string, recoveryCode: string): Prom
 /**
  * Step 2: set the new password, then sign in. If the challenge expired while
  * the person chose a password (401), a fresh one is fetched and opened with the
- * key already in memory, and the request is sent once more.
+ * key already in memory, and the request is sent once more. Throws only while
+ * the password is not yet changed.
  */
 export async function completeRecovery(opened: OpenedRecovery, newPassword: string): Promise<Joined> {
   const locked = await lockKeys(opened.keypair.privateKey, newPassword)
@@ -49,17 +52,22 @@ export async function completeRecovery(opened: OpenedRecovery, newPassword: stri
     const fresh = await startRecovery(opened.username)
     await send(await openChallenge(fresh.sealedChallenge, opened.keypair))
   }
-  const answer = await login(opened.username, locked.authKey)
-  // Recovery leaves two-factor sign-in as it was. With it on, signing in needs a
-  // code too; the new recovery code must still be shown (the old one is used up).
-  if (isTwoFactorChallenge(answer)) return { signedIn: null, recoveryCode: locked.recoveryCode }
-  const result = answer
-  const bundle = result.keys ?? (await getKeys(result.token.token))
-  // A group admin's group key opens with their (unchanged) keypair, as at sign-in.
-  const org = bundle.orgKey
-  const groupKeypair =
-    org?.wrappedOrgPrivateKey && org.chapterPublicKey
-      ? await unlockGroupKey({ wrappedOrgPrivateKey: org.wrappedOrgPrivateKey, chapterPublicKey: org.chapterPublicKey }, opened.keypair).catch(() => null)
-      : null
-  return { signedIn: { result, bundle, keypair: opened.keypair, groupKeypair }, recoveryCode: locked.recoveryCode }
+  // The new password and recovery code are saved and the old code is used up:
+  // from here a failed sign-in is returned with the new code, not thrown (see join.ts).
+  const session = await signInAfterWrite(async () => {
+    const answer = await login(opened.username, locked.authKey)
+    // Recovery leaves two-factor sign-in as it was. With it on, signing in needs a
+    // code too; the new recovery code must still be shown (the old one is used up).
+    if (isTwoFactorChallenge(answer)) return null
+    const result = answer
+    const bundle = result.keys ?? (await getKeys(result.token.token))
+    // A group admin's group key opens with their (unchanged) keypair, as at sign-in.
+    const org = bundle.orgKey
+    const groupKeypair =
+      org?.wrappedOrgPrivateKey && org.chapterPublicKey
+        ? await unlockGroupKey({ wrappedOrgPrivateKey: org.wrappedOrgPrivateKey, chapterPublicKey: org.chapterPublicKey }, opened.keypair).catch(() => null)
+        : null
+    return { result, bundle, keypair: opened.keypair, groupKeypair }
+  })
+  return { ...session, recoveryCode: locked.recoveryCode }
 }

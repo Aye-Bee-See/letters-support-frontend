@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { formatCode, generateCode, hashCode } from './codes'
-import { deriveKey, KDF_PARAMS, normalizeCode, passwordBytes, splitFromMaster } from './kdf'
+import { checkKdfParams, deriveCodeKey, deriveKey, KDF_MAX, KDF_PARAMS, KdfParamsError, normalizeCode, passwordBytes, splitFromMaster } from './kdf'
 import {
   createAccountKeys,
   createClaimToken,
@@ -61,6 +61,35 @@ describe('cross-client test vectors (must match the API and Android byte for byt
 
   it('refuses any key derivation other than Argon2id', async () => {
     await expect(deriveKey(passwordBytes('x'), await toBase64(bytes(16)), { kdf: 'scrypt' })).rejects.toThrow(/Unsupported/)
+  })
+
+  // Web audit 8 Oct, item 3: the parameters come from the server, so a tampered one
+  // could ask for a cost that makes the auth key it receives cheap to brute-force.
+  it('refuses Argon2id costs below the agreed parameters', async () => {
+    const salt = await toBase64(bytes(16))
+    const weak = [
+      { ...KDF_PARAMS, opslimit: 1, memlimit: 8192 },
+      { ...KDF_PARAMS, opslimit: 1 },
+      { ...KDF_PARAMS, memlimit: KDF_PARAMS.memlimit! - 1 },
+    ]
+    for (const params of weak) {
+      const refused = deriveKey(passwordBytes('x'), salt, params)
+      await expect(refused).rejects.toBeInstanceOf(KdfParamsError)
+      await expect(refused).rejects.toMatchObject({ kind: 'weak' })
+    }
+    await expect(deriveCodeKey('ABCD-EFGH', salt, weak[0])).rejects.toMatchObject({ kind: 'weak' })
+  })
+
+  it('refuses Argon2id costs above the cap, before running them', async () => {
+    const salt = await toBase64(bytes(16))
+    await expect(deriveKey(passwordBytes('x'), salt, { ...KDF_PARAMS, opslimit: KDF_MAX.opslimit + 1 })).rejects.toMatchObject({ kind: 'heavy' })
+    await expect(deriveKey(passwordBytes('x'), salt, { ...KDF_PARAMS, memlimit: 4 * 1024 ** 3 })).rejects.toMatchObject({ kind: 'heavy' })
+  })
+
+  it('accepts the bounds themselves', () => {
+    expect(() => checkKdfParams(KDF_PARAMS)).not.toThrow()
+    expect(() => checkKdfParams({ ...KDF_PARAMS, ...KDF_MAX })).not.toThrow()
+    expect(KDF_MAX).toEqual({ opslimit: 8, memlimit: 536870912 })
   })
 })
 

@@ -12,6 +12,13 @@ function failureMessage(err: unknown): string {
       ? `Too many attempts. Try again in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}.`
       : 'Too many attempts. Try again later.'
   }
+  // The server named sign-in costs out of bounds: nothing derived from the password left this device.
+  if (err.kind === 'weak_params') {
+    return 'This server asked for weaker sign-in protection than this site uses, so nothing was sent. Please tell a network admin.'
+  }
+  if (err.kind === 'heavy_params') {
+    return 'This server asked for more sign-in work than this browser can safely do, so nothing was sent. Please tell a network admin.'
+  }
   return err.message
 }
 
@@ -20,7 +27,11 @@ function failureMessage(err: unknown): string {
 export default function Login() {
   const { startSession } = useAuth()
   const navigate = useNavigate()
-  const from = (useLocation().state as { from?: Location } | null)?.from
+  const state = useLocation().state as { from?: Location; notice?: string } | null
+  const from = state?.from
+  // A line from the page that sent the person here: an account was made (or a
+  // password changed) but signing in straight after it didn't work.
+  const notice = typeof state?.notice === 'string' ? state.notice : null
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -89,6 +100,11 @@ export default function Login() {
         <div className="login-box">
           <h1 className="login-heading">Sign in</h1>
           <p className="login-subheading">Writers, support groups and network admins all sign in here.</p>
+          {notice && !pending && (
+            <p className="login-notice" role="status">
+              {notice}
+            </p>
+          )}
 
           <form className="login-form" onSubmit={onSubmit} noValidate>
             {pending ? (
