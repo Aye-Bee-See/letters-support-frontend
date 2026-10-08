@@ -171,12 +171,14 @@
   flex-shrink: 0;
 }
 
-.status-pending { color: #b38600; }
+/* #b38600 and #999 were 3.3:1 and 2.9:1 on white; the lighter pair stays for the black inbound letters. */
+.status-pending { color: #8a6100; }
 .status-mailed  { color: #2a6e2a; }
 .status-received {
-  color: #999;
+  color: var(--mid);
 }
 
+.inbound .status-pending { color: #b38600; }
 .inbound .status-received { color: #888; }
 
 .letter-collapsed-chevron {
