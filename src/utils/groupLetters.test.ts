@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, LetterFooter, MailRule, Message } from '../types'
-import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
+import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lastLetterLine, lettersNamed, queueFilter, statusRefusal, writerInSentence, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -83,6 +83,42 @@ describe('writerLabel', () => {
     expect(writerLabel({ penName: null, name: 'James', username: 'j' })).toBe('James')
     expect(writerLabel({ name: 'Test Chapter anonymous', anonymousForChapter: 1 })).toBe('Anonymous')
   })
+
+  it('falls back to the username, then to the fallback', () => {
+    expect(writerLabel({ penName: '', name: null, username: 'j' })).toBe('j')
+    expect(writerLabel(null)).toBe('Unknown writer')
+    expect(writerLabel(null, 'A writer whose account is gone')).toBe('A writer whose account is gone')
+  })
+
+  it('reads the anonymous flag of a reference lookup or a writer search', () => {
+    expect(writerLabel({ penName: null, name: 'PDX anonymous', anonymous: true })).toBe('Anonymous')
+    expect(writerLabel({ penName: 'Hollow', name: null, anonymous: false })).toBe('Hollow')
+  })
+})
+
+describe('lastLetterLine', () => {
+  const last = (over: Partial<NonNullable<Parameters<typeof lastLetterLine>[0]>>) =>
+    ({ id: 1, sender: 'user', status: 'queued', heldReason: null, createdAt: '2026-10-01T00:00:00Z', ...over }) as Parameters<typeof lastLetterLine>[0]
+  it('words a reply, a held letter by its hold, and the rest by where it stands', () => {
+    expect(lastLetterLine(null)).toBeNull()
+    expect(lastLetterLine(last({ sender: 'prisoner', status: 'received' }))).toEqual({ inbound: true, text: 'reply from the prisoner' })
+    expect(lastLetterLine(last({ heldReason: 'writer_blocked' }))).toEqual({ inbound: false, text: 'held: writer blocked' })
+    expect(lastLetterLine(last({ status: 'mailed' }))).toEqual({ inbound: false, text: 'mailed' })
+    expect(lastLetterLine(last({}))).toEqual({ inbound: false, text: 'waiting to print' })
+  })
+})
+
+describe('writerInSentence', () => {
+  it('names the anonymous writer as the group’s, so no sentence reads “Anonymous’s”', () => {
+    expect(writerInSentence({ name: 'Test Chapter anonymous', anonymousForChapter: 1 })).toBe('the group’s anonymous writer')
+    expect(writerInSentence({ penName: null, name: null, anonymous: true })).toBe('the group’s anonymous writer')
+  })
+
+  it('otherwise names the writer as writerLabel does, and “this writer” when there is none', () => {
+    expect(writerInSentence({ penName: 'Hollow', name: 'James', username: 'j' })).toBe('Hollow')
+    expect(writerInSentence(null)).toBe('this writer')
+    expect(writerInSentence({ penName: null, name: null, anonymous: false }, 'writer 7')).toBe('writer 7')
+  })
 })
 
 describe('batch refusals (README "PUT /messaging/status/batch")', () => {
@@ -126,7 +162,7 @@ describe('batch refusals (README "PUT /messaging/status/batch")', () => {
       /^Letters 41 and 42 aren’t your group’s/,
     )
     expect(statusRefusal(error({ status: 403, name: 'AuthorizationError', message: 'Your group is suspended (3).' }), ids, 'mailed')).toMatch(
-      /^Your group can’t change letters right now/,
+      /^Your group can’t do this right now: only an active group can/,
     )
   })
 

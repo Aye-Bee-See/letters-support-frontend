@@ -14,6 +14,11 @@ import LoadState from '../ui/LoadState'
 //   page, pointing to /settings/keys, except on the key and settings pages.
 // Writers and superadmins pass straight through: /inbox, /threads/:id and
 // /letters/new are theirs too.
+//
+// The record is GroupProvider's (context/GroupContext.tsx), shared with every
+// page: the gate reads it rather than fetching, so its two places in App.tsx
+// don't ask again when a page moves from one to the other, and the pages under
+// it can count on the record being there (useGatedGroup).
 
 /** Where the group key is set up and handed out; never told to go there. */
 const KEY_PAGES = ['/settings', '/settings/keys']
@@ -73,7 +78,9 @@ export default function GroupGate() {
 
   // A 404: the API hides a group that isn't active, and unpublished, from its own admins.
   const hidden = group.error?.status === 404
-  if (group.loading || (group.error && !hidden))
+  // Only the first load, or a record that couldn't be read at all: a reload keeps
+  // the record on screen (GroupProvider), so moving between pages never blanks here.
+  if (group.loading || (!group.group && group.error && !hidden))
     return (
       <div className="wrap">
         <LoadState state={{ data: group.group, error: group.error, loading: group.loading, reload: group.reload }} what="your group" />

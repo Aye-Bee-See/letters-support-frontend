@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom'
 import { cancelInviteCodes, getInviteCodes, issueInviteCodes } from '../../api/inviteCodes'
 import { formatCode } from '../../crypto'
 import { useApi } from '../../hooks/useApi'
-import { useGroup } from '../../hooks/useGroup'
+import { useGatedGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import type { ApiError, InviteCodeBatch, InviteCodeSummary, IssuedInviteCodes } from '../../types'
+import { commonRefusal, otherRefusal } from '../../utils/refusals'
 
 // Invite codes (README "Invite codes"): the group issues a batch, prints the
 // codes as slips and hands them out; a newcomer joins with one at /join
@@ -34,13 +35,12 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 const joinLink = (code: string) => `${window.location.origin}/join?code=${encodeURIComponent(code)}`
 
 export default function InviteCodes() {
-  const { group } = useGroup()
+  const { group } = useGatedGroup()
   const summary = useApi(() => getInviteCodes(), [])
   // The batch just issued: its codes, shown until the group admin clears them.
   const [issued, setIssued] = useState<IssuedInviteCodes | null>(null)
   const [preview, setPreview] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const groupName = group?.name ?? 'Your group'
 
   // Leaving with the codes on screen loses them for good, by a link in the app as much as by closing the tab: ask first.
   useLeaveGuard(issued !== null, 'The invite codes on this page are shown only now. Leave without copying or printing them?')
@@ -72,7 +72,7 @@ export default function InviteCodes() {
           )}
         </div>
 
-        {issued && <Slips issued={issued} groupName={groupName} preview={preview} />}
+        {issued && <Slips issued={issued} groupName={group.name} preview={preview} />}
 
         <div className="invite-screen">
           {!issued && (
@@ -240,7 +240,7 @@ function IssueForm({
   )
 }
 
-/** Why issuing was refused, from status and name (README "Invite codes"). */
+/** Why issuing was refused, from status and name (README "Invite codes"); the shared cases from utils/refusals. */
 async function issueRefusal(err: ApiError, count: number): Promise<string> {
   if (err.status === 409 && err.name === 'InviteQuotaError') {
     // The numbers, fresh: another group admin may have issued meanwhile.
@@ -254,9 +254,8 @@ async function issueRefusal(err: ApiError, count: number): Promise<string> {
       return `A batch of ${count} would put your group over its limit of unused codes. Cancel unused codes below, or issue fewer.`
     }
   }
-  if (err.status === 403) return 'Only a group admin of an active group can issue invite codes, and only for their own group.'
   if (err.status === 400) return err.errors.length ? err.errors.join(' ') : 'Check how many, the label and the days.'
-  return err.message
+  return commonRefusal(err) ?? otherRefusal(err)
 }
 
 /** The codes, once, with copy, the slips and the "done" step. */
@@ -354,7 +353,7 @@ function Slips({ issued, groupName, preview }: { issued: IssuedInviteCodes; grou
         <div key={s.code} className="invite-slip">
           <div className="invite-slip-group">{groupName}</div>
           <div className="invite-slip-what">
-            An invitation to write to people in prison through letters.support. Open the link or scan the QR code, then choose a username and password:
+            An invitation to write to people in prison through letters.support. Open the link or scan the QR code, then choose a username, a pen name and a password:
             the account is yours alone.
           </div>
           <div className="invite-slip-code">{s.code}</div>
@@ -386,7 +385,7 @@ function Batches({ summary, onCancelled }: { summary: InviteCodeSummary; onCance
       )
     } catch (err) {
       const e = err as ApiError
-      setError(e.status === 403 ? 'Only a group admin of an active group can cancel its codes.' : e.status === 400 ? 'Choose a batch to cancel.' : e.message)
+      setError(e.status === 400 ? 'Choose a batch to cancel.' : (commonRefusal(e) ?? otherRefusal(e)))
     } finally {
       setBusy(false)
     }

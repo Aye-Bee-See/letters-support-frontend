@@ -6,7 +6,8 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, BanRecommendation, BanRecommendationStatus, GroupBlock } from '../../types'
-import { blockRefusal, letterCount, longDate, personLabel, writerLabel } from '../../utils/blocks'
+import { blockRefusal, letterCount, longDate, personLabel } from '../../utils/blocks'
+import { writerLabel } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 
 // The group's blocked writers and its site-wide block recommendations (web

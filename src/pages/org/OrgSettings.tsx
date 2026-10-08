@@ -5,7 +5,7 @@ import { GROUP_UI } from '../../components/forms/uiClasses'
 import RelayFacilitiesPanel from '../../components/group/RelayFacilitiesPanel'
 import SupportedPrisonersPanel from '../../components/group/SupportedPrisonersPanel'
 import { useApi } from '../../hooks/useApi'
-import { useGroup } from '../../hooks/useGroup'
+import { useGatedGroup } from '../../hooks/useGroup'
 import type { ApiError, Chapter, ChapterService, HistoryEntry, NetworkRole, SocialLinkKey } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
 import { capitalise, changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
@@ -30,19 +30,10 @@ const SOCIAL_ICONS: Record<SocialLinkKey, string> = { instagram: '📷', mastodo
 const HISTORY_SIZE = 10
 
 export default function OrgSettings() {
-  const { group, reload } = useGroup()
+  // GroupGate has the record in before this page opens; a save reloads it for every page.
+  const { group, reload } = useGatedGroup()
   const [saved, setSaved] = useState(false)
-  const history = useApi(() => (group ? getGroupHistory(group.id, { page: 1, page_size: HISTORY_SIZE }) : Promise.resolve(null)), [group?.id, group?.updatedAt])
-
-  // GroupGate has loaded the group already; this copy comes a moment later, and again after a save.
-  if (!group)
-    return (
-      <div className="settings-wrap">
-        <div className="settings-inner">
-          <p className="settings-static">Loading your group…</p>
-        </div>
-      </div>
-    )
+  const history = useApi(() => getGroupHistory(group.id, { page: 1, page_size: HISTORY_SIZE }), [group.id, group.updatedAt])
 
   return (
     <div className="settings-wrap">

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import PenNameField from '../../components/forms/PenNameField'
 import { createKeyedWriter, describeWriterError } from '../../groups/writers'
 import { useAuth } from '../../hooks/useAuth'
-import { useGroup } from '../../hooks/useGroup'
+import { useGatedGroup } from '../../hooks/useGroup'
 
 // Markup and classes from solidarity-site/create-writer.html (pages/create-writer.css).
 // A managed writer (README "Managed writers", "POST /auth/writer") is an account
@@ -17,7 +17,7 @@ const NAME_MAX = 32
 export default function CreateWriter() {
   const navigate = useNavigate()
   const { groupKeypair } = useAuth()
-  const { chapterId, keyState, keyVersion, group } = useGroup()
+  const { chapterId, keyState, keyVersion, group } = useGatedGroup()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [managerNote, setManagerNote] = useState('')
@@ -66,7 +66,7 @@ export default function CreateWriter() {
         </Link>
         <h1 className="create-writer-title">Add a writer</h1>
         <p className="create-writer-subtitle">
-          An account {group?.name ?? 'your group'} holds for someone who writes through you: at a letter-writing night, or
+          An account {group.name} holds for someone who writes through you: at a letter-writing night, or
           someone who'd rather you handled everything. Replies to their letters come back to it. When they want it, hand it
           to them with a claim token; from then on it is theirs, and your group no longer sees it.
         </p>

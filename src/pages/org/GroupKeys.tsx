@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import { getMemberKeys, getRotation, passOwnership, postRotation, removeMemberKey, setChapterKeys } from '../../api/groups'
-import { getUnreadNotifications } from '../../api/notifications'
+import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import { MembersWaitingNotice } from '../../components/group'
 import LoadState from '../../components/ui/LoadState'
 import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../../crypto'
@@ -10,7 +10,7 @@ import { adminName, errorText, EVERY_HOLDER, handKeyTo, isStaleKey, type OrgKey 
 import { checkResealed, reseal } from '../../groups/rotation'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useAuth } from '../../hooks/useAuth'
-import { useGroup, type GroupState } from '../../hooks/useGroup'
+import { useGatedGroup, type GroupState } from '../../hooks/useGroup'
 import type { ApiError, GroupMemberKeyState, MemberKeyRoster, NotificationEvent } from '../../types'
 
 // The group key (README "End-to-end mode" → "Group keys", "Rotating a group
@@ -46,7 +46,7 @@ type Said = { where: Where; ok: boolean; text: string } | null
 
 export default function GroupKeys() {
   const { user, keys } = useAuth()
-  const group = useGroup()
+  const group = useGatedGroup()
   const refreshKey = useGroupKeyRefresh()
   const chapter = group.chapterId
   const [version, setVersion] = useState(0)
@@ -80,16 +80,24 @@ export default function GroupKeys() {
 
   // Someone handed this admin the key, took it back, rotated it, or passed
   // ownership since they signed in: the feed says so (README "The feed"). Read
-  // once when the page opens; the page doesn't poll. Entries stay unread for the inbox.
+  // once when the page opens; the page doesn't poll. Once acted on (the key read
+  // again, the roster and the record reloaded), those entries are marked read,
+  // so the next visit doesn't do it all again; a key refresh that fails leaves
+  // the `group.key` ones unread, for the next visit (or the inbox) to retry.
   const checkedFeed = useRef(false)
   useEffect(() => {
     if (checkedFeed.current) return
     checkedFeed.current = true
-    getUnreadNotifications()
-      .then((items) => {
-        if (items.some((n) => KEY_EVENTS.includes(n.event))) void reloadAll(true)
-      })
-      .catch(() => {})
+    void (async () => {
+      const items = await getUnreadNotifications().catch(() => [])
+      const entries = items.filter((n) => KEY_EVENTS.includes(n.event))
+      if (entries.length === 0) return
+      const keyEntries = entries.filter((n) => n.event === 'group.key')
+      const keyOk = keyEntries.length === 0 || (await refreshKey().then(() => true, () => false))
+      await reloadAll()
+      const ids = (keyOk ? entries : entries.filter((n) => n.event !== 'group.key')).map((n) => n.id)
+      if (ids.length > 0) await markNotificationsRead(ids).catch(() => null)
+    })()
     // Once, on opening the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -108,7 +116,7 @@ export default function GroupKeys() {
         </Link>
         <h1 className="settings-title">Group key</h1>
         <p className="settings-subtitle">
-          Letters to {group.group?.name ?? 'your group'} are sealed to the group's key. Only group admins who hold it can read them; a site
+          Letters to {group.group.name} are sealed to the group's key. Only group admins who hold it can read them; a site
           admin never can.
         </p>
 
@@ -137,10 +145,14 @@ export default function GroupKeys() {
           <section className="settings-section">
             <h2 className="settings-section-heading">You don't hold the key yet</h2>
             <p className="settings-hint">
-              {owner && owner.id !== user.id
-                ? `${adminName(owner)}, the group-owner admin, hands the key to group admins. You're on their list of admins waiting for it.`
-                : 'The group-owner admin hands the key to group admins.'}{' '}
-              Once they have, it opens here without signing in again.
+              {owner && owner.id !== user.id ? `${adminName(owner)}, the group-owner admin,` : 'The group-owner admin'} hands the key to group
+              admins.{' '}
+              {/* Only what the roster says: waiting is an admin with keys of their own and no copy of the group's. */}
+              {data.members.some((m) => m.id === user.id && m.holdsGroupKey)
+                ? 'You were handed it, but your copy didn’t open in this session: check again, or sign out and in again.'
+                : data.waiting.includes(user.id)
+                  ? 'You’re on their list of admins waiting for it. Once they have handed it to you, it opens here without signing in again.'
+                  : 'Once they have handed it to you, it opens here without signing in again.'}
             </p>
             <p>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => void reloadAll(true)}>

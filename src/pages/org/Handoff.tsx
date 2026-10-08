@@ -5,7 +5,8 @@ import { toApiError } from '../../api/client'
 import type { CaughtUp } from '../../api/groups'
 import LoadState from '../../components/ui/LoadState'
 import { createClaimToken, unlockManagedWriterKey, type Keypair } from '../../crypto'
-import { describeWriterError, giveWriterKeys, isAnonymousWriter, writerLabel } from '../../groups/writers'
+import { describeWriterError, giveWriterKeys, isAnonymousWriter } from '../../groups/writers'
+import { writerInSentence } from '../../utils/groupLetters'
 import { useAuth } from '../../hooks/useAuth'
 import { useGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
@@ -57,7 +58,7 @@ export default function Handoff() {
     )
   }
 
-  const name = writerLabel(writer)
+  const name = writerInSentence(writer)
   const anonymous = isAnonymousWriter(writer)
   const ready = keyState === 'ready' && groupKeypair !== null && chapterId !== null
 

@@ -1,4 +1,6 @@
-import type { ApiError, DeclineReason, HeldReason, LetterFooter, LetterStatus, MailRule, Message, Prison, ReturnReason } from '../types'
+import type { ApiError, Chat, DeclineReason, HeldReason, LetterFooter, LetterStatus, MailRule, Message, Prison, ReturnReason } from '../types'
+import { directionLabel } from './letters'
+import { commonRefusal, otherRefusal } from './refusals'
 
 // Wording for the group inbox and the one-letter print page (group-admin-plan.md,
 // WP1). The API sends codes; these are the group admin's words for them. Nothing
@@ -77,6 +79,18 @@ const HELD_SHORT: Record<HeldReason, string> = {
 export const heldReasonShort = (reason: string | null | undefined): string | null =>
   reason ? (HELD_SHORT[reason as HeldReason] ?? 'Held') : null
 
+/**
+ * A thread's newest letter, from the group's side, for the "Last letter" column
+ * of the Conversations and Writers tabs: a reply recorded from the prisoner, a
+ * held letter by its hold (API #178), else where the letter stands.
+ */
+export function lastLetterLine(last: Chat['last_message']): { inbound: boolean; text: string } | null {
+  if (!last) return null
+  if (last.sender === 'prisoner') return { inbound: true, text: 'reply from the prisoner' }
+  if (last.status === 'queued' && last.heldReason) return { inbound: false, text: (heldReasonShort(last.heldReason) ?? 'Held').toLowerCase() }
+  return directionLabel(last.sender, last.status, last.heldReason)
+}
+
 // --- Returns and declines (README "Letter lifecycle": "Returned mail", "Declined letters") ---
 
 /**
@@ -154,11 +168,46 @@ export function footerSentence(footer: LetterFooter): string {
 
 // --- Who wrote it ---------------------------------------------------------------
 
-/** The writer as the group knows them: the pen name, else the name; "Anonymous" for the group's anonymous writer. */
-export function writerLabel(writer: { name?: string | null; penName?: string | null; username?: string | null; anonymousForChapter?: number | null } | null | undefined): string {
-  if (!writer) return 'Unknown writer'
-  if (writer.anonymousForChapter) return 'Anonymous'
-  return writer.penName || writer.name || writer.username || 'Unknown writer'
+/**
+ * What a writer's name is read from, in any of the API's shapes: a user record
+ * or a thread's `user_details` (`anonymousForChapter`), or a reply-reference
+ * lookup or writer search (`anonymous`).
+ */
+export interface WriterNaming {
+  penName?: string | null
+  name?: string | null
+  username?: string | null
+  anonymousForChapter?: number | null
+  anonymous?: boolean
+}
+
+/** The group's shared anonymous writer, in whichever shape the writer came. */
+export const isGroupAnonymous = (w: WriterNaming) => Boolean(w.anonymous) || (w.anonymousForChapter !== null && w.anonymousForChapter !== undefined)
+
+/** A writer's own name, as the group knows them and the letters are signed: the pen name, else the name, else the username. */
+const ownName = (w: WriterNaming) => w.penName || w.name || w.username || null
+
+/**
+ * A writer as a short label (a table cell, a heading, "Writer: …"): the pen
+ * name, else the name, else the username; "Anonymous" for the group's
+ * anonymous writer; `fallback` when there is no writer (an account gone).
+ */
+export function writerLabel(writer: WriterNaming | null | undefined, fallback = 'Unknown writer'): string {
+  if (!writer) return fallback
+  if (isGroupAnonymous(writer)) return 'Anonymous'
+  return ownName(writer) ?? fallback
+}
+
+/**
+ * A writer named inside a sentence: as writerLabel, but the group's anonymous
+ * writer is "the group's anonymous writer", and no writer is "this writer"
+ * unless `fallback` says otherwise. Don't add "'s" to it: word the sentence
+ * so the name stands alone ("the conversation between … and …").
+ */
+export function writerInSentence(writer: WriterNaming | null | undefined, fallback = 'this writer'): string {
+  if (!writer) return fallback
+  if (isGroupAnonymous(writer)) return 'the group’s anonymous writer'
+  return ownName(writer) ?? fallback
 }
 
 // --- Batch refusals (README "PUT /messaging/status/batch") ------------------------
@@ -189,7 +238,8 @@ const letterList = (ids: number[]) =>
  * Why a batch (or one letter) couldn't be marked, worded from the status, `name`
  * and `condition` (README "PUT /messaging/status/batch", "Error codes"):
  * `letter_status.not_allowed`, `letter_held.<heldReason>`,
- * `authorization.not_yours`, `not_found` and `changed_meanwhile`. Nothing was changed.
+ * `authorization.not_yours`, `not_found` and `changed_meanwhile`; the rest as
+ * every group page words them (utils/refusals). Nothing was changed.
  */
 export function statusRefusal(error: ApiError, ids: number[], target: LetterStatus): string {
   const named = lettersNamed(error, ids)
@@ -197,7 +247,6 @@ export function statusRefusal(error: ApiError, ids: number[], target: LetterStat
   const plural = named.length > 1
   const is = plural ? 'are' : 'is'
   const nothing = ids.length > 1 ? ' Nothing was marked: the letters move all together or not at all.' : ''
-  if (error.status === 0) return 'Couldn’t reach the server. Nothing was marked; try again.'
   if (error.status === 409 && error.name === 'LetterHeldError') {
     // The condition is the hold itself (README "Moved and freed"); one this client doesn't know is still a hold.
     const why = (heldReasonText(error.condition) ?? '').replace(/^On hold:?\s*/, '')
@@ -212,14 +261,13 @@ export function statusRefusal(error: ApiError, ids: number[], target: LetterStat
   // `authorization.not_yours`; an older API sent no condition, but named the letters in its sentence.
   if (error.status === 403 && (error.condition === 'not_yours' || (!namesInField(error) && !error.condition && named.length > 0)))
     return `${who} ${plural ? 'aren’t' : 'isn’t'} your group’s to mark: ${plural ? 'they are' : 'it is'} mailed by another group now.${nothing}`
-  if (error.status === 403) return `Your group can’t change letters right now: it may be waiting for approval or suspended.${nothing}`
   if (error.status === 404)
     return `${who} ${is} gone: the writer may have deleted ${plural ? 'them' : 'it'}.${nothing} Reload the list.`
   // A `facility_rule` decline naming a rule some letter's facility lacks: `not_eligible` on `rule`, naming the letters.
   if (error.status === 400 && error.problems?.[0]?.field === 'rule' && error.problems[0].code === 'not_eligible')
     return `${named.length ? `The facility of ${who.toLowerCase()}` : 'A selected letter’s facility'} doesn’t list that rule (any more).${nothing} Reload and pick again, or decline for another reason.`
-  if (error.status === 400) return `The server refused this change.${nothing}`
-  return `Something went wrong on the server (${error.status}).${nothing} Try again later.`
+  // The shared ones: the server not reached, a group that isn't active, too many, a fault.
+  return `${commonRefusal(error) ?? otherRefusal(error)}${nothing}`
 }
 
 // --- Sharing with a partner group (README "Sending and reading letters") --------

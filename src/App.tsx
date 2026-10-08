@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { GroupProvider } from './context/GroupContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import GroupGate from './components/layout/GroupGate'
@@ -72,6 +73,8 @@ function InboxRoute() {
 export default function App() {
   return (
     <AuthProvider>
+      {/* The signed-in group admin's group record, fetched once for every page (useGroup). */}
+      <GroupProvider>
       <BrowserRouter>
         <ScrollToTop />
         <TwoFactorSetupLock />
@@ -158,6 +161,7 @@ export default function App() {
         </Routes>
         </Suspense>
       </BrowserRouter>
+      </GroupProvider>
     </AuthProvider>
   )
 }

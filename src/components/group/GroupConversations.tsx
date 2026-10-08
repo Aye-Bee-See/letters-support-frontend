@@ -2,10 +2,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getChats } from '../../api/letters'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, PrisonSummary } from '../../types'
-import { heldReasonShort, writerLabel } from '../../utils/groupLetters'
-import { directionLabel, inboxDate, threadPrisonerName } from '../../utils/letters'
+import { writerLabel } from '../../utils/groupLetters'
+import { inboxDate, threadPrisonerName } from '../../utils/letters'
 import { heldAt } from '../../utils/prisoners'
 import LoadState from '../ui/LoadState'
+import LastLetter from './LastLetter'
 
 // The group's conversations (group-admin-plan.md, WP1 "Conversations"): the
 // threads of its managed writers and the threads holding a letter it relays,
@@ -16,18 +17,8 @@ import LoadState from '../ui/LoadState'
 
 const PAGE_SIZE = 25
 
-/** The newest letter, from the group's side: a reply recorded, or a letter and where it stands. */
-function lastLetter(chat: Chat): { inbound: boolean; text: string } | null {
-  const last = chat.last_message
-  if (!last) return null
-  if (last.sender === 'prisoner') return { inbound: true, text: 'reply from the prisoner' }
-  if (last.status === 'queued' && last.heldReason) return { inbound: false, text: (heldReasonShort(last.heldReason) ?? 'Held').toLowerCase() }
-  return directionLabel(last.sender, last.status, last.heldReason)
-}
-
 function ConversationRow({ chat }: { chat: Chat }) {
   const navigate = useNavigate()
-  const last = lastLetter(chat)
   const facility = heldAt((chat.prisoner_details?.prison_details ?? null) as PrisonSummary | null)
   const open = () => {
     navigate(`/threads/${chat.id}`)
@@ -47,11 +38,7 @@ function ConversationRow({ chat }: { chat: Chat }) {
       </td>
       <td>{writerLabel(chat.user_details)}</td>
       <td>
-        {last && (
-          <span className={last.inbound ? 'convo-direction inbound' : 'convo-direction outbound'}>
-            <span className="arrow">{last.inbound ? '←' : '→'}</span> {last.text}
-          </span>
-        )}
+        <LastLetter chat={chat} />
         {chat.heldCount > 0 && !chat.last_message?.heldReason && (
           <div className="queue-sub">{chat.heldCount === 1 ? '1 letter on hold' : `${chat.heldCount} letters on hold`}</div>
         )}

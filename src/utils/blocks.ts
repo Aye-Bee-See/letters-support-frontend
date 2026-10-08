@@ -1,4 +1,5 @@
 import type { ApiError, GroupBlock, UserRole } from '../types'
+import { commonRefusal, otherRefusal } from './refusals'
 
 // Shared by the group admin's block actions (components/group/WriterBlockActions)
 // and the Blocked writers page: README "Blocking a writer" (Groups) and
@@ -38,14 +39,6 @@ export function canActOn(writer: BlockableWriter, chapterId: number | null): boo
   return true
 }
 
-/** How a writer is named on these screens: pen name first, then name, then username. */
-export function writerLabel(
-  writer: { penName?: string | null; name?: string | null; username?: string } | null | undefined,
-  fallback = 'this writer',
-): string {
-  return writer?.penName || writer?.name || writer?.username || fallback
-}
-
 /** One person on a block or a recommendation: `you`, their name, or their username. */
 export function personLabel(person: { id: number; username: string; name: string | null } | null, me: number | undefined): string {
   if (!person) return 'someone no longer here'
@@ -63,13 +56,10 @@ export const letterCount = (n: number) => `${n} ${n === 1 ? 'letter' : 'letters'
 
 export type BlockAction = 'block' | 'unblock' | 'recommend'
 
-/** What to say when the API refuses a block, an unblock or a recommendation. */
+/** What to say when the API refuses a block, an unblock or a recommendation; the shared cases from utils/refusals. */
 export function blockRefusal(error: ApiError, action: BlockAction): string {
-  if (error.status === 0) return 'Couldn’t reach the server. Check your connection and try again.'
   if (action === 'recommend' && error.name === 'BanRecommendationError' && error.condition === 'pending')
     return 'Your group already has one waiting for this writer. A site admin will decide it, and the outcome shows on Blocked writers.'
-  if (error.status === 403)
-    return 'Only a group admin of an active group can do this. If your group is suspended or waiting for approval, a site admin has to make it active first.'
   if (error.status === 404)
     return action === 'unblock'
       ? 'This writer isn’t blocked by your group any more: another group admin may have unblocked them already.'
@@ -78,6 +68,5 @@ export function blockRefusal(error: ApiError, action: BlockAction): string {
     return action === 'recommend'
       ? `This account can’t be recommended: only a writer can, and not one already blocked from the whole site. The reason can be at most ${RECOMMEND_REASON_MAX} characters.`
       : `This account can’t be blocked: only a writer can. The reason can be at most ${BLOCK_REASON_MAX} characters.`
-  if (error.status === 429) return 'Too many requests just now. Wait a moment and try again.'
-  return `That didn’t work (${error.message}). Try again.`
+  return commonRefusal(error) ?? otherRefusal(error)
 }

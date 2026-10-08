@@ -6,7 +6,7 @@ import MembersWaitingNotice from '../../components/group/MembersWaitingNotice'
 import PrintQueue from '../../components/group/PrintQueue'
 import AppShell from '../../components/layout/AppShell'
 import { useAuth } from '../../hooks/useAuth'
-import { useGroup } from '../../hooks/useGroup'
+import { useGatedGroup } from '../../hooks/useGroup'
 import { useSignOut } from '../../hooks/useSignOut'
 
 // The group admin's inbox (group-admin-plan.md, WP1), from the prototype's
@@ -27,7 +27,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function InboxOrg() {
   const { user } = useAuth()
-  const group = useGroup()
+  const group = useGatedGroup()
   const signOut = useSignOut()
   const [params, setParams] = useSearchParams()
   const tab: Tab = TABS.find((t) => t.key === params.get('tab'))?.key ?? 'print'
@@ -86,7 +86,7 @@ export default function InboxOrg() {
     <AppShell sidebar={sidebar}>
       <div className="inbox-hero">
         <p className="inbox-hero-sub">Group inbox</p>
-        <h1 className="inbox-hero-title">{group.group?.name ?? user?.username}</h1>
+        <h1 className="inbox-hero-title">{group.group.name}</h1>
       </div>
 
       {/* The group-owner admin hands the key to admins waiting for it (WP3); renders nothing for anyone else. */}
