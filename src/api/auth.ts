@@ -1,4 +1,4 @@
-import client, { getOne, post, put } from './client'
+import client, { getOne, post, PUBLIC, put } from './client'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
 import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFactorChallenge, User, WriterBlock } from '../types'
 
@@ -20,11 +20,11 @@ export const logout = (token: string, options: { everywhere?: boolean } = {}) =>
   })
 
 export const getLoginParams = (username: string) =>
-  getOne<LoginParams>('/auth/login-params', { username })
+  getOne<LoginParams>('/auth/login-params', { username }, PUBLIC)
 
 /** `authKey` is base64 of the derived auth key (44 characters), never the password. */
 export const login = (username: string, authKey: string) =>
-  post<LoginResult | TwoFactorChallenge>('/auth/login', { username, password: authKey })
+  post<LoginResult | TwoFactorChallenge>('/auth/login', { username, password: authKey }, undefined, PUBLIC)
 
 /** The password was right, and the account uses two-factor sign-in: no session yet, only a challenge for the code. */
 export const isTwoFactorChallenge = (answer: LoginResult | TwoFactorChallenge): answer is TwoFactorChallenge =>
@@ -114,7 +114,7 @@ export interface RecoveryStart {
   expiresIn: number
 }
 
-export const startRecovery = (username: string) => getOne<RecoveryStart>('/auth/recover', { username })
+export const startRecovery = (username: string) => getOne<RecoveryStart>('/auth/recover', { username }, PUBLIC)
 
 /**
  * POST /auth/recover: the opened challenge proves the recovery code opened the
@@ -133,7 +133,7 @@ export const finishRecovery = (req: {
     authScheme: 'split',
     password: req.authKey,
     ...req.keyFields,
-  })
+  }, undefined, PUBLIC)
 
 // --- Claiming a managed account ---------------------------------------------
 
@@ -153,7 +153,7 @@ export interface ClaimInfo {
   claimKdfParams?: KdfParams | null
 }
 
-export const getClaimInfo = (token: string) => getOne<ClaimInfo>('/auth/claim', { token })
+export const getClaimInfo = (token: string) => getOne<ClaimInfo>('/auth/claim', { token }, PUBLIC)
 
 export interface ClaimRequest {
   token: string
@@ -173,7 +173,7 @@ export const claimAccount = (req: ClaimRequest) =>
     authScheme: 'split',
     password: req.authKey,
     ...req.keyFields,
-  })
+  }, undefined, PUBLIC)
 
 // --- Invite codes (joining) ---------------------------------------------------
 
@@ -183,7 +183,7 @@ export const claimAccount = (req: ClaimRequest) =>
  * cancelled, expired or inactive otherwise.
  */
 export const checkInviteCode = (code: string) =>
-  getOne<{ chapter: { id: number; name: string }; expiresAt: string }>('/auth/join', { code })
+  getOne<{ chapter: { id: number; name: string }; expiresAt: string }>('/auth/join', { code }, PUBLIC)
 
 export interface JoinRequest {
   code: string
@@ -203,4 +203,4 @@ export const joinWithCode = (req: JoinRequest) =>
     authScheme: 'split',
     password: req.authKey,
     ...req.keyFields,
-  })
+  }, undefined, PUBLIC)
