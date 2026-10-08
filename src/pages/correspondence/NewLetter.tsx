@@ -54,6 +54,10 @@ export default function NewLetter() {
     [prisoner?.prison ?? null],
   )
   const facility: Prison | null = facilityState.data ?? null
+  /** A `?prisoner=` that names nobody in the directory (unpublished, removed, or a typo). */
+  const unknownPrisoner = prisonerId !== null && directory.data !== null && !prisoner
+  /** In the directory, but held at no facility on record: there is nowhere to mail a letter. */
+  const noFacility = prisoner !== null && !prisoner.prison
 
   const draft = useLetterDraft(prisoner?.id ?? null, facility, undefined, undefined, writeAs)
   const [notesOpen, setNotesOpen] = useState(false)
@@ -97,7 +101,18 @@ export default function NewLetter() {
           <h1 className="letter-page-title">New letter to prisoner</h1>
 
           <div className="facility-guidance" style={{ alignItems: 'stretch' }}>
-            {prisoner && facility ? (
+            {prisoner && facilityState.error ? (
+              <div className="facility-guidance-empty" role="alert">
+                Couldn’t load {displayName(prisoner)}’s facility and its mail rules ({facilityState.error.message}).{' '}
+                <button type="button" className="addr-remove-btn" onClick={facilityState.reload}>
+                  Try again
+                </button>
+              </div>
+            ) : noFacility ? (
+              <div className="facility-guidance-empty">
+                {displayName(prisoner)} isn’t listed at any facility at the moment, so there is nowhere to mail a letter to them.
+              </div>
+            ) : prisoner && facility ? (
               <div className="facility-rules">
                 <span className="facility-rules-heading">Facility rules — {facility.prisonName}</span>
                 {rules.length > 0 ? (
@@ -193,7 +208,18 @@ export default function NewLetter() {
                   <strong>Not sent.</strong> {draft.error}
                 </p>
               )}
-              {noGroup ? (
+              {noFacility ? (
+                // Nowhere to mail it: say why Send stays off.
+                <p>
+                  <strong>This letter can't be sent through this site right now.</strong> {displayName(prisoner)} isn’t listed at
+                  any facility, so no group can mail it. <Link to={`/prisoners/${prisoner.id}`}>Their profile</Link> says more.
+                </p>
+              ) : prisoner && facilityState.error ? (
+                <p>
+                  <strong>This letter can’t be sent until the facility loads:</strong> its mail rules and the groups that mail
+                  there are needed first. Try again above.
+                </p>
+              ) : noGroup ? (
                 // Nothing to send to: say why, rather than describe a queue there isn't.
                 <p>
                   <strong>This letter can't be sent through this site right now.</strong>{' '}
@@ -292,7 +318,21 @@ export default function NewLetter() {
           <div className="addr-tile">
             <div className="addr-tile-header">Prisoner</div>
             <div className="addr-tile-body">
-              {!prisoner && (
+              {directory.error && (
+                <p className="relay-select-hint" role="alert">
+                  Couldn't load the directory ({directory.error.message}).{' '}
+                  <button type="button" className="addr-remove-btn" onClick={directory.reload}>
+                    Try again
+                  </button>
+                </p>
+              )}
+              {unknownPrisoner && (
+                <p className="relay-select-hint">
+                  The person in this link isn’t in the directory: they may have been taken out of it, or the link is wrong. Search
+                  for them below.
+                </p>
+              )}
+              {!prisoner && !directory.error && (
                 <AddressSearch
                   placeholder={directory.loading ? 'Loading the directory…' : 'Search by name…'}
                   options={(directory.data ?? []).map((p) => ({

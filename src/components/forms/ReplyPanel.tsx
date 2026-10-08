@@ -66,8 +66,17 @@ export default function ReplyPanel({
     <div className="reply-panel">
       <div className="reply-panel-header">
         <div className="reply-facility-rules">
-          <span className="reply-facility-rules-heading">Facility rules — {facility.data?.prisonName ?? '…'}</span>
-          {rules.length > 0 ? (
+          <span className="reply-facility-rules-heading">Facility rules — {facility.data?.prisonName ?? (facility.error ? 'not loaded' : '…')}</span>
+          {/* The facility comes from the thread (one fetch for this and the held letters' group picker). */}
+          {facility.error ? (
+            <p className="reply-notes-hint" role="alert">
+              Couldn’t load the facility’s mail rules and the groups that mail there ({facility.error.message}), so the reply
+              can’t be sent yet.{' '}
+              <button type="button" className="reply-notes-toggle" onClick={facility.reload}>
+                Try again
+              </button>
+            </p>
+          ) : rules.length > 0 ? (
             <ul className="reply-facility-list">
               {rules.map((r) => (
                 <li key={r}>{r}</li>
