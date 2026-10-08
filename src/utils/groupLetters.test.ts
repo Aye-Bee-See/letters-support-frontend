@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError, LetterFooter, MailRule, Message } from '../types'
-import { batchDeclineRules, declineText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
+import { batchDeclineRules, declineReasonForWriter, declineText, returnReasonText, shareRefusal, footerSentence, heldPrintQuestion, heldReasonShort, heldReasonText, lettersNamed, queueFilter, statusRefusal, writerLabel } from './groupLetters'
 
 const footer = (over: Partial<LetterFooter> = {}): LetterFooter => ({
   name: 'James Hollow',
@@ -41,6 +41,23 @@ describe('held reasons', () => {
     expect(heldReasonText('something_new')).toBe('On hold')
     expect(heldReasonShort('something_new')).toBe('Held')
     expect(heldReasonText(null)).toBeNull()
+  })
+
+  it('says your group blocked the writer only when the letter is this group’s', () => {
+    expect(heldReasonText('writer_blocked', { ours: true, name: 'PDX ABC' })).toBe('On hold: your group blocked this writer')
+    expect(heldReasonText('writer_blocked', { ours: false, name: 'Bay ABC' })).toBe('On hold: Bay ABC blocked this writer')
+    expect(heldReasonText('writer_blocked', { ours: false, name: null })).toBe('On hold: the group that mails it blocked this writer')
+    expect(heldReasonText('choose_relay', { ours: false, name: 'Bay ABC' })).toBe(heldReasonText('choose_relay'))
+  })
+})
+
+describe('reasons as the writer reads them', () => {
+  it('finishes the writer’s sentences from the same maps the forms use', () => {
+    expect(declineReasonForWriter('content')).toBe('it was judged inappropriate or unsafe to send')
+    expect(declineReasonForWriter('facility_rule')).toBe('it would break one of the facility’s mail rules')
+    expect(declineReasonForWriter('something_new')).toBe('of something else')
+    expect(declineReasonForWriter(null)).toBe('of something else')
+    expect(returnReasonText('unknown')).toBe('Nothing says why')
   })
 })
 

@@ -12,9 +12,9 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
-import type { Attachment, Chat, DeclineReason, Message, Prison, Prisoner, WriterBlock } from '../../types'
+import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
-import { writerLabel } from '../../utils/groupLetters'
+import { declineReasonForWriter, heldReasonText, returnReasonText, writerLabel } from '../../utils/groupLetters'
 import { oldKeyText, threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
@@ -73,14 +73,7 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
 const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-const RETURN_REASONS: Record<string, string> = {
-  refused: 'refused by the mail room',
-  rule_violation: 'it broke one of the facility’s mail rules',
-  transferred: 'the person has been moved',
-  released: 'the person has been released',
-  bad_address: 'undeliverable as addressed',
-  unknown: 'no reason given',
-}
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
 /** The status pill: its text and one of thread.css's three styles. */
 function statusOf(m: Message): { text: string; className: string; short: string } {
@@ -103,18 +96,11 @@ function statusOf(m: Message): { text: string; className: string; short: string 
   }
 }
 
-/** Why the group didn't send it, as the writer reads it (API #170: three codes, worded here). */
-const DECLINE_REASONS: Record<DeclineReason, string> = {
-  facility_rule: 'it would break one of the facility’s mail rules',
-  content: 'it was judged inappropriate or unsafe to send',
-  other: 'of something else',
-}
-
 /** A declined letter: the reason, the rule it would break (as it read when declined), and the group's note. */
 function DeclinedNote({ m }: { m: Message }) {
   const label = m.declineRuleLabel ?? null
   const group = m.relay_group?.name ?? 'The group'
-  const reason = DECLINE_REASONS[m.declineReason ?? 'other'] ?? DECLINE_REASONS.other
+  const reason = declineReasonForWriter(m.declineReason)
   return (
     <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
       {group} didn’t send this letter, because {reason}
@@ -123,8 +109,27 @@ function DeclinedNote({ m }: { m: Message }) {
   )
 }
 
-/** Why a queued letter is held, for its writer (or, for `writer_blocked`, for the group admins who blocked them). */
-function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>, forGroup: boolean): ReactNode {
+/**
+ * Why a queued letter is held. A group admin (`chapterId`, their group) reads
+ * the group's wording (utils/groupLetters); `writer_blocked` says "your group"
+ * only when the letter is this group's to mail, and links to Blocked writers.
+ */
+function groupHeldText(m: Message, chapterId: number | null): ReactNode {
+  const ours = m.relayChapter !== null && m.relayChapter === chapterId
+  const text = heldReasonText(m.heldReason, { ours, name: m.relay_group?.name ?? null })
+  if (!text) return null
+  // Unblocking is on Blocked writers or in the sidebar (README "Blocking a writer").
+  if (m.heldReason === 'writer_blocked' && ours)
+    return (
+      <>
+        {text}. <Link to="/blocked-writers">Blocked writers</Link>
+      </>
+    )
+  return `${text}.`
+}
+
+/** Why a queued letter is held, as its writer reads it, with what they can do about it below. */
+function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBlock>): ReactNode {
   switch (m.heldReason) {
     case 'choose_relay':
       return `${prisonerName} has been moved. This letter is waiting until you choose which group mails it now: choose below.`
@@ -133,14 +138,6 @@ function heldText(m: Message, prisonerName: string, blocks: Map<number, WriterBl
     case 'prisoner_free':
       return `${prisonerName} has been released. The group will decide whether this letter can still be sent, or you can delete it.`
     case 'writer_blocked': {
-      // A group admin reads this in the thread of a writer their group blocked
-      // (README "Blocking a writer"); unblocking is on Blocked writers or in the sidebar.
-      if (forGroup)
-        return (
-          <>
-            Held: your group blocked this writer. <Link to="/blocked-writers">Blocked writers</Link>
-          </>
-        )
       const group = m.relay_group?.name ?? 'The group that mails this letter'
       // The reason they gave, from GET /auth/blocks (API #179); the notification may be long read.
       const block = m.relayChapter !== null ? blocks.get(m.relayChapter) : undefined
@@ -232,8 +229,8 @@ function LetterItem({
   prisonerName: string
   writerName: string
   blocks: Map<number, WriterBlock>
-  /** The reader is a group admin. */
-  forGroup: boolean
+  /** The reader is a group admin of this group; null for the writer. */
+  forGroup: { chapterId: number | null } | null
   /** Offered on the writer's own returned and declined letters, when a reply can be sent. */
   onWriteAgain?: (resend: Resend) => void
   /** Group admins, on a reply their group may correct: Edit transcription and Delete, then this. */
@@ -245,7 +242,7 @@ function LetterItem({
   const { message: m, opened } = item
   const outbound = m.sender === 'user'
   const status = statusOf(m)
-  const held = heldText(m, prisonerName, blocks, forGroup)
+  const held = forGroup ? groupHeldText(m, forGroup.chapterId) : heldText(m, prisonerName, blocks)
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
@@ -285,7 +282,7 @@ function LetterItem({
           )}
           {m.status === 'returned' && (
             <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
-              This letter came back: {RETURN_REASONS[m.returnReason ?? 'unknown']}.{m.returnNote ? ` The envelope said: “${m.returnNote}”.` : ''}
+              This letter came back: {lowerFirst(returnReasonText(m.returnReason))}.{m.returnNote ? ` The envelope said: “${m.returnNote}”.` : ''}
             </p>
           )}
           {m.status === 'declined' && <DeclinedNote m={m} />}
@@ -350,12 +347,15 @@ function Sidebar({
   chat,
   letters,
   showWriter,
+  chapterId,
   blockNotice,
   onBlockChanged,
 }: {
   chat: Chat
   letters: OpenedMessage[]
   showWriter: boolean
+  /** The reading group admin's group. */
+  chapterId: number | null
   /** What the last block or unblock did, kept across the reload that follows it. */
   blockNotice: string | null
   /** After the group blocks or unblocks the writer: their held letters changed. */
@@ -393,7 +393,8 @@ function Sidebar({
               {chat.user_details.managedBy && !chat.user_details.claimedAt && (
                 <>
                   <br />
-                  Managed by your group
+                  {/* No name for another group: the thread carries only its id. */}
+                  {chat.user_details.managedBy === chapterId ? 'Managed by your group' : 'Managed by another group'}
                 </>
               )}
             </div>
@@ -488,7 +489,7 @@ export default function Thread() {
   const facility = (prisoner?.prison_details as Prison | null | undefined)?.prisonName
   // A group admin knows the writer by their pen name, as the letters are signed
   // (README "GET /chat/chats": `user_details.penName`), else their name, else their username.
-  const writerName = chat.user === user?.id ? (user.penName ?? user.username) : chat.user_details ? writerLabel(chat.user_details) : 'Writer'
+  const writerName = chat.user === user?.id ? (user.penName ?? user.username) : writerLabel(chat.user_details)
   const lastRelayId = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group?.id
   // A group admin may correct or delete a reply their group recorded, or any
   // reply in the thread of a writer it manages (README "PUT /messaging/message").
@@ -541,7 +542,7 @@ export default function Thread() {
                 prisonerName={prisonerName}
                 writerName={writerName}
                 blocks={blocks}
-                forGroup={isChapter}
+                forGroup={isChapter ? { chapterId: user?.chapterId ?? null } : null}
                 onWriteAgain={!isChapter && prisoner?.prison ? writeAgain : undefined}
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
                 queued={
@@ -587,6 +588,7 @@ export default function Thread() {
           chat={chat}
           letters={letters}
           showWriter={isChapter}
+          chapterId={user?.chapterId ?? null}
           blockNotice={blockNotice}
           onBlockChanged={(notice) => {
             setBlockNotice(notice)
