@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getClaimInfo, type ClaimInfo } from '../../api/auth'
 import { toApiError } from '../../api/client'
@@ -184,7 +184,7 @@ function ClaimForm({
   const ready = accountValuesReady(values, { penNameRequired: true })
   const group = info.chapter?.name ?? 'Your group'
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!ready) return
     setErrors([])

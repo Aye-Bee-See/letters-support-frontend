@@ -45,8 +45,9 @@ group small.
 
 ## Running it
 
-You need Node 20.19 or later (CI uses the current LTS) and a running copy of
-the API. The API's own README covers its install; its development server
+You need Node 20.19 or later in the 20 line, or 22.12 or later (Vite's range,
+in `package.json` under `engines`; `.nvmrc` names 24, and CI uses the current
+LTS), and a running copy of the API. The API's own README covers its install; its development server
 listens on `3069` and allows the origin `http://localhost:3001` by default,
 which is where this app's dev server runs.
 
@@ -229,9 +230,13 @@ docs/           encryption-guide.md
 
 Three rules hold the shape together:
 
-- **Pages do not do crypto.** They call `src/auth`, `src/letters` and
-  `src/groups`, which call `src/crypto`. Nothing outside `src/crypto` imports
-  libsodium.
+- **Pages leave crypto to the flows, mostly.** They call `src/auth`,
+  `src/letters` and `src/groups`, which call `src/crypto`. A few group-key and
+  token flows call `src/crypto` directly (the group key page, hand-off,
+  sharing with a partner, correcting a reply), and some screens use its code
+  helpers (formatting and normalising codes). Nothing outside `src/crypto`
+  imports libsodium, and nothing imports `src/crypto` except through its
+  `index.ts`.
 - **Wording lives in `src/utils`**, keyed on the API's codes (`heldReason`,
   `returnReason`, `declineReason`, feed events, an error's `name` and
   `condition`), never on its English sentences, which the README says are not
@@ -295,6 +300,14 @@ files under `assets/styles/pages/`; the admin area uses `admin.css`, loaded
 only under `/admin`, so its class names must not leak into other pages.
 Components shared by both (the invitation parts) take a class set rather than
 assuming one.
+
+**Fonts.** Nothing is loaded from a third party, fonts included: a visitor's
+browser talks only to this site and the API. The logo's face, Protest
+Guerrilla, used to come from Google Fonts on every page and no longer does;
+`.site-logo` still names it first and falls back to Arial Black. To
+self-host it (it is under the SIL Open Font License), put a `woff2` under
+`public/fonts/` and add an `@font-face` for it at the top of `style.css`,
+with `font-display: swap`.
 
 **Tests.** Vitest in Node, with no DOM: tests cover the crypto core (including
 cross-client vectors), the sending and recording flows, rotation, housekeeping,

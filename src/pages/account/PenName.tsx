@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Navigate, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { getMyPenName, setMyPenName } from '../../api/auth'
 import PenNameField from '../../components/forms/PenNameField'
@@ -32,7 +32,7 @@ export default function PenName() {
 
   const ready = penName.trim().length >= 3 && !refused && !busy
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!ready || !user) return
     setBusy(true)

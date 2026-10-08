@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { blockWriter, getGroupBlocks, unblockWriter } from '../../api/groups'
 import { getBanRecommendations, recommendBan } from '../../api/moderation'
@@ -103,7 +103,7 @@ export default function WriterBlockActions({
     }
   }
 
-  function submit(e: FormEvent) {
+  function submit(e: SubmitEvent) {
     e.preventDefault()
     const words = reason.trim()
     const max = form === 'block' ? BLOCK_REASON_MAX : RECOMMEND_REASON_MAX

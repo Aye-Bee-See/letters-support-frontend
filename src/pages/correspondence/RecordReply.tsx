@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getAllChats, lookupReference, searchWriters } from '../../api/letters'
 import RecordReplyPanel, { type RecordedReply } from '../../components/forms/RecordReplyPanel'
@@ -100,7 +100,7 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
   )
   const lookup = useApi(() => (submitted ? lookupReference(submitted) : Promise.resolve(null)), [submitted])
 
-  function onSubmit(e: FormEvent) {
+  function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     onTarget(null)
     const state = checkReference(typed)
@@ -185,7 +185,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
   // Every page of them: a long-standing writer may have more than a page.
   const threads = useApi(() => (writer ? getAllChats({ user: writer.id }) : Promise.resolve(null)), [writer?.id])
 
-  function onSubmit(e: FormEvent) {
+  function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     onTarget(null)
     setWriter(null)

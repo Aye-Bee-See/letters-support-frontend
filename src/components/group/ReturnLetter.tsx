@@ -44,7 +44,7 @@ export default function ReturnLetter({ message, onDone }: { message: Message; on
           className="letter-action-form"
           onSubmit={(e) => {
             e.preventDefault()
-            submit()
+            void submit()
           }}
         >
           <fieldset>

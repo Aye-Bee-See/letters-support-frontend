@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PenNameField from '../../components/forms/PenNameField'
 import { createKeyedWriter, describeWriterError } from '../../groups/writers'
@@ -53,7 +53,7 @@ export default function CreateWriter() {
     }
   }
 
-  function onSubmit(e: FormEvent) {
+  function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     void save('list')
   }

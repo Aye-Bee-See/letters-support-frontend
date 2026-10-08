@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import type { Joined } from '../../auth/join'
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
   const [pw, setPw] = useState({ password: '', confirm: '' })
   const [error, setError] = useState<string | null>(null)
 
-  async function onStart(e: FormEvent) {
+  async function onStart(e: SubmitEvent) {
     e.preventDefault()
     if (!username.trim() || !code.trim()) return
     setError(null)
@@ -50,7 +50,7 @@ export default function ForgotPassword() {
     }
   }
 
-  async function onSave(e: FormEvent, opened: OpenedRecovery) {
+  async function onSave(e: SubmitEvent, opened: OpenedRecovery) {
     e.preventDefault()
     if (pw.password.length < MIN_PASSWORD_LENGTH || pw.password !== pw.confirm) return
     setError(null)

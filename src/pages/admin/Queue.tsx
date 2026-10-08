@@ -37,10 +37,11 @@ const fieldLabel = (field: string) => {
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   if (Array.isArray(value)) return value.length ? value.map(formatValue).join(', ') : '—'
-  if (typeof value === 'object') return JSON.stringify(value, null, 1)
   // Timestamps such as verifiedAt, as the rest of the page shows dates.
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return dateTime(value)
-  return String(value)
+  if (typeof value === 'string') return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? dateTime(value) : value
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value)
+  // An object as JSON, never "[object Object]".
+  return JSON.stringify(value, null, 1) ?? '—'
 }
 
 /** "Change to facility #12" or "New prisoner". */

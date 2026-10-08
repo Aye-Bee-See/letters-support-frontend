@@ -2,7 +2,7 @@
 
 A guided tour of the end-to-end encryption code: what each file does, how the pieces fit, and why they are built the way they are. It grows as the crypto phase is built; the **Status** section at the end says what exists so far.
 
-**Status of this guide:** covers the crypto core (Step 3) and sign-in (Step 4, in progress). Last updated 25 September 2026.
+**Status of this guide:** walks through the crypto core (Step 3); sign-in, joining, claiming and recovery (Step 4); and reading and sending letters (Step 5). The group-admin work merged on 6 October (#38: group keys, rotation, managed writers, recording replies) is built and listed under **Status**, but not yet walked through file by file here. Last updated 8 October 2026.
 
 Sources this code follows, in order of authority:
 
@@ -319,15 +319,15 @@ Tested against the local API: a typed letter with a note and a file, the same le
 | Recovery with a recovery code: same keypair, new password and new recovery code | Built (Step 4) |
 | Every account has keys; sign-in refuses a keyless account | Built (Step 4) |
 | First superadmin created with keys (bootstrap setup code) | API side (Pax), `questions-for-pax.md` H |
-| Group key creation and approving access (group-owner admin) | WP3, `group-keys` (wrappers and `useGroup` in WP0, `group-foundation`) |
+| Group key creation and approving access (group-owner admin) | Built (#38, `group-keys`): the group key page sets the key up and hands it to waiting group admins (`src/groups/keys.ts`) |
 | Reading letters: envelopes, bodies, relay notes, attachments (Thread page) | Built (Step 5) |
 | Writing and sending letters: New Letter, reply panel, paper letters, scans | Built (Step 5) |
-| Group inbox: print queue, printing with the reply reference, sharing with a partner group | WP1, `group-inbox` |
-| Recording a prisoner's reply by reply reference or pen name | WP5, `group-replies` |
-| Group keys: hand-over, ownership, rotation | WP3, `group-keys` |
-| Managed writers: keys sealed to the group, claim tokens, writing as a writer, missing envelopes after sign-in | WP2, `group-writers` |
+| Group inbox: print queue, printing with the reply reference, sharing with a partner group | Built (#38, `group-inbox`): the print queue, the print page, and Share with a partner (`ShareLetter.tsx`) |
+| Recording a prisoner's reply by reply reference or pen name | Built (#38, `group-replies`): `/replies/new`, the thread's reply panel and corrections (`src/letters/record.ts`) |
+| Group keys: hand-over, ownership, rotation | Built (#38, `group-keys`): rotation re-seals the group's letters and writers to the new key (`src/groups/rotation.ts`) |
+| Managed writers: keys sealed to the group, claim tokens, writing as a writer, missing envelopes after sign-in | Built (#38, `group-writers`): hand-off makes the claim token (`Handoff.tsx`); housekeeping after sign-in keys keyless writers and adds missing envelopes (`src/groups/housekeeping.ts`) |
 
-The WP numbers are the work packages of `group-admin-plan.md` (6 October), each a branch of that name.
+The branch names are the work packages of `group-admin-plan.md` (6 October); all of them merged to `master` together as #38 that day.
 
 ## 10. Known limits
 

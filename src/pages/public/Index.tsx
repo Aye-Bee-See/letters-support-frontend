@@ -4,6 +4,7 @@ import { getPrisoners } from '../../api/prisoners'
 import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
 import { useApi } from '../../hooks/useApi'
+import type { AbcfFeedItem } from '../../types'
 
 const ABCF_URL = 'https://www.abcf.net/'
 const TILE_COUNT = 6
@@ -16,13 +17,30 @@ async function getFrontPagePrisoners() {
   return { featured: false, prisoners: recent.items }
 }
 
-const feedDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+/** The item's date in words, or null when the feed gave none or one that does not parse. */
+function feedDate(iso: string | null): string | null {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
+/** A key per item: its URL, or URL and position when two items share one. */
+function keysFor(items: AbcfFeedItem[]): string[] {
+  const seen = new Set<string>()
+  return items.map((item, i) => {
+    const key = seen.has(item.url) ? `${item.url}#${i}` : item.url
+    seen.add(item.url)
+    return key
+  })
+}
 
 // Markup and classes from solidarity-site/index.html.
 export default function Index() {
   // No loading or error line for the feed: until the API has fetched it, it is empty and shows nothing.
   const feed = useApi(() => getAbcfFeed(3), [])
+  const feedItems = feed.data ?? []
+  const feedKeys = keysFor(feedItems)
   const tiles = useApi(getFrontPagePrisoners, [])
 
   return (
@@ -60,19 +78,24 @@ export default function Index() {
               </a>
             </div>
 
-            {feed.data?.map((item) => (
-              <article key={item.title} className="feed-item">
-                <time className="feed-date" dateTime={item.date}>
-                  {feedDate(item.date)}
-                </time>
-                <h3 className="feed-item-title">
-                  <a href={item.url} target="_blank" rel="noopener noreferrer">
-                    {item.title}
-                  </a>
-                </h3>
-                <p className="feed-item-excerpt">{item.summary}</p>
-              </article>
-            ))}
+            {feedItems.map((item, i) => {
+              const date = feedDate(item.date)
+              return (
+                <article key={feedKeys[i]} className="feed-item">
+                  {date && item.date && (
+                    <time className="feed-date" dateTime={item.date}>
+                      {date}
+                    </time>
+                  )}
+                  <h3 className="feed-item-title">
+                    <a href={item.url} target="_blank" rel="noopener noreferrer">
+                      {item.title}
+                    </a>
+                  </h3>
+                  <p className="feed-item-excerpt">{item.summary}</p>
+                </article>
+              )
+            })}
 
             <div className="feed-footer">
               <a href={ABCF_URL} target="_blank" rel="noopener noreferrer" className="feed-more">

@@ -713,7 +713,8 @@ export interface Notification extends Timestamps {
 export interface AbcfFeedItem {
   title: string
   url: string
-  date: string
+  /** Publication date (ISO), or null when the feed gave none. */
+  date: string | null
   summary: string
 }
 
