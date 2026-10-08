@@ -48,8 +48,9 @@ export async function claim(
   })
   // The account is the writer's now and the claim code is spent: from here a
   // failed sign-in is returned with the recovery code, not thrown (see join.ts).
-  const session = await signInAfterWrite(async () => {
+  const session = await signInAfterWrite(async (issued) => {
     const result = await loginNewAccount(username, locked.authKey)
+    issued(result.token.token)
     const bundle = result.keys ?? (await getKeys(result.token.token))
     return { result, bundle, keypair, groupKeypair: null }
   })

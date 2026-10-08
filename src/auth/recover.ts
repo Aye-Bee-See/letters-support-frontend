@@ -54,12 +54,13 @@ export async function completeRecovery(opened: OpenedRecovery, newPassword: stri
   }
   // The new password and recovery code are saved and the old code is used up:
   // from here a failed sign-in is returned with the new code, not thrown (see join.ts).
-  const session = await signInAfterWrite(async () => {
+  const session = await signInAfterWrite(async (issued) => {
     const answer = await login(opened.username, locked.authKey)
     // Recovery leaves two-factor sign-in as it was. With it on, signing in needs a
     // code too; the new recovery code must still be shown (the old one is used up).
     if (isTwoFactorChallenge(answer)) return null
     const result = answer
+    issued(result.token.token)
     const bundle = result.keys ?? (await getKeys(result.token.token))
     // A group admin's group key opens with their (unchanged) keypair, as at sign-in.
     const org = bundle.orgKey

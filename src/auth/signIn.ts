@@ -1,4 +1,4 @@
-import { getKeys, getLoginParams, isTwoFactorChallenge, login } from '../api/auth'
+import { getKeys, getLoginParams, isTwoFactorChallenge, login, logout } from '../api/auth'
 import { loginTwoFactor, type SecondFactor } from '../api/twoFactor'
 import { toApiError } from '../api/client'
 import { KdfParamsError, signInKeys, unlockAccount, unlockGroupKey, wipe, type Keypair } from '../crypto'
@@ -80,6 +80,17 @@ function fail(err: unknown): never {
   throw new SignInError('other', e.message)
 }
 
+/**
+ * Revoke a token no session will use (POST /auth/logout), without waiting: a
+ * sign-in refused after the API issued it. Best effort; a failure changes
+ * nothing for the person, and the token expires within a week regardless.
+ */
+export function revoke(token: string): void {
+  Promise.resolve()
+    .then(() => logout(token))
+    .catch(() => null)
+}
+
 /** The second step's failures: a wrong code leaves the challenge usable; an expired or used one does not. */
 function failCode(err: unknown): never {
   const e = toApiError(err)
@@ -141,30 +152,37 @@ export async function signIn(
       if (isTwoFactorChallenge(answer)) return { codeNeeded: true, ...answer.twoFactor }
       result = answer
     }
-    const bundle = result.keys ?? (await getKeys(result.token.token).catch(fail))
-
-    if (!bundle.wrappedPrivateKey || !bundle.publicKey) {
-      throw new SignInError('no_keys', "This account isn't fully set up, so it can't be used yet. Please contact a network admin.")
-    }
-
-    let keypair: Keypair
     try {
-      keypair = await unlockAccount(bundle, wrapKey) // wipes wrapKey
-      wrapKey = null
-    } catch {
-      throw new SignInError('keys', "Signed in, but we couldn't open your letters with this password. Try your recovery code.")
-    }
+      const bundle = result.keys ?? (await getKeys(result.token.token).catch(fail))
 
-    let groupKeypair: Keypair | null = null
-    const org = bundle.orgKey
-    if (org?.wrappedOrgPrivateKey && org.chapterPublicKey) {
-      groupKeypair = await unlockGroupKey(
-        { wrappedOrgPrivateKey: org.wrappedOrgPrivateKey, chapterPublicKey: org.chapterPublicKey },
-        keypair,
-      ).catch(() => null) // a stale hand-out must not block sign-in; the group key is handed out again later
-    }
+      if (!bundle.wrappedPrivateKey || !bundle.publicKey) {
+        throw new SignInError('no_keys', "This account isn't fully set up, so it can't be used yet. Please contact a network admin.")
+      }
 
-    return { result, bundle, keypair, groupKeypair }
+      let keypair: Keypair
+      try {
+        keypair = await unlockAccount(bundle, wrapKey) // wipes wrapKey
+        wrapKey = null
+      } catch {
+        throw new SignInError('keys', "Signed in, but we couldn't open your letters with this password. Try your recovery code.")
+      }
+
+      let groupKeypair: Keypair | null = null
+      const org = bundle.orgKey
+      if (org?.wrappedOrgPrivateKey && org.chapterPublicKey) {
+        groupKeypair = await unlockGroupKey(
+          { wrappedOrgPrivateKey: org.wrappedOrgPrivateKey, chapterPublicKey: org.chapterPublicKey },
+          keypair,
+        ).catch(() => null) // a stale hand-out must not block sign-in; the group key is handed out again later
+      }
+
+      return { result, bundle, keypair, groupKeypair }
+    } catch (err) {
+      // The API issued a token, but no session starts with it: end it on the
+      // server too (best effort; it would otherwise stay good for a week).
+      revoke(result.token.token)
+      throw err
+    }
   } finally {
     await wipe(wrapKey)
   }

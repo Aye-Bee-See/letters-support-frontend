@@ -2,7 +2,7 @@ import { getKeys, joinWithCode, loginNewAccount } from '../api/auth'
 import { toApiError } from '../api/client'
 import { createAccountKeys } from '../crypto'
 import type { ApiError } from '../types'
-import type { SignedIn } from './signIn'
+import { revoke, type SignedIn } from './signIn'
 
 // Joining with an invite code (README "Invite codes"; 22 Sept note §3). The
 // account and its keys are made together: the keypair is generated on the
@@ -34,14 +34,18 @@ export interface Joined {
 /**
  * The sign-in that follows a write which made an account or set a password.
  * Its failure is returned rather than thrown: the write cannot be repeated,
- * and its recovery code must still reach the person.
+ * and its recovery code must still reach the person. `signIn` passes the token
+ * to `issued` as soon as it has one: if it fails after that (fetching the
+ * keys), no session will use the token, so it is revoked.
  */
 export async function signInAfterWrite(
-  signIn: () => Promise<SignedIn | null>,
+  signIn: (issued: (token: string) => void) => Promise<SignedIn | null>,
 ): Promise<Pick<Joined, 'signedIn' | 'signInError'>> {
+  let token: string | null = null
   try {
-    return { signedIn: await signIn(), signInError: null }
+    return { signedIn: await signIn((t) => (token = t)), signInError: null }
   } catch (err) {
+    if (token) revoke(token)
     return { signedIn: null, signInError: toApiError(err) }
   }
 }
@@ -60,8 +64,9 @@ export async function join(input: { code: string; username: string; penName: str
     authKey: account.authKey,
     keyFields: account.keyFields,
   })
-  const session = await signInAfterWrite(async () => {
+  const session = await signInAfterWrite(async (issued) => {
     const result = await loginNewAccount(username, account.authKey)
+    issued(result.token.token)
     const bundle = result.keys ?? (await getKeys(result.token.token))
     return { result, bundle, keypair: account.keypair, groupKeypair: null }
   })
