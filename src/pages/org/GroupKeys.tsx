@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import { getMemberKeys, getRotation, passOwnership, postRotation, removeMemberKey, setChapterKeys } from '../../api/groups'
-import { getUnreadNotifications } from '../../api/notifications'
+import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import { MembersWaitingNotice } from '../../components/group'
 import LoadState from '../../components/ui/LoadState'
 import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../../crypto'
@@ -80,16 +80,24 @@ export default function GroupKeys() {
 
   // Someone handed this admin the key, took it back, rotated it, or passed
   // ownership since they signed in: the feed says so (README "The feed"). Read
-  // once when the page opens; the page doesn't poll. Entries stay unread for the inbox.
+  // once when the page opens; the page doesn't poll. Once acted on (the key read
+  // again, the roster and the record reloaded), those entries are marked read,
+  // so the next visit doesn't do it all again; a key refresh that fails leaves
+  // the `group.key` ones unread, for the next visit (or the inbox) to retry.
   const checkedFeed = useRef(false)
   useEffect(() => {
     if (checkedFeed.current) return
     checkedFeed.current = true
-    getUnreadNotifications()
-      .then((items) => {
-        if (items.some((n) => KEY_EVENTS.includes(n.event))) void reloadAll(true)
-      })
-      .catch(() => {})
+    void (async () => {
+      const items = await getUnreadNotifications().catch(() => [])
+      const entries = items.filter((n) => KEY_EVENTS.includes(n.event))
+      if (entries.length === 0) return
+      const keyEntries = entries.filter((n) => n.event === 'group.key')
+      const keyOk = keyEntries.length === 0 || (await refreshKey().then(() => true, () => false))
+      await reloadAll()
+      const ids = (keyOk ? entries : entries.filter((n) => n.event !== 'group.key')).map((n) => n.id)
+      if (ids.length > 0) await markNotificationsRead(ids).catch(() => null)
+    })()
     // Once, on opening the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
