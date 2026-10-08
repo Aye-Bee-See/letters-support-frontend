@@ -63,7 +63,7 @@ export default function ShareLetter({ messageId, partners, contentKey }: { messa
           className="letter-action-form"
           onSubmit={(e) => {
             e.preventDefault()
-            submit()
+            void submit()
           }}
         >
           <label htmlFor="share-partner">Another group that mails to this facility</label>

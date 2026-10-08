@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { signIn, SignInError, type CodeNeeded, type SignedIn } from '../../auth/signIn'
 import { SECURITY_PATH } from '../../components/layout/RouteGuards'
@@ -55,7 +55,7 @@ export default function Login() {
     setError(message)
   }
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     setError(null)
     if (pending) {

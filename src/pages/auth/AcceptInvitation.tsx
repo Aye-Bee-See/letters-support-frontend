@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import { getInvitationInfo, type InvitationInfo } from '../../api/invitations'
@@ -228,7 +228,7 @@ function AcceptForm({
 
   const setG = (patch: Partial<GroupValues>) => setGroup((g) => ({ ...g, ...patch }))
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!ready) return
     setErrors([])

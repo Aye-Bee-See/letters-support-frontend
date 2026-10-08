@@ -38,7 +38,9 @@ function WriterThreads({ chats }: { chats: Chat[] }) {
           const direction = last ? directionLabel(last.sender, last.status, last.heldReason) : null
           const held = last?.sender === 'user' && last.status === 'queued' ? heldReasonShort(last.heldReason) : null
           const facility = heldAt((chat.prisoner_details?.prison_details ?? null) as PrisonSummary | null)
-          const open = () => navigate(`/threads/${chat.id}`)
+          const open = () => {
+            navigate(`/threads/${chat.id}`)
+          }
           return (
             <tr
               key={chat.id}

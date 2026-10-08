@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type SubmitEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { deleteWriter, updateWriter, type WriterFields } from '../../api/writers'
 import PenNameField from '../../components/forms/PenNameField'
@@ -113,7 +113,7 @@ function EditForm({
   const dirty = Object.keys(changes).length > 0
   const canSave = dirty && !nameProblem && !penNameRefused && !saving
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!canSave) return
     setSaving(true)

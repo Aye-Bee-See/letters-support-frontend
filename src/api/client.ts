@@ -100,13 +100,19 @@ export function isApiError(value: unknown): value is ApiError {
 // GET takes query parameters; PUT and DELETE take the id in a JSON body.
 // Every success is wrapped in { data, info, success, status, name }.
 
-/** Drop undefined values; send booleans as the strings the API expects ("true"). */
+/**
+ * Drop undefined values; send booleans as the strings the API expects ("true").
+ * Anything else (an object or array) goes as JSON, never as "[object Object]".
+ */
 function toQuery(params?: ListParams | Record<string, unknown>) {
   if (!params) return undefined
   const query: Record<string, string> = {}
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') continue
-    query[key] = String(value)
+    query[key] =
+      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint'
+        ? String(value)
+        : JSON.stringify(value)
   }
   return query
 }

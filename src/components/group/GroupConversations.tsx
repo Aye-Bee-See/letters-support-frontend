@@ -29,7 +29,9 @@ function ConversationRow({ chat }: { chat: Chat }) {
   const navigate = useNavigate()
   const last = lastLetter(chat)
   const facility = heldAt((chat.prisoner_details?.prison_details ?? null) as PrisonSummary | null)
-  const open = () => navigate(`/threads/${chat.id}`)
+  const open = () => {
+    navigate(`/threads/${chat.id}`)
+  }
   return (
     <tr
       className="convo-row"

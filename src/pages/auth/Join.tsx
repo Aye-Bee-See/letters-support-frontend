@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { checkInviteCode } from '../../api/auth'
 import { toApiError } from '../../api/client'
@@ -188,7 +188,7 @@ function JoinForm({
   const [errors, setErrors] = useState<string[]>([])
   const ready = accountValuesReady(values, { penNameRequired: true })
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!ready) return
     setErrors([])

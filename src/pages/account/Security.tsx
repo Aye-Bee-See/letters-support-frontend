@@ -1,5 +1,5 @@
 import qrcode from 'qrcode-generator'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { confirmTwoFactor, disableTwoFactor, getTwoFactor, newRecoveryCodes, setupTwoFactor } from '../../api/twoFactor'
 import { useApi } from '../../hooks/useApi'
@@ -168,7 +168,7 @@ function Scan({ secret, otpauthUri, onConfirmed, onCancel }: { secret: string; o
     return qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
   }, [otpauthUri])
 
-  async function submit(e: FormEvent) {
+  async function submit(e: SubmitEvent) {
     e.preventDefault()
     const digits = code.replace(/\s/g, '')
     if (!/^\d{6}$/.test(digits)) return setError('Enter the six-digit code your app shows.')
@@ -316,7 +316,7 @@ function Enabled(props: { enabledAt: string | null; codesLeft: number; required:
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function submit(e: FormEvent) {
+  async function submit(e: SubmitEvent) {
     e.preventDefault()
     if (!code.trim()) return setError(useRecovery ? 'Enter one of your recovery codes.' : 'Enter the code from your app.')
     setBusy(true)

@@ -54,7 +54,7 @@ export function DeclineForm({
       className="letter-action-form"
       onSubmit={(e) => {
         e.preventDefault()
-        submit()
+        void submit()
       }}
     >
       <fieldset>

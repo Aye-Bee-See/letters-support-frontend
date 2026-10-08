@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { submitCorrection } from '../../api/corrections'
 import { getMailRules } from '../../api/facilities'
 import { toApiError } from '../../api/client'
@@ -88,7 +88,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
     return fields
   }
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
     setError(null)
     const fields = changedFields()

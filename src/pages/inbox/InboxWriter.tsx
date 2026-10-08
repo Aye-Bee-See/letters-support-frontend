@@ -28,7 +28,9 @@ function ConvoRow({ chat, unread }: { chat: Chat; unread: boolean }) {
   const direction = last ? directionLabel(last.sender, last.status, last.heldReason) : null
   const prisoner = chat.prisoner_details
   const facility = heldAt((prisoner?.prison_details ?? null) as PrisonSummary | null)
-  const open = () => navigate(`/threads/${chat.id}`)
+  const open = () => {
+    navigate(`/threads/${chat.id}`)
+  }
 
   return (
     <tr
