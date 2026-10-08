@@ -13,6 +13,58 @@ export const KDF_PARAMS: Readonly<KdfParams> = Object.freeze({
   memlimit: 67108864, // 64 MiB
 })
 
+/**
+ * The most any stored record or server answer may ask for. The agreed
+ * parameters are the floor; this ceiling leaves room to raise the cost later
+ * while keeping a hostile answer from hanging or crashing the tab (512 MiB is
+ * already more than some phones will give one page).
+ */
+export const KDF_MAX: Readonly<{ opslimit: number; memlimit: number }> = Object.freeze({
+  opslimit: 8,
+  memlimit: 536870912, // 512 MiB
+})
+
+/**
+ * Parameters outside the bounds: `weak` below KDF_PARAMS, `heavy` above KDF_MAX.
+ * Thrown before any derivation, so nothing derived from the secret is sent.
+ */
+export class KdfParamsError extends Error {
+  readonly kind: 'weak' | 'heavy'
+  constructor(kind: 'weak' | 'heavy', message: string) {
+    super(message)
+    this.name = 'KdfParamsError'
+    this.kind = kind
+  }
+}
+
+/**
+ * Refuse parameters below the agreed ones or above KDF_MAX. Every derivation
+ * reads its parameters from the server (GET /auth/login-params, recovery,
+ * claim), so a tampered server could otherwise ask for a cost low enough that
+ * the auth key it receives can be brute-forced offline into the password, and
+ * from that the wrap key: the very thing the password split exists to stop.
+ */
+export function checkKdfParams(params: KdfParams): void {
+  const { opslimit, memlimit } = params
+  if (!Number.isInteger(opslimit) || !Number.isInteger(memlimit)) {
+    throw new Error('Key derivation parameters are missing opslimit or memlimit.')
+  }
+  if (opslimit! < KDF_PARAMS.opslimit! || memlimit! < KDF_PARAMS.memlimit!) {
+    throw new KdfParamsError(
+      'weak',
+      `Key derivation parameters below the agreed minimum (opslimit ${opslimit}, memlimit ${memlimit}; ` +
+        `at least ${KDF_PARAMS.opslimit} and ${KDF_PARAMS.memlimit}). Refused.`,
+    )
+  }
+  if (opslimit! > KDF_MAX.opslimit || memlimit! > KDF_MAX.memlimit) {
+    throw new KdfParamsError(
+      'heavy',
+      `Key derivation parameters above what this client runs (opslimit ${opslimit}, memlimit ${memlimit}; ` +
+        `at most ${KDF_MAX.opslimit} and ${KDF_MAX.memlimit}). Refused.`,
+    )
+  }
+}
+
 const SALT_BYTES = 16
 
 /** A password as the KDF takes it: Unicode NFKC, then UTF-8. */
@@ -41,16 +93,16 @@ export async function newSalt(): Promise<string> {
 /**
  * Argon2id: 32 bytes from a secret, a base64 salt, and stored parameters.
  * Parameters are read from the record, never assumed, so keys made with other
- * costs later still open. Anything but Argon2id is refused.
+ * costs later still open, within bounds: anything but Argon2id is refused, and
+ * so are costs below KDF_PARAMS or above KDF_MAX (checkKdfParams). Every
+ * derivation in the client passes through here.
  */
 export async function deriveKey(secret: Uint8Array, saltB64: string, params: KdfParams): Promise<Uint8Array> {
   const s = await getSodium()
   if (params.kdf !== 'argon2id' || params.alg !== s.crypto_pwhash_ALG_ARGON2ID13) {
     throw new Error(`Unsupported key derivation: ${JSON.stringify(params)}`)
   }
-  if (!Number.isInteger(params.opslimit) || !Number.isInteger(params.memlimit)) {
-    throw new Error('Key derivation parameters are missing opslimit or memlimit.')
-  }
+  checkKdfParams(params)
   const salt = await fromBase64(saltB64)
   if (salt.length !== s.crypto_pwhash_SALTBYTES) throw new Error('Key derivation salt must be 16 bytes.')
   return s.crypto_pwhash(32, secret, salt, params.opslimit!, params.memlimit!, params.alg)

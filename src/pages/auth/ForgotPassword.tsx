@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import type { Joined } from '../../auth/join'
 import { completeRecovery, openRecovery, RecoveryCodeError, type OpenedRecovery } from '../../auth/recover'
+import { codeParamsRefusal } from '../../auth/signIn'
 import NewPasswordFields from '../../components/forms/NewPasswordFields'
 import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import { MIN_PASSWORD_LENGTH } from '../../utils/password'
@@ -21,6 +22,8 @@ type Step =
 
 function startProblem(err: unknown): string {
   if (err instanceof RecoveryCodeError) return 'That recovery code does not match this account. Check it and try again.'
+  const refused = codeParamsRefusal(err)
+  if (refused) return refused
   const e = toApiError(err)
   if (e.status === 404) return 'We could not find an account with that username that can be recovered with a code.'
   if (e.status === 429) return 'Too many attempts. Please wait a while and try again.'

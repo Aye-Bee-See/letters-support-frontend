@@ -12,6 +12,13 @@ function failureMessage(err: unknown): string {
       ? `Too many attempts. Try again in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}.`
       : 'Too many attempts. Try again later.'
   }
+  // The server named sign-in costs out of bounds: nothing derived from the password left this device.
+  if (err.kind === 'weak_params') {
+    return 'This server asked for weaker sign-in protection than this site uses, so nothing was sent. Please tell a network admin.'
+  }
+  if (err.kind === 'heavy_params') {
+    return 'This server asked for more sign-in work than this browser can safely do, so nothing was sent. Please tell a network admin.'
+  }
   return err.message
 }
 

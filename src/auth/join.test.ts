@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateKeypair } from '../crypto'
+import { generateKeypair, KDF_PARAMS, KdfParamsError } from '../crypto'
 import type { ApiError } from '../types'
 
 // Making an account (or a new password) and signing in are two steps: once the
@@ -27,7 +27,7 @@ vi.mock('../api/invitations', () => ({ acceptInvitation: api.acceptInvitation })
 
 const { join } = await import('./join')
 const { accept } = await import('./acceptInvitation')
-const { completeRecovery } = await import('./recover')
+const { completeRecovery, openRecovery, RecoveryCodeError } = await import('./recover')
 
 const signedInAnswer = { token: { token: 't', expires: 0 }, user: {}, keys: { publicKey: 'p', wrappedPrivateKey: 'w' } }
 const joinInput = { code: 'ABCD-EFGH-JKMN', username: ' sam ', penName: 'Sam Rivers', password: 'a long enough password' }
@@ -107,5 +107,18 @@ describe('recovery', () => {
     const opened = { username: 'sam', keypair: await generateKeypair(), challenge: 'c' }
     const joined = await completeRecovery(opened, 'a new long password')
     expect(joined).toMatchObject({ signedIn: null, signInError: null })
+  })
+
+  it('a recovery record with costs below the agreed ones is refused as such, not as a wrong code', async () => {
+    api.startRecovery.mockResolvedValue({
+      recoverySalt: 'AAECAwQFBgcICQoLDA0ODw==',
+      recoveryKdfParams: { ...KDF_PARAMS, opslimit: 1, memlimit: 8192 },
+      recoveryWrappedPrivateKey: 'x',
+      publicKey: 'p',
+      sealedChallenge: 'c',
+    })
+    const refused = openRecovery('sam', 'ABCD-EFGH-JKMN-PQRS-TVWX-YZ01')
+    await expect(refused).rejects.toBeInstanceOf(KdfParamsError)
+    await expect(refused).rejects.not.toBeInstanceOf(RecoveryCodeError)
   })
 }, 30000)

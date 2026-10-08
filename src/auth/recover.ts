@@ -1,6 +1,6 @@
 import { finishRecovery, getKeys, isTwoFactorChallenge, login, startRecovery } from '../api/auth'
 import { toApiError } from '../api/client'
-import { lockKeys, openChallenge, unlockGroupKey, unlockWithRecoveryCode, type Keypair } from '../crypto'
+import { KdfParamsError, lockKeys, openChallenge, unlockGroupKey, unlockWithRecoveryCode, type Keypair } from '../crypto'
 import { signInAfterWrite, type Joined } from './join'
 
 // Recovery with a recovery code (README "End-to-end mode: Recovery").
@@ -27,7 +27,9 @@ export async function openRecovery(username: string, recoveryCode: string): Prom
   let keypair: Keypair
   try {
     keypair = await unlockWithRecoveryCode(start, recoveryCode)
-  } catch {
+  } catch (err) {
+    // Costs out of bounds are the server's doing, not a mistyped code.
+    if (err instanceof KdfParamsError) throw err
     throw new RecoveryCodeError('That recovery code does not match this account.')
   }
   return { username: name, keypair, challenge: await openChallenge(start.sealedChallenge, keypair) }
