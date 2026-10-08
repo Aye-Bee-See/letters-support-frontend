@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { apiUrl } from '../../api/client'
 import { getGroup } from '../../api/groups'
 import { getPrisoner } from '../../api/prisoners'
 import Breadcrumb from '../../components/ui/Breadcrumb'
@@ -56,9 +57,13 @@ export default function PrisonerProfile() {
         <div className="profile-layout">
           {/* SIDEBAR */}
           <aside className="profile-sidebar">
-            {p.photoUrl ? (
+            {p.photo ? (
               // style.css styles `.profile-sidebar img`; the prototype only has the placeholder.
-              <img src={p.photoUrl} alt={name} />
+              // The credit says where the picture came from or whose permission it is there by.
+              <figure className="profile-photo">
+                <img src={apiUrl(p.photo.url)} alt={name} />
+                {p.photo.credit && <figcaption className="profile-photo-credit">Photo: {p.photo.credit}</figcaption>}
+              </figure>
             ) : (
               <div className="profile-sidebar-img-placeholder">Photo</div>
             )}

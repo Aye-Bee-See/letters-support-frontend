@@ -658,6 +658,21 @@ img { display: block; max-width: 100%; }
   background: var(--off-white);
 }
 
+.profile-photo {
+  margin: 0 0 1rem;
+}
+
+.profile-photo img {
+  margin-bottom: 0.4rem;
+}
+
+.profile-photo-credit {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--mid);
+  line-height: 1.4;
+}
+
 .profile-sidebar-img-placeholder {
   width: 100%;
   aspect-ratio: 3/4;
@@ -1070,7 +1085,7 @@ img { display: block; max-width: 100%; }
   .prisoner-grid { grid-template-columns: repeat(2, 1fr); }
   .cta-grid { grid-template-columns: 1fr; }
   .profile-layout { grid-template-columns: 1fr; }
-  .profile-sidebar img, .profile-sidebar-img-placeholder { max-width: 240px; }
+  .profile-sidebar img, .profile-sidebar-img-placeholder, .profile-photo { max-width: 240px; }
   .groups-grid { grid-template-columns: 1fr; }
   .splash-two-col { grid-template-columns: 1fr; gap: 2.5rem; }
   .feed-panel { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 2rem; }
