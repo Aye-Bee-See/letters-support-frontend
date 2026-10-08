@@ -41,8 +41,8 @@ export function useLetterDraft(
   prisonerId: number | null,
   facility: Prison | null,
   preferredGroup?: number,
-  /** Writing a returned or declined letter again: its text, and its id to send as resendOf. */
-  initial?: { text: string; resendOf: number },
+  /** Writing a letter again: its text, and for a returned or declined one its id to send as resendOf. */
+  initial?: { text: string; resendOf: number | null },
   /** A group admin's letter: the writer it is written as; nothing can be sent until one is chosen. Ignored for writers. */
   writeAs?: WriteAs | null,
 ) {
@@ -109,6 +109,8 @@ export function useLetterDraft(
 
   const pages = Math.max(1, Math.ceil(text.length / CHARS_PER_PAGE))
   const overPageLimit = !paper && facility?.pageLimit != null && pages > facility.pageLimit
+  /** Something typed or attached that would be lost: what the leave guard watches. */
+  const hasContent = text.trim() !== '' || relayNote.trim() !== '' || file !== null
   const canSend = Boolean(prisonerId && relayChapterId && sender && draftHasContent({ text, paper, file })) && !sending && !attachmentFailed
 
   async function send(): Promise<Message | null> {
@@ -198,7 +200,7 @@ export function useLetterDraft(
   return {
     text, setText, relayNote, setRelayNote, paper, setPaper, file, setFile,
     groups, blocked, allBlocked, relayChapterId, setChosenGroup, resendOf,
-    pages, overPageLimit, canSend, sending, error, send,
+    pages, overPageLimit, canSend, sending, error, send, hasContent,
     /** A group admin holds the group key in this session (needed to write for the group's writers). */
     hasGroupKey: Boolean(groupKeypair),
     attachmentFailed, retryAttachment, skipAttachment,

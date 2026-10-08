@@ -1,4 +1,4 @@
-import type { Chat, HeldReason, LetterStatus, Sender } from '../types'
+import type { ApiError, Chat, HeldReason, LetterStatus, Sender } from '../types'
 import { displayName } from './prisoners'
 
 // Display helpers for threads and letters (no decryption here).
@@ -52,4 +52,42 @@ export function oldKeyText(sealedWith: number, holding: number): { short: string
     short: 'Sealed under a newer group key',
     long: `This letter was sealed under a newer group key (version ${sealedWith}) than this session holds (version ${holding}). Open the Group key page, or sign in again, to pick up the new key.`,
   }
+}
+
+// --- The writer's own queued letter (README "Letter lifecycle", "Moved and freed") ---
+// While a letter is queued its writer may delete it, and for a `choose_relay`
+// hold choose the group that mails it (PUT /messaging/message { relayChapter }).
+
+/**
+ * What Delete asks first, by the letter's hold. `rewrite`: its text then goes
+ * into the reply box to be sent again (a `reseal_needed` hold, when it can be).
+ */
+export function deleteQuestion(heldReason: HeldReason | null, prisonerName: string, rewrite = false): string {
+  if (rewrite)
+    return `Delete this letter and write it again? Its text goes into the reply box below, to send through a group that serves ${prisonerName}’s facility now.`
+  if (heldReason === 'prisoner_free')
+    return `Delete this letter? ${prisonerName} has been released, so it may never reach them. It won’t be printed, and it can’t be brought back.`
+  return 'Delete this letter? It won’t be printed or mailed, and it can’t be brought back.'
+}
+
+/**
+ * Why deleting a queued letter, or choosing its group, was refused, worded from
+ * the status, `name` and the 400's field and code (never the API's sentence).
+ * Nothing was changed. `group`: the chosen group's name.
+ */
+export function queuedLetterRefusal(error: ApiError, action: 'delete' | 'choose', group?: string): string {
+  const problem = error.problems?.[0]
+  if (error.status === 0) return 'Couldn’t reach the server. Nothing was changed; try again.'
+  if (error.status === 403 && error.name === 'GroupBlockError')
+    return `${group ?? 'That group'} isn’t mailing your letters, so it can’t take this one. Choose another group, or delete the letter.`
+  // Printed (or mailed) meanwhile: from then on only a site admin can change it.
+  if (error.status === 403)
+    return `This letter can’t be ${action === 'delete' ? 'deleted' : 'changed'} any more: the group may have printed it meanwhile. Reload to see where it is.`
+  if (error.status === 404) return 'This letter is gone already. Reload the conversation.'
+  // End-to-end mode: the letter is sealed for the readers its group implies, and the server can't re-seal it.
+  if (error.status === 400 && problem?.field === 'relayChapter' && problem.code === 'not_settable_here')
+    return 'This letter is sealed for the group that was going to mail it, so it can’t be handed to another one. Delete it and write it again.'
+  if (error.status === 400 && problem?.field === 'relayChapter') return `${group ?? 'That group'} doesn’t mail to this facility any more. Reload and choose again.`
+  if (error.status === 400) return error.errors[0] ?? 'The server refused this change.'
+  return `Something went wrong on the server (${error.status}). Try again later.`
 }

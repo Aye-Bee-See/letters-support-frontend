@@ -42,9 +42,17 @@ const HELD_REASONS: Record<HeldReason, string> = {
   writer_blocked: 'On hold: your group blocked this writer',
 }
 
-/** A held letter's reason in words; a reason this client doesn't know yet is still "on hold". */
-export const heldReasonText = (reason: string | null | undefined): string | null =>
-  reason ? (HELD_REASONS[reason as HeldReason] ?? 'On hold') : null
+/**
+ * A held letter's reason in words; a reason this client doesn't know yet is
+ * still "on hold". `relay`: whose letter it is, where that isn't known to be
+ * this group's (the print queue's letters always are). A thread can show a
+ * managed writer's letter that another group mails, and blocked.
+ */
+export function heldReasonText(reason: string | null | undefined, relay?: { ours: boolean; name?: string | null }): string | null {
+  if (!reason) return null
+  if (reason === 'writer_blocked' && relay && !relay.ours) return `On hold: ${relay.name ?? 'the group that mails it'} blocked this writer`
+  return HELD_REASONS[reason as HeldReason] ?? 'On hold'
+}
 
 /**
  * What the print page asks before printing a held letter, naming the hold:
@@ -71,25 +79,35 @@ export const heldReasonShort = (reason: string | null | undefined): string | nul
 
 // --- Returns and declines (README "Letter lifecycle": "Returned mail", "Declined letters") ---
 
-/** The six return reasons, as the "It came back" form offers them. */
+/**
+ * The six return reasons, as the "It came back" form offers them; lower-cased,
+ * they also finish "This letter came back: …" for the writer.
+ */
 export const RETURN_REASONS: { value: ReturnReason; label: string }[] = [
   { value: 'refused', label: 'Refused by the mail room, no rule named' },
   { value: 'rule_violation', label: 'It broke one of the facility’s mail rules' },
   { value: 'transferred', label: 'The person has been moved' },
   { value: 'released', label: 'The person has been released' },
   { value: 'bad_address', label: 'Undeliverable as addressed' },
-  { value: 'unknown', label: 'It came back and nothing says why' },
+  { value: 'unknown', label: 'Nothing says why' },
 ]
 
 export const returnReasonText = (reason: string | null | undefined) =>
   RETURN_REASONS.find((r) => r.value === reason)?.label ?? 'It came back'
 
-/** The three decline reasons, as the "Don't send" form offers them. */
-export const DECLINE_REASONS: { value: DeclineReason; label: string }[] = [
-  { value: 'facility_rule', label: 'It would break one of the facility’s mail rules' },
-  { value: 'content', label: 'It is inappropriate or unsafe to send' },
-  { value: 'other', label: 'Something else (say what in the note)' },
+/**
+ * The three decline reasons: `label` as the "Don't send" form offers them,
+ * `writer` finishing "{group} didn't send this letter, because …" for the writer.
+ */
+export const DECLINE_REASONS: { value: DeclineReason; label: string; writer: string }[] = [
+  { value: 'facility_rule', label: 'It would break one of the facility’s mail rules', writer: 'it would break one of the facility’s mail rules' },
+  { value: 'content', label: 'It is inappropriate or unsafe to send', writer: 'it was judged inappropriate or unsafe to send' },
+  { value: 'other', label: 'Something else (say what in the note)', writer: 'of something else' },
 ]
+
+/** Why a group didn't send a letter, as its writer reads it (API #170); an unknown reason reads as "something else". */
+export const declineReasonForWriter = (reason: string | null | undefined): string =>
+  (DECLINE_REASONS.find((r) => r.value === reason) ?? DECLINE_REASONS[2]).writer
 
 /** A declined letter's reason in words, with the rule's label as it read when it was declined (API #184). */
 export function declineText(m: Pick<Message, 'declineReason' | 'declineRuleLabel'>): string {

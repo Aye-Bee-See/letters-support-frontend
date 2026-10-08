@@ -9,6 +9,7 @@ import UploadZone from '../../components/forms/UploadZone'
 import { isAnonymousWriter, writerLabel } from '../../groups/writers'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
+import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useLetterDraft, type WriteAs } from '../../hooks/useLetterDraft'
 import type { Prison, PrisonSummary } from '../../types'
 import { addressLine, mailRuleLines } from '../../utils/facilities'
@@ -58,6 +59,7 @@ export default function NewLetter() {
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility ? mailRuleLines(facility) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
+  useLeaveGuard(draft.hasContent, 'Leave without sending your letter?')
   // No group can take this letter: none mails to the facility, or every one has blocked this writer.
   const noGroup = Boolean(facility) && (draft.groups.length === 0 || draft.allBlocked)
 

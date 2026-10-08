@@ -79,6 +79,15 @@
   font-weight: 600;
 }
 
+/* The thread is being read again after an action; what is on screen stays. */
+.thread-updating {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--mid);
+  font-style: italic;
+  margin-top: 0.35rem;
+}
+
 /* ============================================================
    LETTER CHAIN
    ============================================================ */

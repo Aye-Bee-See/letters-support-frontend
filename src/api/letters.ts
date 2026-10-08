@@ -149,13 +149,19 @@ export const getMissingEnvelopes = () => getOne<MissingEnvelope[]>('/messaging/e
 export const addEnvelope = (envelope: { message: number; readerType: 'user' | 'chapter'; readerId: number; wrappedKey: string; keyVersion?: number }) =>
   post<Envelope & { id: number; message: number }>('/messaging/envelope', envelope)
 
-/** The fields of a letter that can still change (end-to-end mode): a new body under the same content key, or `keep`. */
+/**
+ * The fields of a letter that can still change (end-to-end mode): a new body
+ * under the same content key, `keep`, or for a `choose_relay` hold the group
+ * that mails it (README "Moved and freed"; the API refuses any other change of
+ * group in end-to-end mode, `400 not_settable_here`).
+ */
 export type LetterFields = Partial<{
   ciphertext: string
   nonce: string
   relayNoteCiphertext: string | null
   relayNoteNonce: string | null
   keep: boolean
+  relayChapter: number
 }>
 
 /**
