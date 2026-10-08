@@ -34,7 +34,7 @@ export default function BanRecommendations() {
   const status = (STATUSES.find((s) => s.value === params.get('status'))?.value ?? 'pending') as BanRecommendationStatus
   const list = useApi(() => getBanRecommendations(status), [status])
   // Kept here, not in a card: a reload after a decision unmounts the card it came from.
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<Notice | null>(null)
 
   // Waiting ones, one card per writer: several groups may recommend the same
   // writer, and a ban settles them all.
@@ -71,8 +71,8 @@ export default function BanRecommendations() {
         </div>
 
         {notice && (
-          <div className="admin-alert admin-alert-warn">
-            {notice}
+          <div className={notice.kind === 'done' ? 'admin-alert admin-alert-ok' : 'admin-alert admin-alert-warn'} role="status">
+            {notice.text}
             <button type="button" className="a-btn a-btn-sm" onClick={() => setNotice(null)}>
               OK
             </button>
@@ -96,8 +96,8 @@ export default function BanRecommendations() {
               <WriterCard
                 key={recs[0].userId}
                 recs={recs}
-                onDecided={(message) => {
-                  setNotice(message ?? null)
+                onDecided={(outcome) => {
+                  setNotice(outcome)
                   list.reload()
                 }}
               />
@@ -108,8 +108,11 @@ export default function BanRecommendations() {
   )
 }
 
+/** What the last decision did, or why it didn't happen: the card it came from is gone after the reload. */
+type Notice = { kind: 'done' | 'warn'; text: string }
+
 /** One writer, every group's waiting recommendation for them, and the two decisions. */
-function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided: (message?: string) => void }) {
+function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided: (outcome: Notice) => void }) {
   const first = recs[0]
   const name = writerName(first)
   const [busy, setBusy] = useState(false)
@@ -131,10 +134,13 @@ function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided:
     try {
       const note = (decision === 'ban' ? banNote : dismissNotes[r.id])?.trim() || undefined
       await decideBanRecommendation(r.id, decision, note)
-      onDecided()
+      onDecided({
+        kind: 'done',
+        text: decision === 'ban' ? `Banned ${name}.` : `Dismissed ${r.chapter_details?.name ?? 'the group'}’s recommendation. ${name} isn’t banned.`,
+      })
     } catch (err) {
       // Decided by someone else meanwhile: the list reloads (and this card may go), so the page says it.
-      if ((err as ApiError).condition === 'decided') return onDecided(errorText(err))
+      if ((err as ApiError).condition === 'decided') return onDecided({ kind: 'warn', text: errorText(err) })
       setError(errorText(err))
       setBusy(false)
     }

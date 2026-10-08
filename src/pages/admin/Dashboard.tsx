@@ -121,7 +121,10 @@ function Alerts({ summary, readiness }: { summary: AdminSummary | null; readines
           ? `${g.name} relays mail but has no group key, so no letters can be sent through it.`
           : `${g.name} relays mail but has no group key: after the switch to end-to-end encryption, no letters could be sent through it.`,
       )
-    if (!readiness.serverKeyConfigured)
+    // The server key matters while the server seals letters (server mode) or still
+    // holds some for readers without keys; after the migration's final clean-up
+    // removes it in e2e mode, its absence is the expected state.
+    if (!readiness.serverKeyConfigured && (readiness.mode !== 'e2e' || readiness.letters.serverHeld > 0))
       warnings.push('No server encryption key is configured: letters cannot be sealed to readers who set up keys later.')
     if (readiness.authSchemes.plain > 0)
       warnings.push(
