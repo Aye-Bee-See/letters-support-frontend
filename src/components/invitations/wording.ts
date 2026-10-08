@@ -8,6 +8,9 @@ import type { UiClasses } from '../forms/uiClasses'
 export const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 export const dateTime = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
+/** Asked before a create or renew while a code is on screen: it is shown once, and the new one replaces it. */
+export const REPLACE_CODE_QUESTION = 'The code on screen is shown only now. Replace it?'
+
 /** The site admin's page (/admin/invite). */
 export const ADMIN_KIND_LABELS: Record<InvitationKind, string> = { group: 'New group', member: 'Group member' }
 /** A group admin's page (/settings/invitations): screens say "group admin", never "member". */

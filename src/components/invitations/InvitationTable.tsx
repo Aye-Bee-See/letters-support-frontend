@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { renewInvitation, withdrawInvitation } from '../../api/invitations'
 import type { ApiError, Chapter, Invitation, InvitationKind } from '../../types'
 import type { UiClasses } from '../forms/uiClasses'
-import { date, invitationRefusal, stateBadge } from './wording'
+import { date, invitationRefusal, REPLACE_CODE_QUESTION, stateBadge } from './wording'
 
 // The invitations sent, with Renew (PUT /invitation/invitation: a new token,
 // the old one stops working) and Withdraw (DELETE) for pending ones (README
@@ -19,9 +19,11 @@ interface Props {
   groupHref: (id: number) => string
   onRenewed: (invitation: Invitation) => void
   onChanged: () => void
+  /** A code from an earlier create or renew is still on screen: Renew says it replaces it. */
+  codeOnScreen?: boolean
 }
 
-export default function InvitationTable({ classes: c, invitations, groupById, kindLabels, groupHref, onRenewed, onChanged }: Props) {
+export default function InvitationTable({ classes: c, invitations, groupById, kindLabels, groupHref, onRenewed, onChanged, codeOnScreen = false }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -105,7 +107,8 @@ export default function InvitationTable({ classes: c, invitations, groupById, ki
                         className={c.button}
                         disabled={busy}
                         onClick={() => {
-                          if (window.confirm(`Renew the invitation for ${i.inviteeName}? You get a new code; the old one stops working.`))
+                          const renew = `Renew the invitation for ${i.inviteeName}? You get a new code; the old one stops working.`
+                          if (window.confirm(codeOnScreen ? `${REPLACE_CODE_QUESTION}\n\n${renew}` : renew))
                             void act('renew', async () => onRenewed(await renewInvitation(i.id)))
                         }}
                       >
