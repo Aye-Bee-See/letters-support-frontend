@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { approveSubmission, rejectSubmission } from '../../api/admin'
 import { getSubmission, getSubmissions } from '../../api/corrections'
+import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
+import { usePageClamp } from '../../hooks/useListParams'
 import type { AccountBrief, Submission, SubmissionResource, SubmissionStatus } from '../../types'
 
 // The moderation queue: directory proposals from group admins (and superadmins),
@@ -66,15 +68,17 @@ export default function Queue() {
     next.delete('page')
     setParams(next)
   }
-  const goToPage = (n: number) => {
+  const goToPage = (n: number, replace = false) => {
     const next = new URLSearchParams(params)
     if (n > 1) next.set('page', String(n))
     else next.delete('page')
-    setParams(next)
+    setParams(next, { replace })
   }
 
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  // Deciding the last proposal on a later page goes back a page rather than showing "Nothing is waiting".
+  usePageClamp(page, list.data ? pages : null, (n) => goToPage(n, true))
 
   return (
     <>
@@ -126,19 +130,7 @@ export default function Queue() {
           <QueueItem key={s.id} submission={s} onDecided={list.reload} />
         ))}
 
-        {pages > 1 && (
-          <div className="queue-pager">
-            <button type="button" className="a-btn a-btn-sm" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
-              ← Older
-            </button>
-            <span>
-              Page {page} of {pages}
-            </span>
-            <button type="button" className="a-btn a-btn-sm" disabled={page >= pages} onClick={() => goToPage(page + 1)}>
-              Newer →
-            </button>
-          </div>
-        )}
+        {list.data && <ListPager page={page} pages={pages} onPage={(n) => goToPage(n)} />}
       </div>
     </>
   )
