@@ -206,7 +206,6 @@
   padding: 1.25rem 1.5rem;
   resize: vertical;
   background: var(--white);
-  outline: none;
 }
 
 .letter-textarea:focus { border-color: #888; }
@@ -260,7 +259,6 @@
   resize: vertical;
   min-height: 60px;
   background: var(--off-white);
-  outline: none;
 }
 
 .notes-textarea:focus { border-color: #888; background: var(--white); }
@@ -349,7 +347,6 @@
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--text);
-  outline: none;
 }
 
 .addr-search:focus { border-color: #888; }

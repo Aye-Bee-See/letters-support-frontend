@@ -40,6 +40,23 @@ a:hover { text-decoration: none; }
 
 img { display: block; max-width: 100%; }
 
+/* One focus ring for every focusable thing, links, fields, buttons and the
+   role="button"/"radio" divs alike. Fields keep their #888 border on :focus
+   as well; nothing sets outline: none. White where the ground is black. */
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.site-header :focus-visible,
+.site-footer :focus-visible,
+.admin-edit-bar :focus-visible,
+.token-box :focus-visible,
+.letter-item.inbound :focus-visible {
+  outline-color: var(--white);
+}
+/* A table row's ring sits inside it, where the table can't clip it. */
+tr:focus-visible { outline-offset: -2px; }
+
 /* ============================================================
    LAYOUT
    ============================================================ */
@@ -1149,3 +1166,15 @@ img { display: block; max-width: 100%; }
 }
 .attachment-retry p + p { margin-top: 0.4rem; }
 .attachment-retry-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+/* No transitions and no spinning for anyone who asks the system for less
+   motion. !important because it has to beat every rule that sets one. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

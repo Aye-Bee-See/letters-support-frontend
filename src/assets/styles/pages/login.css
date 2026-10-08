@@ -84,7 +84,6 @@
   border: 1.5px solid var(--border);
   background: var(--white);
   color: var(--text);
-  outline: none;
   width: 100%;
 }
 
