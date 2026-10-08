@@ -43,6 +43,18 @@
   line-height: 1.45;
 }
 
+/* A line from the page that sent the person here (an account made, a password changed). */
+.login-notice {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--off-white);
+  border-left: 3px solid var(--text);
+  padding: 0.55rem 0.75rem;
+  margin: -0.75rem 0 1.5rem;
+}
+
 /* ── FORM FIELDS ── */
 .login-form {
   display: flex;

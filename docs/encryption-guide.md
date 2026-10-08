@@ -219,7 +219,7 @@ There's no prototype, so the markup reuses `claim.html`'s classes and journey:
 
 - **Code:** from the link (`/join?code=…`, the QR code on a slip) or typed. `GET /auth/join` says which group is vouching, or why the code can't be used (never issued, used, expired, cancelled, or the group isn't active).
 - **Form:** username, pen name (checked with `GET /auth/pen-name-available` when the field loses focus, nudging towards two parts), password (10 characters minimum, with the prototype's strength meter, `src/utils/password.ts`) and a confirmation. The form shows its own "Setting up your account…" state, so a refusal returns to the form with what was typed.
-- **Recovery code:** shown once, with a Copy button and the decided recovery wording, and they can't continue until they tick "I have saved my recovery code". Only then does the session start (`startSession`) and they reach the inbox.
+- **Recovery code:** shown once, with a Copy button and the decided recovery wording, and they can't continue until they tick "I have saved my recovery code". Only then does the session start (`startSession`) and they reach the inbox. Making the account and signing in are two steps (`signInAfterWrite` in `src/auth/join.ts`): once the account exists, its recovery code exists nowhere else and the invite code is spent, so a failed sign-in after it (a `429`, a `5xx`, a dropped connection) comes back in the result (`signedIn: null`, `signInError`) rather than as an error. The code is shown anyway, and the button then goes to `/login` with a one-line notice that the account was made. Only a failure before the account exists returns to the form.
 
 The wording follows the everyday-screen rule: "Your password never leaves this device. Only you, and the group that prints and mails your letters, can read them", with a link to the explanation.
 
@@ -237,7 +237,7 @@ A group can make an account for someone who writes through it (a *managed writer
 2. **`unlockWithClaimToken`** opens the writer's private key with the typed code (normalised first, so dashes and case don't matter) and checks it matches the public key.
 3. **`lockKeys(privateKey, password)`** (in `account.ts`) locks the **same** private key under the writer's new password (split scheme) and a new recovery code. The keypair doesn't change, so every letter already sealed to the writer stays readable.
 4. **`POST /auth/claim`** sends the username, optional pen name, the auth key and the two locked copies. The API refuses a changed public key. It spends the code, makes the account the writer's, and **clears the group's sealed copy of the key**. The group keeps its own envelopes on letters it mailed, because a group that prints a letter can always read that letter.
-5. It signs in with the auth key, and the recovery code is shown as in Join.
+5. It signs in with the auth key, and the recovery code is shown as in Join, even if that sign-in fails.
 
 ### Shared pieces
 
@@ -264,7 +264,7 @@ When someone forgets their password, the recovery code is the only way back in. 
    - **`lockKeys`** locks the **same** private key under the new password (split scheme) and a **new** recovery code. The old one has now been typed out, so it's replaced.
    - **`POST /auth/recover`** sends the username, the opened challenge, the new auth key and both locked copies. The API refuses a changed public key, spends the challenge, and **signs the account out on every device**.
    - If the challenge expired while the person chose a password, the server answers `401`. A fresh challenge is then fetched and opened with the key already in memory, and the request is sent once more.
-   - It then signs in with the new auth key, opens a group admin's group key as at sign-in, and returns the new recovery code to show.
+   - It then signs in with the new auth key, opens a group admin's group key as at sign-in, and returns the new recovery code to show. A failed sign-in here is returned with the code, not thrown, as in Join.
 
 ### `src/pages/auth/ForgotPassword.tsx`
 

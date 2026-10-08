@@ -1,7 +1,7 @@
 import { claimAccount, getKeys, loginNewAccount, type ClaimInfo } from '../api/auth'
 import { lockKeys, unlockWithClaimToken } from '../crypto'
 import { samePenName } from '../utils/penName'
-import type { Joined } from './join'
+import { signInAfterWrite, type Joined } from './join'
 
 // Claiming a managed account (README "Managed writers and claiming", end-to-end
 // mode). The group made the writer's keypair in its own browser and locked a
@@ -18,8 +18,9 @@ export function claimIsUsable(info: ClaimInfo): boolean {
 
 /**
  * Open the writer's key with the claim code, take the account, and sign in.
- * Throws the crypto error if the code does not open the key (a mistyped code),
- * and the API's errors otherwise (400 with `errors`, 404/410 for the code).
+ * Throws only while the account is not yet taken: the crypto error if the code
+ * does not open the key (a mistyped code), and the API's errors otherwise (400
+ * with `errors`, 404/410 for the code).
  */
 export async function claim(
   info: ClaimInfo,
@@ -45,7 +46,12 @@ export async function claim(
     authKey: locked.authKey,
     keyFields: locked.keyFields,
   })
-  const result = await loginNewAccount(username, locked.authKey)
-  const bundle = result.keys ?? (await getKeys(result.token.token))
-  return { signedIn: { result, bundle, keypair, groupKeypair: null }, recoveryCode: locked.recoveryCode }
+  // The account is the writer's now and the claim code is spent: from here a
+  // failed sign-in is returned with the recovery code, not thrown (see join.ts).
+  const session = await signInAfterWrite(async () => {
+    const result = await loginNewAccount(username, locked.authKey)
+    const bundle = result.keys ?? (await getKeys(result.token.token))
+    return { result, bundle, keypair, groupKeypair: null }
+  })
+  return { ...session, recoveryCode: locked.recoveryCode }
 }

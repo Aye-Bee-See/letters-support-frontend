@@ -60,6 +60,8 @@ export default function ForgotPassword() {
       setPw({ password: '', confirm: '' })
       setStep({ name: 'done', joined })
     } catch (err) {
+      // Only a failure before the password is changed lands here. Once it is, a
+      // failed sign-in comes back in the result, with the new recovery code.
       const apiError = toApiError(err)
       setError(apiError.errors.length ? apiError.errors.join(' ') : apiError.message)
       setStep({ name: 'new-password', opened })
@@ -183,7 +185,11 @@ export default function ForgotPassword() {
           {step.name === 'saving' && working('Setting your new password…')}
 
           {step.name === 'done' && (
-            <RecoveryCodeStep joined={step.joined} eyebrow="Password changed">
+            <RecoveryCodeStep
+              joined={step.joined}
+              eyebrow="Password changed"
+              signInNotice="Your password is changed. Sign in with your new password."
+            >
               <div className="claim-encryption-note">
                 <p>Your old recovery code no longer works. This new one replaces it.</p>
               </div>

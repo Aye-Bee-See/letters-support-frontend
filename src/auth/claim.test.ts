@@ -13,6 +13,7 @@ vi.mock('../api/auth', () => ({
 }))
 
 const { claim } = await import('./claim')
+const { loginNewAccount } = await import('../api/auth')
 
 describe('claim', () => {
   let token: string
@@ -56,5 +57,13 @@ describe('claim', () => {
   it('sends a pen name the writer chose instead of the group’s', async () => {
     await claim({ ...base, writer: { ...base.writer, penName: 'James Hollow' } }, input('Sam Rivers'))
     expect(posted[0]).toMatchObject({ penName: 'Sam Rivers' })
+  })
+
+  it('still returns the recovery code when the account is taken but signing in fails', async () => {
+    vi.mocked(loginNewAccount).mockRejectedValueOnce({ status: 0, name: null, condition: null, errors: [], message: 'Could not reach the server.' })
+    const joined = await claim(base, input('Sam Rivers'))
+    expect(posted).toHaveLength(1)
+    expect(joined).toMatchObject({ signedIn: null, signInError: { status: 0 } })
+    expect(joined.recoveryCode).toMatch(/\S/)
   })
 }, 30000)

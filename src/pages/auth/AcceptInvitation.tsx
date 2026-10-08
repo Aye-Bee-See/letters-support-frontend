@@ -254,6 +254,8 @@ function AcceptForm({
       })
       onAccepted({ joined: result, activation: result.activation, group: result.group })
     } catch (err) {
+      // Only a failure before the account is made lands here; the invitation
+      // still works. Once it is made, a failed sign-in comes back in the result.
       const apiError = toApiError(err)
       // Expired, used or withdrawn in the meantime.
       if (apiError.status === 404 || apiError.status === 410) return onCodeRefused(apiError)
