@@ -1,12 +1,13 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
-import AdminLayout, { AdminStyles } from './components/layout/AdminLayout'
 import GroupGate from './components/layout/GroupGate'
 import { PenNameLock, RequireAdmin, RequireAuth, TwoFactorSetupLock } from './components/layout/RouteGuards'
 import ScrollToTop from './components/layout/ScrollToTop'
 
+// The public directory stays in the main chunk, so the front page never waits.
 import Index from './pages/public/Index'
 import Prisoners from './pages/public/Prisoners'
 import PrisonerProfile from './pages/public/PrisonerProfile'
@@ -16,45 +17,52 @@ import Groups from './pages/public/Groups'
 import GroupProfile from './pages/public/GroupProfile'
 import About from './pages/public/About'
 
-import Login from './pages/auth/Login'
-import ChangePassword from './pages/account/ChangePassword'
-import PenName from './pages/account/PenName'
-import RecoveryCode from './pages/account/RecoveryCode'
-import Security from './pages/account/Security'
-import ForgotPassword from './pages/auth/ForgotPassword'
-import Claim from './pages/auth/Claim'
-import AcceptInvitation from './pages/auth/AcceptInvitation'
-import Join from './pages/auth/Join'
+// Everything behind sign-in is fetched on first visit, a chunk per page.
+// AdminLayout is lazy as well, which takes the inlined admin.css string with it.
+const AdminLayout = lazy(() => import('./components/layout/AdminLayout'))
+const AdminStyles = lazy(() =>
+  import('./components/layout/AdminLayout').then((m) => ({ default: m.AdminStyles })),
+)
 
-import InboxWriter from './pages/inbox/InboxWriter'
-import InboxOrg from './pages/inbox/InboxOrg'
-import PrintLetter from './pages/inbox/PrintLetter'
-import Thread from './pages/correspondence/Thread'
-import NewLetter from './pages/correspondence/NewLetter'
-import RecordReply from './pages/correspondence/RecordReply'
+const Login = lazy(() => import('./pages/auth/Login'))
+const ChangePassword = lazy(() => import('./pages/account/ChangePassword'))
+const PenName = lazy(() => import('./pages/account/PenName'))
+const RecoveryCode = lazy(() => import('./pages/account/RecoveryCode'))
+const Security = lazy(() => import('./pages/account/Security'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const Claim = lazy(() => import('./pages/auth/Claim'))
+const AcceptInvitation = lazy(() => import('./pages/auth/AcceptInvitation'))
+const Join = lazy(() => import('./pages/auth/Join'))
 
-import BlockedWriters from './pages/org/BlockedWriters'
-import CreateWriter from './pages/org/CreateWriter'
-import EditWriter from './pages/org/EditWriter'
-import GroupInvitations from './pages/org/GroupInvitations'
-import GroupKeys from './pages/org/GroupKeys'
-import Handoff from './pages/org/Handoff'
-import InviteCodes from './pages/org/InviteCodes'
-import OrgSettings from './pages/org/OrgSettings'
+const InboxWriter = lazy(() => import('./pages/inbox/InboxWriter'))
+const InboxOrg = lazy(() => import('./pages/inbox/InboxOrg'))
+const PrintLetter = lazy(() => import('./pages/inbox/PrintLetter'))
+const Thread = lazy(() => import('./pages/correspondence/Thread'))
+const NewLetter = lazy(() => import('./pages/correspondence/NewLetter'))
+const RecordReply = lazy(() => import('./pages/correspondence/RecordReply'))
 
-import AdminLogin from './pages/admin/AdminLogin'
-import AuditLog from './pages/admin/AuditLog'
-import BanRecommendations from './pages/admin/BanRecommendations'
-import Dashboard from './pages/admin/Dashboard'
-import PrisonersList from './pages/admin/PrisonersList'
-import EditFacility from './pages/admin/EditFacility'
-import EditGroup from './pages/admin/EditGroup'
-import EditPrisoner from './pages/admin/EditPrisoner'
-import FacilitiesList from './pages/admin/FacilitiesList'
-import GroupsList from './pages/admin/GroupsList'
-import Invitations from './pages/admin/Invitations'
-import Queue from './pages/admin/Queue'
-import SiteSettings from './pages/admin/SiteSettings'
+const BlockedWriters = lazy(() => import('./pages/org/BlockedWriters'))
+const CreateWriter = lazy(() => import('./pages/org/CreateWriter'))
+const EditWriter = lazy(() => import('./pages/org/EditWriter'))
+const GroupInvitations = lazy(() => import('./pages/org/GroupInvitations'))
+const GroupKeys = lazy(() => import('./pages/org/GroupKeys'))
+const Handoff = lazy(() => import('./pages/org/Handoff'))
+const InviteCodes = lazy(() => import('./pages/org/InviteCodes'))
+const OrgSettings = lazy(() => import('./pages/org/OrgSettings'))
+
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+const AuditLog = lazy(() => import('./pages/admin/AuditLog'))
+const BanRecommendations = lazy(() => import('./pages/admin/BanRecommendations'))
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
+const PrisonersList = lazy(() => import('./pages/admin/PrisonersList'))
+const EditFacility = lazy(() => import('./pages/admin/EditFacility'))
+const EditGroup = lazy(() => import('./pages/admin/EditGroup'))
+const EditPrisoner = lazy(() => import('./pages/admin/EditPrisoner'))
+const FacilitiesList = lazy(() => import('./pages/admin/FacilitiesList'))
+const GroupsList = lazy(() => import('./pages/admin/GroupsList'))
+const Invitations = lazy(() => import('./pages/admin/Invitations'))
+const Queue = lazy(() => import('./pages/admin/Queue'))
+const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'))
 
 /** /inbox shows the writer or the group view by role; superadmins have no inbox. */
 function InboxRoute() {
@@ -70,6 +78,8 @@ export default function App() {
         <ScrollToTop />
         <TwoFactorSetupLock />
         <PenNameLock />
+        {/* A lazy page's first load (LoadState's wording); a link click keeps the old page up until the chunk is in. */}
+        <Suspense fallback={<p className="wrap">Loading…</p>}>
         <Routes>
           {/* Public directory: header and footer */}
           <Route element={<SiteLayout />}>
@@ -150,6 +160,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   )

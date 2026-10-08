@@ -10,7 +10,7 @@
   --a-sidebar-ab:#2d2d2d;
   --a-white:     #ffffff;
   --a-text:      #1a1a1a;
-  --a-mid:       #767676;
+  --a-mid:       #6c6c6c;
   --a-border:    #dddcda;
   --a-alert:     #b33a3a;
   --a-alert-bg:  #fdf0f0;
@@ -37,6 +37,13 @@ html, body {
 
 a { color: var(--a-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+/* style.css's focus ring in the admin's ink, white on the black sidebar. */
+:focus-visible {
+  outline: 2px solid var(--a-text);
+  outline-offset: 2px;
+}
+.admin-sidebar :focus-visible { outline-color: var(--a-sidebar-a); outline-offset: -2px; }
 
 /* ============================================================
    LAYOUT — sidebar + main
@@ -195,28 +202,23 @@ a:hover { text-decoration: underline; }
   flex: 1;
 }
 
-/* ============================================================
-   PAGE HEADER
-   ============================================================ */
-.admin-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
+/* Under 768px the sidebar stacks above the page, its links in rows. */
+@media (max-width: 767px) {
+  .admin-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .admin-sidebar { position: static; height: auto; overflow-y: visible; }
+  .admin-main { min-height: 0; }
 
-.admin-page-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
+  .sidebar-brand { padding: 0.9rem 1rem 0.75rem; }
+  .sidebar-section { padding: 0.6rem 0 0.2rem; }
+  .sidebar-section-label { padding: 0 1rem; }
+  .sidebar-nav { display: flex; flex-wrap: wrap; }
+  .sidebar-nav a { padding: 0.4rem 1rem; border-left: none; border-bottom: 2px solid transparent; }
+  .sidebar-nav a.active { border-bottom-color: #fff; }
+  .sidebar-footer { padding: 0.75rem 1rem; }
+  .sidebar-footer a { display: inline-block; margin: 0.3rem 1rem 0 0; }
 
-.admin-page-subtitle {
-  font-size: 0.78rem;
-  color: var(--a-mid);
-  margin-top: 0.2rem;
+  .admin-topbar { flex-wrap: wrap; padding: 0.75rem 1rem; }
+  .admin-content { padding: 1rem; }
 }
 
 /* ============================================================
@@ -539,59 +541,8 @@ a:hover { text-decoration: underline; }
 .admin-alert-ok   { background: var(--a-success-bg); border-color: #a3d4a3; color: var(--a-success); }
 
 /* ============================================================
-   LOGIN PAGE
-   ============================================================ */
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--a-bg);
-}
-
-.login-box {
-  background: var(--a-white);
-  border: 1px solid var(--a-border);
-  width: 100%;
-  max-width: 360px;
-  padding: 2rem;
-}
-
-.login-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.login-sub {
-  font-size: 0.75rem;
-  color: var(--a-mid);
-  margin-bottom: 1.5rem;
-}
-
-.login-divider {
-  border: none;
-  border-top: 1px solid var(--a-border);
-  margin: 1.25rem 0;
-}
-
-/* ============================================================
    DIFF VIEW (for moderation queue)
    ============================================================ */
-.diff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-.diff-col { padding: 0.75rem; font-size: 0.78rem; line-height: 1.55; }
-.diff-col-header {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--a-mid);
-  padding: 0.4rem 0.75rem;
-  background: var(--a-bg);
-  border-bottom: 1px solid var(--a-border);
-}
-.diff-old { background: #fff8f8; border-right: 1px solid var(--a-border); }
-.diff-new { background: #f8fff8; }
 .diff-del { background: #fce8e8; text-decoration: line-through; color: var(--a-alert); }
 .diff-add { background: #e8fce8; color: var(--a-success); }
 

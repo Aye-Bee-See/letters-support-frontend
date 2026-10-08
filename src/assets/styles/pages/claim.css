@@ -89,7 +89,6 @@
   border: 1.5px solid var(--border);
   background: var(--white);
   color: var(--text);
-  outline: none;
   width: 100%;
 }
 
@@ -254,70 +253,6 @@
   font-weight: 600;
   line-height: 1.5;
 }
-
-.encrypting-progress {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--mid);
-}
-
-.encrypting-bar-wrap {
-  width: 100%;
-  height: 4px;
-  background: var(--border);
-}
-
-.encrypting-bar-fill {
-  height: 100%;
-  background: var(--text);
-  transition: width 0.4s;
-  width: 0%;
-}
-
-/* ── SUCCESS STATE ── */
-.success-box {
-  padding: 2.5rem 2rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.success-icon {
-  font-size: 2.5rem;
-  line-height: 1;
-}
-
-.success-title {
-  font-family: var(--sans);
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.success-body {
-  font-family: var(--serif);
-  font-size: 0.9rem;
-  line-height: 1.65;
-  color: #3a3a3a;
-  max-width: 320px;
-}
-
-.success-btn {
-  font-family: var(--sans);
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.65rem 1.75rem;
-  background: var(--text);
-  color: var(--white);
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.success-btn:hover { background: #333; }
 
 /* ── ERROR STATE (invalid/expired token) ── */
 .token-error-box {

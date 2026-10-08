@@ -126,30 +126,31 @@
   gap: 0.4rem;
 }
 
-.writer-handoff-btn {
-  border-color: var(--border) !important;
-  color: var(--mid) !important;
-  font-size: 0.68rem !important;
+/* .btn.x outranks .btn, .btn-sm and .btn:hover (style.css) without !important. */
+.btn.writer-handoff-btn {
+  border-color: var(--border);
+  color: var(--mid);
+  font-size: 0.68rem;
   white-space: nowrap;
 }
 
-.writer-handoff-btn:hover {
-  border-color: var(--text) !important;
-  color: var(--text) !important;
-  background: var(--white) !important;
+.btn.writer-handoff-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--white);
 }
 
-.writer-new-letter-btn {
-  font-size: 0.68rem !important;
+.btn.writer-new-letter-btn {
+  font-size: 0.68rem;
   white-space: nowrap;
-  color: var(--white) !important;
-  border-color: var(--text) !important;
-  background: var(--text) !important;
+  color: var(--white);
+  border-color: var(--text);
+  background: var(--text);
 }
 
-.writer-new-letter-btn:hover {
-  background: #333 !important;
-  border-color: #333 !important;
+.btn.writer-new-letter-btn:hover {
+  background: #333;
+  border-color: #333;
 }
 
 .convo-empty {
@@ -190,8 +191,6 @@
 
 .convo-table th:first-child { padding-left: 1.25rem; }
 
-/* The + action column header is narrow and right-aligned */
-.col-action { width: 2.5rem; text-align: center; }
 .col-prisoner  { width: 44%; }
 .col-direction { width: 18%; }
 .col-date      { width: 30%; }
@@ -282,31 +281,6 @@
 }
 
 .convo-row.unread .convo-date { color: var(--text); }
-
-/* + action button cell */
-.convo-add-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  color: var(--mid);
-  border: 1px solid var(--border);
-  background: var(--white);
-  text-decoration: none;
-  cursor: pointer;
-  vertical-align: middle;
-  font-weight: 400;
-}
-
-.convo-add-btn:hover {
-  background: var(--text);
-  color: var(--white);
-  border-color: var(--text);
-  text-decoration: none;
-}
 
 /* ============================================================
    PAGINATION (anonymous inbox)
