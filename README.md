@@ -212,7 +212,7 @@ src/
   crypto/       the end-to-end core: libsodium lives here and nowhere else (index.ts is the only import point)
   letters/      sending a letter (send.ts), recording a reply (record.ts), opening one (open.ts)
   groups/       group-admin logic with no React: housekeeping, key hand-out, rotation
-  context/      AuthContext: the session, in memory only
+  context/      AuthContext: the session, in memory only; GroupContext: the group admin's group record, fetched once
   hooks/        useApi (load + reload), useGroup (the admin's group and key state), drafts, list params, leave guard
   components/
     layout/     header, footers, the admin shell, route guards, the group gate

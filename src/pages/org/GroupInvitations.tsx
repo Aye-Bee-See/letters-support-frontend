@@ -9,7 +9,7 @@ import TokenNotice from '../../components/invitations/TokenNotice'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { GROUP_KIND_LABELS } from '../../components/invitations/wording'
 import { useApi } from '../../hooks/useApi'
-import { useGroup } from '../../hooks/useGroup'
+import { useGatedGroup } from '../../hooks/useGroup'
 import { useListParams } from '../../hooks/useListParams'
 import type { Invitation, InvitationKind } from '../../types'
 
@@ -26,7 +26,7 @@ import type { Invitation, InvitationKind } from '../../types'
 const PAGE_SIZE = 25
 
 export default function GroupInvitations() {
-  const { group } = useGroup()
+  const { group } = useGatedGroup()
   const { params, page, update } = useListParams()
   const kindParam = params.get('kind')
   const kind: InvitationKind | undefined = kindParam === 'member' || kindParam === 'group' ? kindParam : undefined
@@ -37,7 +37,7 @@ export default function GroupInvitations() {
   const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
   const groupById = useMemo(() => {
     const map = new Map((groups.data ?? []).map((g) => [g.id, g]))
-    if (group) map.set(group.id, group)
+    map.set(group.id, group)
     return map
   }, [groups.data, group])
   // The token to hand over, after a create or renew: shown until dismissed.
@@ -47,8 +47,6 @@ export default function GroupInvitations() {
 
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-
-  if (!group) return null
 
   return (
     <div className="settings-wrap">

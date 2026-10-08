@@ -10,7 +10,7 @@ import { adminName, errorText, EVERY_HOLDER, handKeyTo, isStaleKey, type OrgKey 
 import { checkResealed, reseal } from '../../groups/rotation'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useAuth } from '../../hooks/useAuth'
-import { useGroup, type GroupState } from '../../hooks/useGroup'
+import { useGatedGroup, type GroupState } from '../../hooks/useGroup'
 import type { ApiError, GroupMemberKeyState, MemberKeyRoster, NotificationEvent } from '../../types'
 
 // The group key (README "End-to-end mode" → "Group keys", "Rotating a group
@@ -46,7 +46,7 @@ type Said = { where: Where; ok: boolean; text: string } | null
 
 export default function GroupKeys() {
   const { user, keys } = useAuth()
-  const group = useGroup()
+  const group = useGatedGroup()
   const refreshKey = useGroupKeyRefresh()
   const chapter = group.chapterId
   const [version, setVersion] = useState(0)
@@ -108,7 +108,7 @@ export default function GroupKeys() {
         </Link>
         <h1 className="settings-title">Group key</h1>
         <p className="settings-subtitle">
-          Letters to {group.group?.name ?? 'your group'} are sealed to the group's key. Only group admins who hold it can read them; a site
+          Letters to {group.group.name} are sealed to the group's key. Only group admins who hold it can read them; a site
           admin never can.
         </p>
 

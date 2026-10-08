@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { GroupProvider } from './context/GroupContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import AdminLayout, { AdminStyles } from './components/layout/AdminLayout'
@@ -64,6 +65,8 @@ function InboxRoute() {
 export default function App() {
   return (
     <AuthProvider>
+      {/* The signed-in group admin's group record, fetched once for every page (useGroup). */}
+      <GroupProvider>
       <BrowserRouter>
         <ScrollToTop />
         <TwoFactorSetupLock />
@@ -147,6 +150,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </GroupProvider>
     </AuthProvider>
   )
 }

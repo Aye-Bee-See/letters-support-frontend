@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { cancelInviteCodes, getInviteCodes, issueInviteCodes } from '../../api/inviteCodes'
 import { formatCode } from '../../crypto'
 import { useApi } from '../../hooks/useApi'
-import { useGroup } from '../../hooks/useGroup'
+import { useGatedGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import type { ApiError, InviteCodeBatch, InviteCodeSummary, IssuedInviteCodes } from '../../types'
 
@@ -34,13 +34,12 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 const joinLink = (code: string) => `${window.location.origin}/join?code=${encodeURIComponent(code)}`
 
 export default function InviteCodes() {
-  const { group } = useGroup()
+  const { group } = useGatedGroup()
   const summary = useApi(() => getInviteCodes(), [])
   // The batch just issued: its codes, shown until the group admin clears them.
   const [issued, setIssued] = useState<IssuedInviteCodes | null>(null)
   const [preview, setPreview] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const groupName = group?.name ?? 'Your group'
 
   // Leaving with the codes on screen loses them for good, by a link in the app as much as by closing the tab: ask first.
   useLeaveGuard(issued !== null, 'The invite codes on this page are shown only now. Leave without copying or printing them?')
@@ -72,7 +71,7 @@ export default function InviteCodes() {
           )}
         </div>
 
-        {issued && <Slips issued={issued} groupName={groupName} preview={preview} />}
+        {issued && <Slips issued={issued} groupName={group.name} preview={preview} />}
 
         <div className="invite-screen">
           {!issued && (

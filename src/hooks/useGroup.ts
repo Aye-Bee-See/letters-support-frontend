@@ -1,6 +1,6 @@
-import { getGroup } from '../api/groups'
+import { useContext } from 'react'
+import { GroupContext } from '../context/group-context'
 import type { ApiError, Chapter } from '../types'
-import { useApi } from './useApi'
 import { useAuth } from './useAuth'
 
 /**
@@ -15,7 +15,7 @@ export type GroupKeyState = 'no-key' | 'not-held' | 'ready'
 export interface GroupState {
   /** The signed-in group admin's group id; null for an account in no group, and for anyone who isn't a group admin. */
   chapterId: number | null
-  /** The group's record, full (relay facilities and supported prisoners). Null while loading, with no group, or on an error. */
+  /** The group's record, full (relay facilities and supported prisoners). Null while it first loads, with no group, or when it couldn't be read. */
   group: Chapter | null
   loading: boolean
   /**
@@ -32,19 +32,21 @@ export interface GroupState {
   isActive: boolean
   /** The version of the group key this session holds (0 when the group has none): what anything sealed to the group names. */
   keyVersion: number
-  /** Load the group's record again (after an edit). The key state comes from sign-in. */
+  /** Load the group's record again (after an edit), for every page at once. The key state comes from sign-in. */
   reload: () => void
 }
 
 /**
  * The signed-in group admin's group: one place every group page reads it from.
- * The record comes from GET /chapter/chapter?full=true; the key state from the
- * key bundle that sign-in fetched (`keys.orgKey`) and the group keypair it opened.
+ * The record is GroupProvider's (context/GroupContext.tsx), fetched once from
+ * GET /chapter/chapter?full=true and shared, so one `reload()` refreshes every
+ * page; the key state comes from the key bundle that sign-in fetched
+ * (`keys.orgKey`) and the group keypair it opened.
  */
 export function useGroup(): GroupState {
+  const record = useContext(GroupContext)
+  if (!record) throw new Error('useGroup must be used inside <GroupProvider>')
   const { user, keys, groupKeypair } = useAuth()
-  const chapterId = user?.role === 'chapter' ? user.chapterId : null
-  const record = useApi(() => (chapterId === null ? Promise.resolve(null) : getGroup(chapterId, true)), [chapterId])
 
   const orgKey = keys?.orgKey ?? null
   const keyState: GroupKeyState = !orgKey?.chapterPublicKey
@@ -53,11 +55,11 @@ export function useGroup(): GroupState {
       ? 'ready'
       : 'not-held'
 
-  const group = record.data
+  const group = record.group
   return {
-    chapterId,
+    chapterId: record.chapterId,
     group,
-    loading: chapterId !== null && record.loading,
+    loading: record.loading,
     error: record.error,
     keyState,
     // The record is newer than the sign-in bundle when both are there.
@@ -66,4 +68,16 @@ export function useGroup(): GroupState {
     keyVersion: orgKey?.chapterPublicKey ? orgKey.keyVersion : 0,
     reload: record.reload,
   }
+}
+
+/**
+ * useGroup() on a page that only group admins reach, inside GroupGate: the gate
+ * renders such a page only once the group's record is in and the group is
+ * active, so `group` is always there. Elsewhere, use useGroup().
+ */
+export function useGatedGroup(): GroupState & { group: Chapter } {
+  const state = useGroup()
+  const { group } = state
+  if (!group) throw new Error('useGatedGroup is for pages inside GroupGate, which waits for the group record')
+  return { ...state, group }
 }
