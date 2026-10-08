@@ -1,7 +1,8 @@
-import { useState, type SubmitEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { Link, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { signIn, SignInError, type CodeNeeded, type SignedIn } from '../../auth/signIn'
 import { SECURITY_PATH } from '../../components/layout/RouteGuards'
+import { wipe } from '../../crypto'
 import { useAuth } from '../../hooks/useAuth'
 
 function failureMessage(err: unknown): string {
@@ -40,12 +41,25 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   // Two-factor sign-in: the password was right, and a code is needed. The
-  // password stays in this form's state until then, to derive the keys again.
-  const [pending, setPending] = useState<CodeNeeded | null>(null)
+  // password is cleared at once; what the second step needs is the wrap key
+  // derived from it, held as bytes in a ref (never in state) so it can be wiped:
+  // once signed in, on "Start again", when the challenge expires, on leaving.
+  const [pending, setPending] = useState<Omit<CodeNeeded, 'wrapKey'> | null>(null)
+  const wrapKeyRef = useRef<Uint8Array | null>(null)
   const [code, setCode] = useState('')
   const [useRecovery, setUseRecovery] = useState(false)
 
+  const forgetKey = useCallback(() => {
+    const key = wrapKeyRef.current
+    wrapKeyRef.current = null
+    void wipe(key)
+  }, [])
+
+  // Leaving the page mid-challenge.
+  useEffect(() => forgetKey, [forgetKey])
+
   function finish(signedIn: SignedIn) {
+    forgetKey()
     setPassword('')
     startSession(signedIn)
     // Required and not set up: only setting it up works until it is.
@@ -58,13 +72,24 @@ export default function Login() {
     navigate(from ? `${from.pathname}${from.search}${from.hash}` : home, { replace: true })
   }
 
-  function startAgain(message: string | null = null) {
+  const startAgain = useCallback((message: string | null = null) => {
+    forgetKey()
     setPending(null)
     setCode('')
     setUseRecovery(false)
     setPassword('')
     setError(message)
-  }
+  }, [forgetKey])
+
+  // The challenge lasts five minutes; after that the code can't be used, so the
+  // key goes too. A clock far off from the server's falls back to five minutes.
+  useEffect(() => {
+    if (!pending) return
+    const left = Date.parse(pending.expiresAt) - Date.now()
+    const wait = Number.isFinite(left) && left > 0 && left <= 15 * 60_000 ? left : 5 * 60_000
+    const timer = window.setTimeout(() => startAgain('That took too long. Sign in again from the start.'), wait)
+    return () => window.clearTimeout(timer)
+  }, [pending, startAgain])
 
   async function onSubmit(e: SubmitEvent) {
     e.preventDefault()
@@ -79,10 +104,19 @@ export default function Login() {
 
     setBusy(true)
     try {
-      const factor = useRecovery ? { recoveryCode: code.trim() } : { code: code.replace(/\s/g, '') }
-      const outcome = await signIn(username, password, pending ? { challenge: pending.challenge, factor } : undefined)
+      if (pending) {
+        const wrapKey = wrapKeyRef.current
+        if (!wrapKey) return startAgain('That took too long. Sign in again from the start.')
+        const factor = useRecovery ? { recoveryCode: code.trim() } : { code: code.replace(/\s/g, '') }
+        // Nothing is derived again: the wrap key from the first step opens the keys.
+        return finish(await signIn(username, { wrapKey }, { challenge: pending.challenge, factor }))
+      }
+      const outcome = await signIn(username, password)
       if ('codeNeeded' in outcome) {
-        setPending(outcome)
+        const { wrapKey, ...challenge } = outcome
+        wrapKeyRef.current = wrapKey
+        setPassword('')
+        setPending(challenge)
         setBusy(false)
         return
       }

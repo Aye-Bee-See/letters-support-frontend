@@ -59,6 +59,19 @@ export interface CodeNeeded {
   codeNeeded: true
   challenge: string
   expiresAt: string
+  /**
+   * The wrap key derived from the password, for the second step, so the
+   * password itself need not be kept and Argon2id need not run again. The
+   * caller owns it: pass it back with each code, and wipe it (`wipe` from
+   * src/crypto) once signed in, on starting again, when the challenge expires,
+   * and on leaving the page.
+   */
+  wrapKey: Uint8Array
+}
+
+/** The second step's input: the wrap key from CodeNeeded (an object with more in it, such as SplitKeys, will do). */
+export interface DerivedKeys {
+  wrapKey: Uint8Array
 }
 
 export interface SignedIn {
@@ -108,48 +121,61 @@ function failCode(err: unknown): never {
  *    the device (one Argon2id run) and send only authKey. Costs below the
  *    agreed ones, or above the cap, are refused, sending nothing.
  * 3. POST /auth/login. For an account with two-factor sign-in on, that answers
- *    only a challenge: return CodeNeeded, and the caller calls again with the
- *    challenge and a code (POST /auth/login/two-factor).
+ *    only a challenge: return CodeNeeded with the wrap key, and the caller
+ *    calls again with that key, the challenge and a code
+ *    (POST /auth/login/two-factor). The second step derives nothing: the
+ *    password is not needed again, and Argon2id runs once per sign-in.
  * 4. GET /auth/keys (or the bundle the sign-in answered with), and open the
- *    private key (and the group key) with wrapKey. wrapKey is wiped either way.
+ *    private key (and the group key) with wrapKey. The wrap key derived here
+ *    is wiped either way (unless handed over with CodeNeeded); the second
+ *    step works on a copy of the caller's, which the caller wipes.
  * 5. An account without keys is refused: every account has keys, made when it
  *    is created (owner's decision, 25 September). There is no key set-up at
  *    sign-in.
  */
+export async function signIn(username: string, password: string): Promise<SignedIn | CodeNeeded>
+export async function signIn(username: string, keys: DerivedKeys, second: { challenge: string; factor: SecondFactor }): Promise<SignedIn>
 export async function signIn(
   username: string,
-  password: string,
+  secret: string | DerivedKeys,
   second?: { challenge: string; factor: SecondFactor },
 ): Promise<SignedIn | CodeNeeded> {
   const name = username.trim()
+  // Owned by this call, and wiped when it ends.
   let wrapKey: Uint8Array | null = null
   try {
-    const params = await getLoginParams(name).catch(fail)
-    if (params.scheme !== 'split') {
-      throw new SignInError(
-        'plain_account',
-        'This account still uses an older sign-in that sends your password to the server, which letters.support no longer does. ' +
-          'Your password was not sent. Ask a network admin to move your account.',
-      )
-    }
-
-    // The second step derives the keys again (a second or so) rather than holding
-    // wrapKey in memory while the person fetches their code.
-    // Costs outside the agreed bounds are refused here, before anything derived
-    // from the password exists, let alone is sent (see checkKdfParams).
-    const keys = await signInKeys(password, params).catch((err: unknown) => {
-      if (err instanceof KdfParamsError) {
-        throw new SignInError(err.kind === 'weak' ? 'weak_params' : 'heavy_params', err.message)
-      }
-      throw err
-    })
-    wrapKey = keys.wrapKey
     let result: LoginResult
-    if (second) {
+    if (typeof secret !== 'string') {
+      if (!second) throw new Error('signIn: derived keys are for the second step only.')
+      // A copy: if this code is wrong, the caller's key is still good for the next.
+      wrapKey = secret.wrapKey.slice()
       result = await loginTwoFactor(second.challenge, second.factor).catch(failCode)
     } else {
+      const params = await getLoginParams(name).catch(fail)
+      if (params.scheme !== 'split') {
+        throw new SignInError(
+          'plain_account',
+          'This account still uses an older sign-in that sends your password to the server, which letters.support no longer does. ' +
+            'Your password was not sent. Ask a network admin to move your account.',
+        )
+      }
+
+      // Costs outside the agreed bounds are refused here, before anything derived
+      // from the password exists, let alone is sent (see checkKdfParams).
+      const keys = await signInKeys(secret, params).catch((err: unknown) => {
+        if (err instanceof KdfParamsError) {
+          throw new SignInError(err.kind === 'weak' ? 'weak_params' : 'heavy_params', err.message)
+        }
+        throw err
+      })
+      wrapKey = keys.wrapKey
       const answer = await login(name, keys.authKey).catch(fail)
-      if (isTwoFactorChallenge(answer)) return { codeNeeded: true, ...answer.twoFactor }
+      if (isTwoFactorChallenge(answer)) {
+        // Handed over: the caller holds the wrap key, not the password, until the code.
+        const handed = wrapKey
+        wrapKey = null
+        return { codeNeeded: true, ...answer.twoFactor, wrapKey: handed }
+      }
       result = answer
     }
     try {
