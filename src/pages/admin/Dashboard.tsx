@@ -208,8 +208,14 @@ function QueueTable({ items, total }: { items: Submission[]; total: number }) {
           {items.map((s) => (
             <tr key={s.id}>
               <td>
-                {s.kind === 'create' ? 'New' : 'Change to'} {RESOURCE_LABELS[s.resource].toLowerCase()}
-                {s.targetId !== null && s.kind === 'update' && <> #{s.targetId}</>}
+                {/* A change opens the record's admin edit page; a new record is read whole in the queue. */}
+                {s.kind === 'update' && s.targetId !== null ? (
+                  <Link to={`${RESOURCE_LINKS[s.resource]}/${s.targetId}/edit`}>
+                    Change to {RESOURCE_LABELS[s.resource].toLowerCase()} #{s.targetId}
+                  </Link>
+                ) : (
+                  <Link to={`/admin/queue?resource=${s.resource}`}>New {RESOURCE_LABELS[s.resource].toLowerCase()}</Link>
+                )}
               </td>
               <td>{who(s.submitter)}</td>
               <td>{dateTime(s.createdAt)}</td>
