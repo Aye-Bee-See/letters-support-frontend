@@ -127,6 +127,12 @@ export default function PrisonerProfile() {
             <div className="profile-actions">
               {/* Not in the prototype: the way into New Letter for a signed-in writer. */}
               {/* Only with a facility on record: without one there is nowhere to mail a letter. */}
+              {/* README "Moved and freed": mail may never reach someone who has left; New Letter asks before sending. The status notice is above the name. */}
+              {isWriter && p.prison && p.status === 'free' && (
+                <p className="verified-note" style={{ marginBottom: '0.5rem' }}>
+                  <strong>{name} has been released.</strong> A letter mailed to {prison?.prisonName ?? 'their last facility'} may never reach them.
+                </p>
+              )}
               {isWriter && p.prison && (
                 <Link to={`/letters/new?prisoner=${p.id}`} className="btn btn-sm btn-primary" style={{ marginBottom: '0.5rem' }}>
                   Write a letter
