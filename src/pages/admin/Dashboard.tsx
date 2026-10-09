@@ -159,13 +159,14 @@ function Alerts({ summary, readiness }: { summary: AdminSummary | null; readines
 
 function Stats({ summary }: { summary: AdminSummary }) {
   const pending = sum(summary.pendingSubmissions)
-  const stale = summary.staleVerification.prisoner + summary.staleVerification.prison
   const cards: { label: string; value: number; to?: string }[] = [
     { label: 'Proposals to review', value: pending, to: '/admin/queue' },
     { label: 'Groups awaiting approval', value: summary.groups.pendingApproval, to: '/admin/groups?accountStatus=pending' },
     { label: 'Block recommendations', value: summary.pendingBanRecommendations, to: '/admin/bans' },
     { label: 'Addresses in doubt', value: summary.addressInDoubt.prisoner, to: '/admin/prisoners?addressInDoubt=true' },
-    { label: 'Need re-verifying', value: stale },
+    // The summary's staleVerification matches the lists' stale=true filter (README "GET /moderation/summary").
+    { label: 'Prisoners to re-verify', value: summary.staleVerification.prisoner, to: '/admin/prisoners?stale=true' },
+    { label: 'Facilities to re-verify', value: summary.staleVerification.prison, to: '/admin/facilities?stale=true' },
     { label: 'Suspended groups', value: summary.groups.suspended, to: '/admin/groups?accountStatus=suspended' },
   ]
   return (
@@ -262,14 +263,53 @@ function DirectoryTable({ summary }: { summary: AdminSummary }) {
   )
 }
 
+/** Named groups, each linked to its edit page, with what is said of each. */
+function GroupLinks({ groups }: { groups: { id: number; name: string; detail: string }[] }) {
+  if (groups.length === 0) return <>None</>
+  return (
+    <>
+      {groups.map((g) => (
+        <div key={g.id}>
+          <Link to={`/admin/groups/${g.id}/edit`}>{g.name}</Link> <span className="list-sub">{g.detail}</span>
+        </div>
+      ))}
+    </>
+  )
+}
+
+const keyHolders = (g: { members: number; membersWithKeys: number }) =>
+  `${g.membersWithKeys} of ${g.members} group admin${g.members === 1 ? '' : 's'} with keys`
+
 function EncryptionTable({ readiness }: { readiness: EncryptionReadiness }) {
   const { groups, writers, letters, authSchemes } = readiness
   const rows: [string, ReactNode][] = [
     ['Mode', readiness.mode === 'e2e' ? 'End-to-end' : 'Server'],
     ['Groups with a group key', `${groups.withKey} of ${groups.active} active`],
+    [
+      'Groups without a group key',
+      <GroupLinks
+        groups={groups.withoutKey.map((g) => ({
+          id: g.id,
+          name: g.name,
+          detail: `${keyHolders(g)}${g.blocksTheSwitch ? '; relays mail' : ''}`,
+        }))}
+      />,
+    ],
+    [
+      'Group admins waiting for their group key',
+      <GroupLinks groups={groups.membersWaitingForGroupKey.map((g) => ({ id: g.id, name: g.name, detail: keyHolders(g) }))} />,
+    ],
     ['Writers with keys', `${writers.withKeys} of ${writers.total}`],
-    ['Members waiting for their group key', groups.membersWaitingForGroupKey.length === 0 ? 'None' : groups.membersWaitingForGroupKey.map((g) => g.name).join(', ')],
+    ['Writers without keys who have letters', writers.withoutKeysWithLetters.toLocaleString()],
+    [
+      'Groups whose unclaimed writers have no keys',
+      <GroupLinks
+        groups={groups.unclaimedWritersWithoutKeys.map((g) => ({ id: g.id, name: g.name, detail: `${g.writers} writer${g.writers === 1 ? '' : 's'}` }))}
+      />,
+    ],
     ['Letters held for readers without keys', letters.serverHeld.toLocaleString()],
+    ['… waiting for a writer to set up keys', letters.waitingForWriters.toLocaleString()],
+    ['… waiting for a group to set up its key', letters.waitingForGroups.toLocaleString()],
     ['Accounts signing in without sending a password', `${authSchemes.split} of ${authSchemes.split + authSchemes.plain}`],
   ]
   return (
