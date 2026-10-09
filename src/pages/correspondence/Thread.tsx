@@ -83,6 +83,9 @@ const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { m
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
+/** Where a letter written again stands, for "now …" on the one it replaced. */
+const nowStatus = (m: Message) => (m.status === 'queued' && !m.heldReason ? 'waiting to print' : lowerFirst(statusOf(m).short))
+
 /** The status pill: its text and one of thread.css's three styles. */
 function statusOf(m: Message): { text: string; className: string; short: string } {
   const group = m.relay_group?.name
@@ -240,6 +243,7 @@ function LetterItem({
   onCorrected,
   queued,
   retention,
+  chain,
 }: {
   item: OpenedMessage
   initiallyOpen: boolean
@@ -267,6 +271,12 @@ function LetterItem({
    * pin it: the writer, or the group managing them (PUT /messaging/message { keep }).
    */
   retention?: { rules: RetentionRules; days: number | null | undefined; onChanged?: () => void }
+  /**
+   * The resend chain (README "Sending it again"): the letter that replaced this
+   * returned or declined one, and for a letter written again (`resendOf`) the
+   * one it replaces, null when that is no longer in the thread.
+   */
+  chain: { replacedBy?: Message; replaces?: Message | null }
 }) {
   const [open, setOpen] = useState(initiallyOpen)
   const [keeping, setKeeping] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null })
@@ -351,7 +361,19 @@ function LetterItem({
             </p>
           )}
           {m.status === 'declined' && <DeclinedNote m={m} />}
-          {outbound && (m.status === 'returned' || m.status === 'declined') && onWriteAgain && (
+          {chain.replacedBy && (
+            <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+              Written again on {longDate(chain.replacedBy.createdAt)}, now {nowStatus(chain.replacedBy)}.
+            </p>
+          )}
+          {chain.replaces !== undefined && (
+            <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+              {chain.replaces
+                ? `Replaces ${forGroup ? 'the writer’s' : 'your'} letter of ${longDate(chain.replaces.createdAt)}, which ${chain.replaces.status === 'declined' ? 'wasn’t sent' : 'came back'}.`
+                : `Replaces ${forGroup ? 'a letter of the writer’s' : 'a letter of yours'} that came back or wasn’t sent.`}
+            </p>
+          )}
+          {outbound && (m.status === 'returned' || m.status === 'declined') && onWriteAgain && !chain.replacedBy && (
             <p style={{ marginBottom: '0.75rem' }}>
               <button
                 type="button"
@@ -610,6 +632,12 @@ export default function Thread() {
       : managedHere && managedWriter.data
         ? { rules, days: windowFor(managedWriter.data.retentionDays, rules), onChanged: page.reload }
         : { rules, days: undefined }
+  // A letter written again names the one it replaces (resendOf), and both are in
+  // this thread (one per writer and prisoner), so the old letter's resent_as,
+  // which only GET /messaging/message?full=true carries, needn't be fetched.
+  const byId = new Map(letters.map((l) => [l.message.id, l.message]))
+  const replacedBy = new Map<number, Message>()
+  for (const { message } of letters) if (message.resendOf != null) replacedBy.set(message.resendOf, message)
   const canCorrect = (m: Message) =>
     isChapter && m.sender === 'prisoner' && m.status === 'received' && (managedHere || (m.relayChapter !== null && m.relayChapter === user?.chapterId))
 
@@ -667,6 +695,10 @@ export default function Thread() {
                 onWriteAgain={!isChapter && prisoner?.prison ? writeAgain : undefined}
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
                 retention={retention}
+                chain={{
+                  replacedBy: replacedBy.get(item.message.id),
+                  replaces: item.message.resendOf != null ? (byId.get(item.message.resendOf) ?? null) : undefined,
+                }}
                 queued={
                   !isChapter && chat.user === user?.id
                     ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
