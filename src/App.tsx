@@ -29,6 +29,7 @@ const Login = lazy(() => import('./pages/auth/Login'))
 const ChangePassword = lazy(() => import('./pages/account/ChangePassword'))
 const PenName = lazy(() => import('./pages/account/PenName'))
 const RecoveryCode = lazy(() => import('./pages/account/RecoveryCode'))
+const Retention = lazy(() => import('./pages/account/Retention'))
 const Security = lazy(() => import('./pages/account/Security'))
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const Claim = lazy(() => import('./pages/auth/Claim'))
@@ -121,6 +122,7 @@ export default function App() {
             </Route>
             <Route element={<RequireAuth roles={['user']} />}>
               <Route path="account/pen-name" element={<PenName />} />
+              <Route path="account/retention" element={<Retention />} />
             </Route>
 
             {/* Group admins (group-admin-plan.md): GroupGate says when the group isn't active or the key isn't held. */}

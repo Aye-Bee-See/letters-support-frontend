@@ -111,6 +111,21 @@ export default function Security() {
         </div>
         {/* Only two-factor set-up works while it is required and not on. */}
         {!twoFactorSetupRequired && <AccountKeys />}
+        {/* A writer's letters: how long they are kept. */}
+        {!twoFactorSetupRequired && user?.role === 'user' && (
+          <div className="claim-box" style={{ marginTop: '1.5rem' }}>
+            <div className="claim-state is-active">
+              <div className="claim-header">
+                <h2 className="claim-title">Your letters</h2>
+              </div>
+              <div className="claim-body">
+                <p className="claim-org-note">
+                  <Link to="/account/retention">How long your letters are kept</Link>, and keeping them longer.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {!twoFactorSetupRequired && <SignOutEverywhere />}
         {!twoFactorSetupRequired && (
           <Link to={home} className="claim-back">

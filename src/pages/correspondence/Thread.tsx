@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getMyBlocks } from '../../api/auth'
+import { getAccount, getMyBlocks } from '../../api/auth'
 import { getFacility } from '../../api/facilities'
-import { getAttachments, getChat } from '../../api/letters'
+import { getAttachments, getChat, getRetention, setLetterKept, type RetentionRules } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import CorrectReply from '../../components/forms/CorrectReply'
 import QueuedLetterActions from '../../components/forms/QueuedLetterActions'
@@ -14,11 +14,13 @@ import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
-import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
+import type { ApiError, Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { declineReasonForWriter, heldReasonText, isGroupAnonymous, returnReasonText, writerInSentence, writerLabel } from '../../utils/groupLetters'
 import { oldKeyText, threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
+import { retentionLine, windowFor } from '../../utils/retention'
 
 // Markup and classes from solidarity-site/thread.html (pages/thread.css). At
 // the bottom, a writer's reply panel, or for a group admin the panel that
@@ -237,6 +239,7 @@ function LetterItem({
   onWriteAgain,
   onCorrected,
   queued,
+  retention,
 }: {
   item: OpenedMessage
   initiallyOpen: boolean
@@ -257,12 +260,33 @@ function LetterItem({
     mayReplaceReply: () => boolean
     onChanged: () => void
   }
+  /**
+   * When a settled letter is deleted (README "Retention"): `days` is the
+   * writer's window (null for ever), undefined when the reader can't know it (a
+   * group admin of a writer it doesn't manage). `onChanged` when the reader may
+   * pin it: the writer, or the group managing them (PUT /messaging/message { keep }).
+   */
+  retention?: { rules: RetentionRules; days: number | null | undefined; onChanged?: () => void }
 }) {
   const [open, setOpen] = useState(initiallyOpen)
+  const [keeping, setKeeping] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null })
   const { message: m, opened } = item
   const outbound = m.sender === 'user'
   const status = statusOf(m)
   const held = forGroup ? groupHeldText(m, forGroup.chapterId) : heldText(m, prisonerName, blocks, queued?.prisonId != null)
+  const kept = retention ? retentionLine(m, retention.days, retention.rules) : null
+  const onKept = retention?.onChanged
+  async function toggleKeep() {
+    if (!onKept) return
+    setKeeping({ busy: true, error: null })
+    try {
+      await setLetterKept(m.id, !m.keep)
+      setKeeping({ busy: false, error: null })
+      onKept()
+    } catch (err) {
+      setKeeping({ busy: false, error: refusalText(err as ApiError) })
+    }
+  }
 
   return (
     <div className={`letter-item ${outbound ? 'outbound' : 'inbound'}${open ? ' is-open' : ''}`}>
@@ -369,6 +393,20 @@ function LetterItem({
               )}
               <LetterAttachments message={m} contentKey={opened.contentKey} />
             </>
+          )}
+          {kept && (
+            <p className="letter-body-scan-note" style={{ marginTop: '0.75rem' }}>
+              {kept}
+              {onKept && (
+                <>
+                  {' '}
+                  <button type="button" className="btn btn-sm" disabled={keeping.busy} onClick={toggleKeep}>
+                    {keeping.busy ? 'Saving…' : m.keep ? 'Stop keeping' : 'Keep'}
+                  </button>
+                </>
+              )}
+              {keeping.error && <span role="alert"> Not changed: {keeping.error}</span>}
+            </p>
           )}
           {onCorrected && (
             <CorrectReply
@@ -520,6 +558,14 @@ export default function Thread() {
   // A writer's own only (README "GET /auth/blocks"): a group admin's would always be empty.
   const blocksState = useApi(() => (isChapter ? Promise.resolve(NO_BLOCKS) : getMyBlocks()), [isChapter])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
+  // How long letters are kept (README "Retention"): the caller's own window, and
+  // for a group admin the site's default and cap. A group managing the writer
+  // reads the writer's own window from their account.
+  const retentionState = useApi(getRetention, [])
+  const writerDetails = page.data?.chat.user_details
+  const managedWriterId =
+    isChapter && writerDetails?.managedBy != null && writerDetails.managedBy === user?.chapterId && !writerDetails.claimedAt ? writerDetails.id : null
+  const managedWriter = useApi(() => (managedWriterId !== null ? getAccount(managedWriterId) : Promise.resolve(null)), [managedWriterId])
   useEffect(() => {
     opened.current = page.data?.letters ?? null
   }, [page.data])
@@ -556,6 +602,14 @@ export default function Thread() {
   const writeAgain = (r: Resend) => {
     if (mayReplaceReply()) startFrom(r)
   }
+  const rules = retentionState.data
+  const retention = !rules
+    ? undefined
+    : !isChapter
+      ? { rules, days: rules.effectiveDays, onChanged: page.reload }
+      : managedHere && managedWriter.data
+        ? { rules, days: windowFor(managedWriter.data.retentionDays, rules), onChanged: page.reload }
+        : { rules, days: undefined }
   const canCorrect = (m: Message) =>
     isChapter && m.sender === 'prisoner' && m.status === 'received' && (managedHere || (m.relayChapter !== null && m.relayChapter === user?.chapterId))
 
@@ -612,6 +666,7 @@ export default function Thread() {
                 forGroup={isChapter ? { chapterId: user?.chapterId ?? null } : null}
                 onWriteAgain={!isChapter && prisoner?.prison ? writeAgain : undefined}
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
+                retention={retention}
                 queued={
                   !isChapter && chat.user === user?.id
                     ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
