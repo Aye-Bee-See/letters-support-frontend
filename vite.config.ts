@@ -19,6 +19,15 @@ export default defineConfig({
   test: {
     // The app's own tests only, never an agent worktree under .claude/.
     dir: 'src',
+    // `npm run test:coverage`: a summary in the terminal, the full report under
+    // node_modules/.coverage (open index.html). No threshold; nothing in CI reads it.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts', 'src/types/**'],
+      reporter: ['text-summary', 'html'],
+      reportsDirectory: 'node_modules/.coverage',
+    },
     // Two kinds, one run: pure modules in Node (*.test.ts), components and hooks
     // in happy-dom (*.test.tsx), with the API faked (src/test/setup.ts).
     projects: [
