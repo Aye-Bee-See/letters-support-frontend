@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import { getMessages, setLetterStatusBatch } from '../../api/letters'
 import { useApi } from '../../hooks/useApi'
@@ -35,7 +35,10 @@ import { DeclineForm } from './DeclineLetter'
 // (README "PUT /messaging/status/batch"); a held letter is printed only with
 // `release: true`, after the group admin confirms (README "Moved and freed").
 // "Don't send" declines the selected letters the same way (README "Declined
-// letters"): queued, held or printed, held ones without `release`.
+// letters"): queued, held or printed, held ones without `release`. "Print
+// selected" opens the chosen queued or held letters on one batch sheet
+// (pages/inbox/PrintBatch.tsx), held ones after the same confirmation, and the
+// sheet marks them printed together.
 
 const PAGE_SIZE = 50
 
@@ -149,13 +152,15 @@ function QueueList({
   onClamp: (last: number, notice: Notice | null) => void
 }) {
   const [, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const spec = queueFilter(filter)
   const list = useApi(
     () => getMessages({ relayChapter: chapterId, status: spec.status, held: spec.held, full: true, page, page_size: PAGE_SIZE }),
     [chapterId, filter, page],
   )
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [confirming, setConfirming] = useState(false)
+  // Which held-letter question is open: before marking them printed, or before opening them on the batch sheet.
+  const [confirming, setConfirming] = useState<false | 'mark' | 'print'>(false)
   const [declining, setDeclining] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(carried)
@@ -182,6 +187,12 @@ function QueueList({
       return next
     })
   const allChosen = rows.length > 0 && chosen.length === rows.length
+
+  /** The batch sheet, in the queue's order; `release` names the held letters confirmed here. */
+  const printSelected = (confirmedHeld: boolean) => {
+    const ids = chosen.join(',')
+    navigate(`/letters/print-batch?ids=${ids}${confirmedHeld ? `&release=${ids}` : ''}`)
+  }
 
   async function run() {
     if (!move || chosen.length === 0) return
@@ -266,10 +277,20 @@ function QueueList({
                 type="button"
                 className="btn btn-sm btn-primary"
                 disabled={!canMove || chosen.length === 0 || busy}
-                onClick={() => (move.release ? setConfirming(true) : run())}
+                onClick={() => (move.release ? setConfirming('mark') : run())}
               >
                 {busy ? 'Marking…' : move.label}
               </button>
+              {move.target === 'printed' && (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={keyState !== 'ready' || chosen.length === 0 || busy}
+                  onClick={() => (move.release ? setConfirming('print') : printSelected(false))}
+                >
+                  Print selected
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-sm"
@@ -298,7 +319,7 @@ function QueueList({
             person, or its writer may still have to act on it; open {chosen.length === 1 ? 'it' : 'each one'} to see why.
           </p>
           <p>Print {chosen.length === 1 ? 'it' : 'them'} anyway?</p>
-          <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={run}>
+          <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={() => (confirming === 'print' ? printSelected(true) : void run())}>
             {busy ? 'Marking…' : 'Yes, print anyway'}
           </button>
           <button type="button" className="btn btn-sm" disabled={busy} onClick={() => setConfirming(false)}>

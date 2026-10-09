@@ -4,6 +4,7 @@ import { getFacility } from '../../api/facilities'
 import { getAttachments, getMessage } from '../../api/letters'
 import DeclineLetter from '../../components/group/DeclineLetter'
 import MarkLetter from '../../components/group/MarkLetter'
+import PrintSheet, { PrintPageStyle } from '../../components/group/PrintSheet'
 import ReturnLetter from '../../components/group/ReturnLetter'
 import ShareLetter from '../../components/group/ShareLetter'
 import LoadState from '../../components/ui/LoadState'
@@ -13,7 +14,7 @@ import { useGroup, type GroupKeyState } from '../../hooks/useGroup'
 import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, LetterStatus, MailRule, Message, Prison } from '../../types'
 import { addressLines } from '../../utils/facilities'
-import { declineText, footerSentence, heldPrintQuestion, heldReasonText, returnReasonText, writerLabel, type QueueFilter } from '../../utils/groupLetters'
+import { declineText, heldPrintQuestion, heldReasonText, returnReasonText, writerLabel, type QueueFilter } from '../../utils/groupLetters'
 import { inboxDate, oldKeyText } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
@@ -246,20 +247,6 @@ export default function PrintLetter() {
   // reload of the page (keys arriving, another letter) is not overridden.
   const [fresh, setFresh] = useState<{ base: Page; message: Message } | null>(null)
 
-  // The print stylesheet applies only while this page is open (group-inbox.css).
-  // `@page` cannot sit under a selector, so the sheet's margins are a <style>
-  // added here and removed on leaving: no other page's printing is affected.
-  useEffect(() => {
-    document.body.classList.add('printing-letter')
-    const margins = document.createElement('style')
-    margins.textContent = '@media print { @page { margin: 2cm; } }'
-    document.head.appendChild(margins)
-    return () => {
-      document.body.classList.remove('printing-letter')
-      margins.remove()
-    }
-  }, [])
-
   const opened = page.data?.opened ?? null
   const contentKey = opened?.state === 'open' ? opened.contentKey : null
   const files = useLetterFiles(id, contentKey)
@@ -267,6 +254,7 @@ export default function PrintLetter() {
   if (!page.data) {
     return (
       <div className="app-wrap">
+        <PrintPageStyle />
         <div className="wrap">
           <LoadState state={page} what="letter" />
         </div>
@@ -299,6 +287,8 @@ export default function PrintLetter() {
 
   return (
     <div className="app-wrap">
+      {/* The print stylesheet applies only while this page is open (group-inbox.css). */}
+      <PrintPageStyle />
       <div className="app-layout">
         <main className="thread-main">
           <div className="thread-header no-print">
@@ -382,18 +372,7 @@ export default function PrintLetter() {
                 <p className="print-note no-print">This facility’s mail room refuses unexplained numbers, so the footer leaves the reference out.</p>
               )}
 
-              <article className="print-sheet">
-                {m.paper ? (
-                  <p className="print-sheet-empty no-print">Written on paper and handed to your group: there is no text to print.</p>
-                ) : opened.text ? (
-                  <div className="print-sheet-body">{opened.text}</div>
-                ) : (
-                  <p className="print-sheet-empty no-print">This letter has no typed text.</p>
-                )}
-                {m.footer && <p className="print-sheet-footer">{footerSentence(m.footer)}</p>}
-                {!m.paper &&
-                  images.map((f) => <img key={f.attachment.id} className="print-sheet-image" src={f.url!} alt={f.attachment.originalName ?? 'Enclosed image'} />)}
-              </article>
+              <PrintSheet message={m} text={opened.text} images={images} />
 
               {files === null && m.status === 'declined' && <p className="print-note no-print">Opening attachments…</p>}
               {(others.length > 0 || (m.paper && images.length > 0)) && (
