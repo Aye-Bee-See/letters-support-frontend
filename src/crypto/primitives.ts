@@ -29,6 +29,16 @@ export async function generateContentKey(): Promise<Uint8Array> {
   return s.crypto_aead_xchacha20poly1305_ietf_keygen()
 }
 
+/**
+ * A key of all zeros is one that was wiped (forgetContentKey, wipe) while
+ * something still held it. Encrypting or sealing with it would succeed, and
+ * leave a letter or a file that nobody can tell from a good one but anybody
+ * could open; so it is refused instead.
+ */
+export function refuseWipedKey(s: Awaited<ReturnType<typeof getSodium>>, key: Uint8Array): void {
+  if (key.length === 0 || s.is_zero(key)) throw new Error('This key has already been wiped, so nothing was encrypted with it.')
+}
+
 /** The same as Encrypted, as bytes: for files, which would cost three times their size as base64. */
 export interface EncryptedBytes {
   /** The ciphertext with its 16-byte tag at the end (libsodium's combined form): what the API stores for a file. */
@@ -42,6 +52,7 @@ export interface EncryptedBytes {
  */
 export async function encryptBytes(plain: Uint8Array, key: Uint8Array): Promise<EncryptedBytes> {
   const s = await getSodium()
+  refuseWipedKey(s, key)
   const nonce = s.randombytes_buf(s.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES)
   const ciphertext = s.crypto_aead_xchacha20poly1305_ietf_encrypt(plain, null, null, nonce, key)
   return { ciphertext, nonce }

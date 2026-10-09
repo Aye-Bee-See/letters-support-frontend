@@ -1,5 +1,5 @@
 import type { Envelope } from '../types'
-import { decryptBytes, decryptText, encrypt, encryptBytes, generateContentKey, openSealed, sealTo, type Keypair } from './primitives'
+import { decryptBytes, decryptText, encrypt, encryptBytes, generateContentKey, openSealed, refuseWipedKey, sealTo, type Keypair } from './primitives'
 import { fromBase64, getSodium, toBase64 } from './sodium'
 
 // Letters in end-to-end mode (README "Sending and reading letters"): each letter
@@ -55,6 +55,7 @@ export async function encryptLetter(
 
 /** Seal an existing letter's content key to one more reader (POST /messaging/envelope). */
 export async function envelopeFor(contentKey: Uint8Array, reader: Reader): Promise<Envelope> {
+  refuseWipedKey(await getSodium(), contentKey)
   return {
     readerType: reader.readerType,
     readerId: reader.readerId,
@@ -107,7 +108,11 @@ export async function decryptFile(bytes: Uint8Array, nonce: string, contentKey: 
   return decryptBytes(bytes, await fromBase64(nonce), contentKey)
 }
 
-/** Drop a content key once the letter and its attachments are done. */
+/**
+ * Drop a content key once the letter and its attachments are done: its bytes
+ * are zeroed, and anything that still tries to encrypt or seal with it is
+ * refused (refuseWipedKey). Wiping the same key twice is harmless.
+ */
 export async function forgetContentKey(contentKey: Uint8Array): Promise<void> {
   ;(await getSodium()).memzero(contentKey)
 }
