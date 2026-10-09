@@ -58,6 +58,7 @@ export default function AdminLayout() {
         <div className="sidebar-section">
           <div className="sidebar-section-label">Administration</div>
           <ul className="sidebar-nav">
+            <li><NavLink to="/admin/users">Accounts</NavLink></li>
             <li><NavLink to="/admin/invite">Invite a group</NavLink></li>
             <li><NavLink to="/admin/audit">Audit log</NavLink></li>
             <li><NavLink to="/admin/settings">Site settings</NavLink></li>
