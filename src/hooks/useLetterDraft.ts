@@ -3,7 +3,17 @@ import { getMyBlocks } from '../api/auth'
 import { useApi } from './useApi'
 import { useAuth } from './useAuth'
 import { forgetContentKey } from '../crypto'
-import { AttachmentNotUploaded, draftHasContent, newIdempotencyKey, sendLetter, uploadLetterFile, type LetterDraft, type Sender } from '../letters/send'
+import {
+  AttachmentNotUploaded,
+  draftHasContent,
+  newIdempotencyKey,
+  ReplayedFileRefused,
+  sendLetter,
+  uploadLetterFile,
+  type LetterDraft,
+  type Replay,
+  type Sender,
+} from '../letters/send'
 import { toApiError } from '../api/client'
 import type { Chapter, Message, Prison, WriterBlock } from '../types'
 
@@ -24,6 +34,31 @@ function describe(err: unknown): string {
   const e = toApiError(err)
   return e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'Something went wrong.'
 }
+
+/** What a send carried, kept when it failed without a clear answer: it may have gone through. */
+type Attempt = Pick<LetterDraft, 'text' | 'relayNote' | 'paper'>
+
+/** A send that failed this way may have reached the API and made the letter (README "Sending exactly once"). */
+function mayHaveGone(err: unknown): boolean {
+  const status = toApiError(err).status
+  return status === 0 || status >= 500
+}
+
+/**
+ * A retry came back as the letter an earlier attempt made (the Idempotency-Key):
+ * were the writer's changes since then left out? Known when the stored letter
+ * could be read and compared; otherwise, if the draft differs from anything
+ * sent without a clear answer, assumed so.
+ */
+function changesLeftOut(replay: Replay, uncertain: Attempt[], draft: Attempt): boolean {
+  if (replay.sameText !== null) return !replay.sameText
+  return uncertain.some((a) => a.text !== draft.text || a.relayNote.trim() !== draft.relayNote.trim() || a.paper !== draft.paper)
+}
+
+/** Shown (after the page's "Not sent.") when a send came back as an earlier version of the letter. */
+const EARLIER_VERSION_SENT =
+  'These changes weren’t sent. Your earlier try had gone through after all, so the letter went as it read then. ' +
+  'Your changes are still here: to put them in, open the letter in your conversation and choose Edit while it’s waiting to be printed.'
 
 /** A letter that went without its file: what retrying the file needs. The content key stays in memory only. */
 interface FileToRetry {
@@ -72,6 +107,10 @@ export function useLetterDraft(
   // Sent, but the file didn't upload: the letter, the file's name, and why (see AttachmentNotUploaded).
   const retryRef = useRef<FileToRetry | null>(null)
   const [attachmentFailed, setAttachmentFailed] = useState<{ letter: Message; fileName: string; error: string } | null>(null)
+  // Sends of this letter that failed without a clear answer, and may have gone through.
+  const uncertainRef = useRef<Attempt[]>([])
+  // The letter as an earlier attempt sent it, when a retry came back with it and this draft's changes weren't in it.
+  const [earlierVersion, setEarlierVersion] = useState<Message | null>(null)
   // The key must be forgotten exactly once, and never while a retry is using it:
   // on leaving the page (unless a retry is under way, which then forgets it), and
   // for a failure that only arrives after the page has gone.
@@ -117,12 +156,26 @@ export function useLetterDraft(
     if (!canSend || !prisonerId || !relayChapterId || !sender) return null
     setSending(true)
     setError(null)
+    setEarlierVersion(null)
     const draft: LetterDraft = { prisonerId, relayChapterId, text, relayNote, paper, file, idempotencyKey, resendOf }
     try {
-      const message = await sendLetter(draft, sender)
+      const { message, replay } = await sendLetter(draft, sender)
+      if (replay && changesLeftOut(replay, uncertainRef.current, draft)) {
+        // The letter went, but as first sent: keep the draft, and say so, rather than clear it.
+        setEarlierVersion(message)
+        setError(EARLIER_VERSION_SENT)
+        return null
+      }
       clearDraft()
       return message
     } catch (err) {
+      if (mayHaveGone(err)) uncertainRef.current.push({ text, relayNote, paper })
+      if (err instanceof ReplayedFileRefused) {
+        // The letter went on an earlier try; its file can't be added from this session. The draft stays.
+        setEarlierVersion(err.letter)
+        setError(err.message)
+        return null
+      }
       if (err instanceof AttachmentNotUploaded && !mountedRef.current) {
         // The page has gone: nobody is left to retry, so don't keep the key.
         await forgetContentKey(err.contentKey)
@@ -160,6 +213,8 @@ export function useLetterDraft(
     setFile(null)
     setResendOf(null)
     setIdempotencyKey(newIdempotencyKey())
+    uncertainRef.current = []
+    setEarlierVersion(null)
   }
 
   /** Done with a letter whose file failed: forget its key; returns the letter. */
@@ -204,5 +259,11 @@ export function useLetterDraft(
     /** A group admin holds the group key in this session (needed to write for the group's writers). */
     hasGroupKey: Boolean(groupKeypair),
     attachmentFailed, retryAttachment, skipAttachment,
+    /**
+     * Set when a send came back as the letter an earlier try had already sent,
+     * without this draft's changes (or, after a group key change, its file):
+     * `error` says so, and the draft is kept. Its thread (`chat`) is where Edit is.
+     */
+    earlierVersion,
   }
 }
