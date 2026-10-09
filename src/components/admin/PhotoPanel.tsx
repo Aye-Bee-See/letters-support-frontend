@@ -39,7 +39,8 @@ function photoRefusal(error: ApiError): string {
   return commonRefusal(error) ?? otherRefusal(error)
 }
 
-export default function PhotoPanel({ prisoner }: { prisoner: Prisoner }) {
+/** `onChanged` runs after a photo goes up or comes down, e.g. for the page's history to ask again. */
+export default function PhotoPanel({ prisoner, onChanged }: { prisoner: Prisoner; onChanged?: () => void }) {
   const [photo, setPhoto] = useState<PrisonerPhoto | null>(prisoner.photo)
   // The chosen file and its preview's object URL, revoked when it is replaced or the panel goes.
   const [chosen, setChosen] = useState<{ file: File; preview: string } | null>(null)
@@ -101,6 +102,7 @@ export default function PhotoPanel({ prisoner }: { prisoner: Prisoner }) {
       setPhoto(result.photo)
       reset()
       setDone(replacing ? 'Photo replaced. The new one is public now.' : 'Photo added. It is public now.')
+      onChanged?.()
     } catch (err) {
       setError(photoRefusal(err as ApiError))
     } finally {
@@ -117,6 +119,7 @@ export default function PhotoPanel({ prisoner }: { prisoner: Prisoner }) {
       await removePrisonerPhoto(prisoner.id)
       setPhoto(null)
       setDone('Photo taken down.')
+      onChanged?.()
     } catch (err) {
       setError(photoRefusal(err as ApiError))
     } finally {

@@ -1,7 +1,7 @@
 import { del, getAllPages, getList, getOne, put } from './client'
 import type { FilterValues, ListParams, Prisoner, PrisonerStatus, RecordStatus } from '../types'
 import client from './client'
-import type { ApiEnvelope, PrisonerPhoto } from '../types'
+import type { ApiEnvelope, HistoryEntry, PrisonerPhoto } from '../types'
 
 export interface PrisonerListParams extends ListParams {
   status?: PrisonerStatus
@@ -105,3 +105,11 @@ export async function uploadPrisonerPhoto(prisoner: number, file: File, credit: 
 
 /** DELETE /prisoner/photo: takes the photo off the record and deletes the file. The same people as uploading. */
 export const removePrisonerPhoto = (prisoner: number) => del<unknown>('/prisoner/photo', { prisoner })
+
+/**
+ * GET /prisoner/history?id=: what happened to the record, newest first,
+ * paginated (README "The history of one record"). Staff only; entries are
+ * routine audit entries, kept 180 days by default.
+ */
+export const getPrisonerHistory = (id: number, params?: Pick<ListParams, 'page' | 'page_size'>) =>
+  getList<HistoryEntry>('/prisoner/history', { id, ...params })

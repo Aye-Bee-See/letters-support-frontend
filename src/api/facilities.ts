@@ -2,7 +2,7 @@
 import { del, getAllPages, getList, getOne, put } from './client'
 import type { FilterValues, ListParams, MailRuleList, Prison, RecordStatus, RoutingMethod } from '../types'
 import { post } from './client'
-import type { MailRule, MailRuleCategory } from '../types'
+import type { HistoryEntry, MailRule, MailRuleCategory } from '../types'
 
 export interface FacilityListParams extends ListParams {
   country?: string
@@ -102,3 +102,7 @@ export const updateMailRule = (id: number, changes: Partial<Omit<MailRuleInput, 
 
 /** DELETE /prison/mail-rule (superadmin): only a rule no facility carries; otherwise a 409 RuleInUseError, and it should be retired. */
 export const deleteMailRule = (id: number) => del<MailRule>('/prison/mail-rule', { id })
+
+/** GET /prison/history?id=: what happened to the facility's record, newest first, paginated. Staff only. */
+export const getFacilityHistory = (id: number, params?: Pick<ListParams, 'page' | 'page_size'>) =>
+  getList<HistoryEntry>('/prison/history', { id, ...params })
