@@ -19,5 +19,22 @@ export default defineConfig({
   test: {
     // The app's own tests only, never an agent worktree under .claude/.
     dir: 'src',
+    // Two kinds, one run: pure modules in Node (*.test.ts), components and hooks
+    // in happy-dom (*.test.tsx), with the API faked (src/test/setup.ts).
+    projects: [
+      {
+        extends: true,
+        test: { name: 'node', environment: 'node', include: ['**/*.test.ts'] },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          environment: 'happy-dom',
+          include: ['**/*.test.tsx'],
+          setupFiles: ['./src/test/setup.ts'],
+        },
+      },
+    ],
   },
 })
