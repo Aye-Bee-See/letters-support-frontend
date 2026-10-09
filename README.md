@@ -309,11 +309,30 @@ self-host it (it is under the SIL Open Font License), put a `woff2` under
 `public/fonts/` and add an `@font-face` for it at the top of `style.css`,
 with `font-display: swap`.
 
-**Tests.** Vitest in Node, with no DOM: tests cover the crypto core (including
-cross-client vectors), the sending and recording flows, rotation, housekeeping,
-and the pure wording helpers. Component behaviour is checked by hand against a
-local API; see the walk-through above. Add a `*.test.ts` beside any new pure
-module.
+**Tests.** `npm test` runs two kinds in one Vitest run (two projects in
+`vite.config.ts`). `*.test.ts` files run in Node, with no DOM: the crypto core
+(including cross-client vectors), the sending and recording flows, rotation,
+housekeeping, the wording helpers, and the API client as requests go through it
+(axios's adapter set to the fake API). `*.test.tsx` files run in happy-dom with
+Testing Library: the route guards and GroupGate, `useApi` and the list filters
+(with fake timers), the sign-in page (with the real Argon2id), the leave guard,
+and the print and admin pages' cleanup. A component test renders with
+`renderApp` (`src/test/render.tsx`): inside a router, `AuthProvider` and
+`GroupProvider`, signed in first if given a `session` (`src/test/session.ts`).
+The API answers from `fakeApi` (`src/test/fakeApi.ts`), put on
+`src/api/client.ts`'s axios instance for every DOM test, so nothing touches the
+network and a request nothing answers fails as a network error. Add a
+`*.test.ts` beside any new pure module and a `*.test.tsx` for a component or
+hook, named apart from any `.test.ts` beside it (`useApi.hook.test.tsx`):
+TypeScript skips a `.tsx` that shares a `.ts` file's name. Pages other than
+sign-in are still checked by hand against a local API; see the walk-through
+above.
+
+`npm run test:coverage` adds a coverage summary, with the full report in
+`node_modules/.coverage/index.html`. On 8 October 2026: 25% of lines and 17% of
+branches overall; the crypto core 99%, the client 94%, the utilities 83%, the
+guards, `useApi` and the list hooks 100%, and the admin, group and account
+pages 0 to 4%. There is no threshold, and CI doesn't run it.
 
 **Dependencies.** React, react-router, axios, `libsodium-wrappers-sumo` (the
 sumo build, for Argon2id) and `qrcode-generator`. Adding one is a decision,
