@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getAllFacilities } from '../../api/facilities'
 import { deletePrisoner, getPrisoner, updatePrisoner, type PrisonerFields, type PrisonerMailChange } from '../../api/prisoners'
+import PhotoPanel from '../../components/admin/PhotoPanel'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
@@ -146,6 +147,8 @@ export default function EditPrisoner() {
             onEdit={() => setSaved(null)}
           />
         )}
+        {/* Keyed on id only: a photo change mustn't reload the record and drop unsaved form edits. */}
+        {prisoner.data && <PhotoPanel key={`photo-${prisoner.data.id}`} prisoner={prisoner.data} />}
       </div>
     </>
   )

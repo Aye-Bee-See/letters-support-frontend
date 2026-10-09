@@ -1,5 +1,7 @@
 import { del, getAllPages, getList, getOne, put } from './client'
 import type { FilterValues, ListParams, Prisoner, PrisonerStatus, RecordStatus } from '../types'
+import client from './client'
+import type { ApiEnvelope, PrisonerPhoto } from '../types'
 
 export interface PrisonerListParams extends ListParams {
   status?: PrisonerStatus
@@ -73,3 +75,33 @@ export const linkSupportGroup = (prisoner: number, chapter: number, description:
 
 /** Remove a support link: the same people as linking. A 404 if there was none. */
 export const unlinkSupportGroup = (prisoner: number, chapter: number) => del<number>('/prisoner/support', { prisoner, chapter })
+
+// --- Photos (README "Photos") -------------------------------------------------
+
+/** The largest photo the API takes (PHOTO_MAX_BYTES, 5 MiB). */
+export const PHOTO_MAX_BYTES = 5 * 1024 * 1024
+/** The types the API takes, read from the file's own bytes there. */
+export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+
+/**
+ * POST /prisoner/photo (multipart): replaces any photo the record has, and is
+ * published at once, without moderation, so the page asks the uploader to
+ * confirm first (CHANGELOG #166). `credit` (at most 200 characters) is shown
+ * beside the picture; a superadmin names the public support page it comes from.
+ * The API strips EXIF and the rest, orientation included, and never rotates.
+ */
+export async function uploadPrisonerPhoto(prisoner: number, file: File, credit: string | null) {
+  const form = new FormData()
+  form.append('prisoner', String(prisoner))
+  if (credit) form.append('credit', credit)
+  form.append('photo', file, file.name)
+  const response = await client.post<ApiEnvelope<{ id: number; photo: PrisonerPhoto; bytesStored: number; bytesUploaded: number }>>(
+    '/prisoner/photo',
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return response.data.data
+}
+
+/** DELETE /prisoner/photo: takes the photo off the record and deletes the file. The same people as uploading. */
+export const removePrisonerPhoto = (prisoner: number) => del<unknown>('/prisoner/photo', { prisoner })
