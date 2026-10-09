@@ -111,7 +111,7 @@ export default function Security() {
         </div>
         {/* Only two-factor set-up works while it is required and not on. */}
         {!twoFactorSetupRequired && <AccountKeys />}
-        {/* A writer's letters: how long they are kept. */}
+        {/* A writer's letters: how long they are kept, and groups not mailing them. */}
         {!twoFactorSetupRequired && user?.role === 'user' && (
           <div className="claim-box" style={{ marginTop: '1.5rem' }}>
             <div className="claim-state is-active">
@@ -121,6 +121,9 @@ export default function Security() {
               <div className="claim-body">
                 <p className="claim-org-note">
                   <Link to="/account/retention">How long your letters are kept</Link>, and keeping them longer.
+                </p>
+                <p className="claim-org-note">
+                  <Link to="/account/blocks">Groups not mailing your letters</Link>, and the reason each gave.
                 </p>
               </div>
             </div>
