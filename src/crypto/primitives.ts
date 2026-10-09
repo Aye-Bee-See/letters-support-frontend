@@ -29,19 +29,40 @@ export async function generateContentKey(): Promise<Uint8Array> {
   return s.crypto_aead_xchacha20poly1305_ietf_keygen()
 }
 
-/** Encrypt bytes or a string (UTF-8) under a 32-byte key, with a random 24-byte nonce. */
-export async function encrypt(plain: Uint8Array | string, key: Uint8Array): Promise<Encrypted> {
+/** The same as Encrypted, as bytes: for files, which would cost three times their size as base64. */
+export interface EncryptedBytes {
+  /** The ciphertext with its 16-byte tag at the end (libsodium's combined form): what the API stores for a file. */
+  ciphertext: Uint8Array
+  nonce: Uint8Array
+}
+
+/**
+ * Encrypt bytes under a 32-byte key, with a random 24-byte nonce, and keep the
+ * result as bytes. Byte for byte what `encrypt` makes before its base64.
+ */
+export async function encryptBytes(plain: Uint8Array, key: Uint8Array): Promise<EncryptedBytes> {
   const s = await getSodium()
   const nonce = s.randombytes_buf(s.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES)
-  const bytes = typeof plain === 'string' ? s.from_string(plain) : plain
-  const ciphertext = s.crypto_aead_xchacha20poly1305_ietf_encrypt(bytes, null, null, nonce, key)
+  const ciphertext = s.crypto_aead_xchacha20poly1305_ietf_encrypt(plain, null, null, nonce, key)
+  return { ciphertext, nonce }
+}
+
+/** Decrypt bytes made by encryptBytes (or encrypt, once decoded). Throws if the key is wrong or the ciphertext was altered. */
+export async function decryptBytes(ciphertext: Uint8Array, nonce: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
+  const s = await getSodium()
+  return s.crypto_aead_xchacha20poly1305_ietf_decrypt(null, ciphertext, null, nonce, key)
+}
+
+/** Encrypt bytes or a string (UTF-8) under a 32-byte key, with a random 24-byte nonce. Base64 out: bodies, notes, wrapped keys. */
+export async function encrypt(plain: Uint8Array | string, key: Uint8Array): Promise<Encrypted> {
+  const s = await getSodium()
+  const { ciphertext, nonce } = await encryptBytes(typeof plain === 'string' ? s.from_string(plain) : plain, key)
   return { ciphertext: await toBase64(ciphertext), nonce: await toBase64(nonce) }
 }
 
 /** Throws if the key is wrong or the ciphertext was altered. */
 export async function decrypt(ciphertext: string, nonce: string, key: Uint8Array): Promise<Uint8Array> {
-  const s = await getSodium()
-  return s.crypto_aead_xchacha20poly1305_ietf_decrypt(null, await fromBase64(ciphertext), null, await fromBase64(nonce), key)
+  return decryptBytes(await fromBase64(ciphertext), await fromBase64(nonce), key)
 }
 
 export async function decryptText(ciphertext: string, nonce: string, key: Uint8Array): Promise<string> {

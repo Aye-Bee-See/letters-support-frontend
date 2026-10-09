@@ -1,5 +1,5 @@
 import type { Envelope } from '../types'
-import { decrypt, decryptText, encrypt, generateContentKey, openSealed, sealTo, type Keypair } from './primitives'
+import { decryptBytes, decryptText, encrypt, encryptBytes, generateContentKey, openSealed, sealTo, type Keypair } from './primitives'
 import { fromBase64, getSodium, toBase64 } from './sodium'
 
 // Letters in end-to-end mode (README "Sending and reading letters"): each letter
@@ -92,15 +92,19 @@ export async function decryptLetter(
   return { text, relayNote }
 }
 
-/** Encrypt an attachment (a scan, a photo) with the letter's content key. Upload `bytes` with the `nonce` field. */
+/**
+ * Encrypt an attachment (a scan, a photo) with the letter's content key. Upload
+ * `bytes` with the `nonce` field (base64, like every nonce the API takes). Bytes
+ * in, bytes out: a 20 MB scan is never turned into a base64 string.
+ */
 export async function encryptFile(bytes: Uint8Array, contentKey: Uint8Array): Promise<{ bytes: Uint8Array; nonce: string }> {
-  const { ciphertext, nonce } = await encrypt(bytes, contentKey)
-  return { bytes: await fromBase64(ciphertext), nonce }
+  const { ciphertext, nonce } = await encryptBytes(bytes, contentKey)
+  return { bytes: ciphertext, nonce: await toBase64(nonce) }
 }
 
-/** Decrypt a downloaded attachment (the API serves the ciphertext as-is). */
+/** Decrypt a downloaded attachment (the API serves the ciphertext as-is), as bytes. */
 export async function decryptFile(bytes: Uint8Array, nonce: string, contentKey: Uint8Array): Promise<Uint8Array> {
-  return decrypt(await toBase64(bytes), nonce, contentKey)
+  return decryptBytes(bytes, await fromBase64(nonce), contentKey)
 }
 
 /** Drop a content key once the letter and its attachments are done. */
