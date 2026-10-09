@@ -31,6 +31,8 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'happy-dom',
+          // The dev server's origin, so links and window.location resolve as in the app.
+          environmentOptions: { happyDOM: { url: 'http://localhost:3001/' } },
           include: ['**/*.test.tsx'],
           setupFiles: ['./src/test/setup.ts'],
         },
