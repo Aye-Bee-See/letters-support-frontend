@@ -60,3 +60,13 @@ export function accountRefusal(error: ApiError): string {
   if (error.status === 404) return 'There is no such account any more: it may have been deleted meanwhile.'
   return commonRefusal(error) ?? otherRefusal(error)
 }
+
+/**
+ * POST /auth/user refusals. A taken username or email comes back as a general
+ * error whose sentence is the only thing that says which (README "POST
+ * /auth/user"), so a 400 shows the API's own sentence as every 400 does.
+ */
+export function createRefusal(error: ApiError): string {
+  if (error.status === 403) return 'The server refused this: only a site admin can make staff accounts.'
+  return commonRefusal(error) ?? otherRefusal(error)
+}

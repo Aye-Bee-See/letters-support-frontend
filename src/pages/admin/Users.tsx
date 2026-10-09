@@ -41,7 +41,12 @@ export default function Users() {
     <>
       <div className="admin-topbar">
         <span className="topbar-title">Accounts</span>
-        <span className="topbar-right">{list.data && `${total} ${filtered ? 'matching' : 'in all'}`}</span>
+        <span className="topbar-right">
+          {list.data && `${total} ${filtered ? 'matching' : 'in all'}`}{' '}
+          <Link to="/admin/users/new" className="a-btn a-btn-primary a-btn-sm">
+            New account
+          </Link>
+        </span>
       </div>
 
       <div className="admin-content">

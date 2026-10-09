@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError } from '../types'
-import { accountRefusal, deleteRefusal, isRole, managedNote, ROLE_LABELS } from './users'
+import { accountRefusal, createRefusal, deleteRefusal, isRole, managedNote, ROLE_LABELS } from './users'
 
 const SENTENCE = 'The API’s own sentence, not stable.'
 const refusal = (over: Partial<ApiError>): ApiError => ({ status: 400, name: null, condition: null, errors: [], message: SENTENCE, ...over })
@@ -61,5 +61,12 @@ describe('accountRefusal', () => {
   it('shows a 400’s first sentence, as every 400 does', () => {
     expect(accountRefusal(refusal({ errors: ['chapterId must name a group'] }))).toBe('chapterId must name a group')
     expect(accountRefusal(refusal({ status: 429, retryAfter: 30 }))).toMatch(/Wait 30 seconds/)
+  })
+})
+
+describe('createRefusal', () => {
+  it('says a 403 is about being a site admin, and shows a 400’s first sentence', () => {
+    expect(createRefusal(refusal({ status: 403, name: 'AuthorizationError' }))).toMatch(/only a site admin can make staff accounts/)
+    expect(createRefusal(refusal({ errors: ['username must be unique'] }))).toBe('username must be unique')
   })
 })
