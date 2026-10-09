@@ -20,6 +20,8 @@ import {
 } from './account'
 import { decryptFile, decryptLetter, encryptFile, encryptLetter, envelopeFor, openEnvelope, reencryptLetter } from './letters'
 import { generateKeypair, sealTo } from './primitives'
+import { runKdfJob } from './kdf.worker'
+import { argon2idRunsIn } from './kdfRunner'
 import { fromBase64, getSodium, toBase64 } from './sodium'
 
 // Argon2id at 64 MiB takes a fraction of a second per run; flows run it several times.
@@ -53,6 +55,27 @@ describe('cross-client test vectors (must match the API and Android byte for byt
     const expected = 'lEpmh4tmC0xaD5DhMboQo/3Hw7JqT3VThdqq0n1pImc='
     expect(await toBase64(await deriveKey(passwordBytes('café'), salt, KDF_PARAMS))).toBe(expected)
     expect(await toBase64(await deriveKey(passwordBytes('café'), salt, KDF_PARAMS))).toBe(expected)
+  })
+
+  // The worker path (kdf.worker.ts) runs exactly this job. Node has no Web Worker, so
+  // deriveKey falls back to the main thread here; the job is run directly instead,
+  // and must give the vector byte for byte, as the fallback does.
+  it('gives the same key in the worker’s job as on the main thread, and wipes the worker’s copy of the secret', { timeout: SLOW }, async () => {
+    expect(argon2idRunsIn()).toBe('main')
+    const salt = await toBase64(bytes(16))
+    const main = await deriveKey(passwordBytes('correct horse battery staple'), salt, KDF_PARAMS)
+    const secret = passwordBytes('correct horse battery staple')
+    const answer = await runKdfJob({ id: 1, secret, salt: bytes(16), opslimit: KDF_PARAMS.opslimit!, memlimit: KDF_PARAMS.memlimit!, alg: KDF_PARAMS.alg! })
+    if (!('key' in answer)) throw new Error(answer.error)
+    expect(await toBase64(answer.key)).toBe('wFzkxN1+DkXuYBHMWdBoreR98bAfwM+c1GeL32ilt7A=')
+    expect(answer.key).toEqual(main)
+    expect(secret.every((b) => b === 0)).toBe(true)
+  })
+
+  it('leaves the caller’s secret to the caller', { timeout: SLOW }, async () => {
+    const secret = passwordBytes('x')
+    await deriveKey(secret, await toBase64(bytes(16)), KDF_PARAMS)
+    expect(secret).toEqual(passwordBytes('x'))
   })
 
   it('writes the agreed kdfParams', () => {
