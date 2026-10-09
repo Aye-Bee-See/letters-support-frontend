@@ -160,3 +160,14 @@ function createFakeApi() {
 }
 
 export const fakeApi = createFakeApi()
+
+/**
+ * An answer the test gives later: `fakeApi.on(method, path, held.answer)`, then
+ * `held.resolve(value)` (any answer `on` takes) whenever the test chooses, before
+ * or after the request is made.
+ */
+export function later() {
+  let resolve: (answer: unknown) => void = () => undefined
+  const promise = new Promise<unknown>((r) => (resolve = r))
+  return { answer: () => promise, resolve: (answer: unknown) => resolve(answer) }
+}
