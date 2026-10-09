@@ -117,7 +117,8 @@ function createFakeApi() {
       data: response.body,
       status: response.status,
       statusText: String(response.status),
-      headers: AxiosHeaders.from(response.headers),
+      // Lower-cased, as a browser's XMLHttpRequest gives them.
+      headers: AxiosHeaders.from(Object.fromEntries(Object.entries(response.headers).map(([k, v]) => [k.toLowerCase(), v]))),
       config,
     }
     if (response.status >= 200 && response.status < 300) return axiosResponse
