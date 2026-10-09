@@ -60,7 +60,12 @@ export default function PrisonersList() {
     <>
       <div className="admin-topbar">
         <span className="topbar-title">Prisoners</span>
-        <span className="topbar-right">{list.data && `${total} ${filtered ? 'matching' : 'in the directory'}`}</span>
+        <span className="topbar-right">
+          {list.data && `${total} ${filtered ? 'matching' : 'in the directory'}`}{' '}
+          <Link to="/admin/prisoners/new" className="a-btn a-btn-primary a-btn-sm">
+            New prisoner
+          </Link>
+        </span>
       </div>
 
       <div className="admin-content">

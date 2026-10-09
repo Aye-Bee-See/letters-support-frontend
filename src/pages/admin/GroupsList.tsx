@@ -57,7 +57,12 @@ export default function GroupsList() {
     <>
       <div className="admin-topbar">
         <span className="topbar-title">Groups</span>
-        <span className="topbar-right">{list.data && `${total} ${filtered ? 'matching' : 'in the network'}`}</span>
+        <span className="topbar-right">
+          {list.data && `${total} ${filtered ? 'matching' : 'in the network'}`}{' '}
+          <Link to="/admin/groups/new" className="a-btn a-btn-primary a-btn-sm">
+            New group
+          </Link>
+        </span>
       </div>
 
       <div className="admin-content">

@@ -1,7 +1,23 @@
 // Superadmin-only calls: the dashboard counts and the moderation decisions. Every
 // call here is a 403 for anyone else; the /admin routes are behind RequireAdmin.
-import { getList, getOne, put } from './client'
-import type { AdminSummary, AuditEntry, BanRecommendation, EncryptionReadiness, ListParams, Submission, User, UserRole } from '../types'
+import { getList, getOne, post, put } from './client'
+import type { FacilityFields } from './facilities'
+import type { GroupFields } from './groups'
+import type { PrisonerFields } from './prisoners'
+import type {
+  AdminSummary,
+  AuditEntry,
+  BanRecommendation,
+  Chapter,
+  EncryptionReadiness,
+  ListParams,
+  Prison,
+  Prisoner,
+  PrisonAddress,
+  Submission,
+  User,
+  UserRole,
+} from '../types'
 
 export const getAdminSummary = () => getOne<AdminSummary>('/moderation/summary')
 
@@ -39,3 +55,23 @@ export { getBanRecommendations } from './moderation'
  */
 export const decideBanRecommendation = (id: number, decision: 'ban' | 'dismiss', note?: string) =>
   put<BanRecommendation>('/moderation/ban-recommendation', { id, decision, ...(note ? { note } : {}) })
+
+// --- Directory records made directly (README "POST /prisoner/prisoner",
+// "POST /prison/prison", "POST /chapter/chapter"), rather than by approving a
+// group's proposal. Each answers the new record; the audit log keeps the
+// fields as sent. A new record is `published` unless recordStatus says
+// otherwise (README "Record status"), so the forms send it every time.
+
+/** POST /prisoner/prisoner. Every field is optional to the API; `prison` must name an existing facility. */
+export const createPrisoner = (fields: PrisonerFields) => post<Prisoner>('/prisoner/prisoner', fields)
+
+/** POST /prison/prison. `prisonName` and `address` (an object; `lines` 1 to 8 non-empty strings) are required. */
+export const createFacility = (fields: FacilityFields & { prisonName: string; address: PrisonAddress }) => post<Prison>('/prison/prison', fields)
+
+/**
+ * POST /chapter/chapter. `name` and `location` (an object) are required. A new
+ * group is `pending` until a site admin makes it active, and has no members and
+ * no key: its first group admin is put in it from their account's page or
+ * invited, and sets the key up.
+ */
+export const createGroup = (fields: GroupFields & { name: string; location: Record<string, string> }) => post<Chapter>('/chapter/chapter', fields)

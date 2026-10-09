@@ -70,3 +70,12 @@ export function createRefusal(error: ApiError): string {
   if (error.status === 403) return 'The server refused this: only a site admin can make staff accounts.'
   return commonRefusal(error) ?? otherRefusal(error)
 }
+
+/**
+ * Any other site-admin write (the directory records made on the New pages): a
+ * 403 there is about the role, never commonRefusal's inactive group.
+ */
+export function siteAdminRefusal(error: ApiError): string {
+  if (error.status === 403) return 'The server refused this: only a site admin can do it. Sign in again if your role changed.'
+  return commonRefusal(error) ?? otherRefusal(error)
+}

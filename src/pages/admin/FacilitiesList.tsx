@@ -61,7 +61,12 @@ export default function FacilitiesList() {
     <>
       <div className="admin-topbar">
         <span className="topbar-title">Facilities</span>
-        <span className="topbar-right">{list.data && `${total} ${filtered ? 'matching' : 'in the directory'}`}</span>
+        <span className="topbar-right">
+          {list.data && `${total} ${filtered ? 'matching' : 'in the directory'}`}{' '}
+          <Link to="/admin/facilities/new" className="a-btn a-btn-primary a-btn-sm">
+            New facility
+          </Link>
+        </span>
       </div>
 
       <div className="admin-content">
