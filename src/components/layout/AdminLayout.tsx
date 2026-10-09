@@ -1,6 +1,8 @@
 import { useLayoutEffect } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { getAdminSummary } from '../../api/admin'
 import adminCss from '../../assets/styles/admin.css?inline'
+import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignOut } from '../../hooks/useSignOut'
 
@@ -20,11 +22,25 @@ export function AdminStyles() {
   return <Outlet />
 }
 
+/** A sidebar link's count, as admin.css's `.sidebar-nav .badge`; nothing at zero or before it loads. */
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span className="badge">
+      {count}
+      <span className="visually-hidden"> waiting</span>
+    </span>
+  )
+}
+
 // Sidebar markup and classes from solidarity-site/admin/dashboard.html.
 export default function AdminLayout() {
   const { user } = useAuth()
 
   const signOut = useSignOut()
+  // The sidebar's counts: GET /moderation/summary, once when the admin area opens.
+  const summary = useApi(getAdminSummary, [])
+  const pending = summary.data ? Object.values(summary.data.pendingSubmissions).reduce((a, b) => a + b, 0) : 0
 
   return (
     <div className="admin-layout">
@@ -40,9 +56,8 @@ export default function AdminLayout() {
           <div className="sidebar-section-label">Overview</div>
           <ul className="sidebar-nav">
             <li><NavLink to="/admin" end>Dashboard</NavLink></li>
-            {/* TODO: pending-count badge (<span className="badge">) once Queue is wired */}
-            <li><NavLink to="/admin/queue">Moderation Queue</NavLink></li>
-            <li><NavLink to="/admin/bans">Block recommendations</NavLink></li>
+            <li><NavLink to="/admin/queue">Moderation Queue<CountBadge count={pending} /></NavLink></li>
+            <li><NavLink to="/admin/bans">Block recommendations<CountBadge count={summary.data?.pendingBanRecommendations ?? 0} /></NavLink></li>
           </ul>
         </div>
 
@@ -52,6 +67,7 @@ export default function AdminLayout() {
             <li><NavLink to="/admin/prisoners">Prisoners</NavLink></li>
             <li><NavLink to="/admin/facilities">Facilities</NavLink></li>
             <li><NavLink to="/admin/groups">Groups</NavLink></li>
+            <li><NavLink to="/admin/mail-rules">Mail rules</NavLink></li>
           </ul>
         </div>
 

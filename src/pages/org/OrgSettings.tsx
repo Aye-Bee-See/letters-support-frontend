@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getGroupHistory, updateGroup } from '../../api/groups'
 import { GROUP_UI } from '../../components/forms/uiClasses'
+import PrisonerPhotos from '../../components/group/PrisonerPhoto'
 import RelayFacilitiesPanel from '../../components/group/RelayFacilitiesPanel'
 import SupportedPrisonersPanel from '../../components/group/SupportedPrisonersPanel'
 import { useApi } from '../../hooks/useApi'
@@ -99,6 +100,7 @@ export default function OrgSettings() {
         {/* Keyed on id only: a link change mustn't reset unsaved form edits. */}
         <RelayFacilitiesPanel key={`relay-${group.id}`} group={group} classes={GROUP_UI} linkTo={(f) => `/facilities/${f.id}`} />
         <SupportedPrisonersPanel key={`support-${group.id}`} group={group} classes={GROUP_UI} linkTo={(p) => `/prisoners/${p.id}`} />
+        <PrisonerPhotos />
 
         <section className="settings-section">
           <h2 className="settings-section-heading">History</h2>

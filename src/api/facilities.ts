@@ -1,6 +1,8 @@
 // The UI says "facility"; the API says "prison" (/prison).
 import { del, getAllPages, getList, getOne, put } from './client'
 import type { FilterValues, ListParams, MailRuleList, Prison, RecordStatus, RoutingMethod } from '../types'
+import { post } from './client'
+import type { HistoryEntry, MailRule, MailRuleCategory } from '../types'
 
 export interface FacilityListParams extends ListParams {
   country?: string
@@ -70,3 +72,37 @@ export const linkRelayGroup = (prison: number, chapter: number) =>
 
 /** Detach a relay group: the same people as linking. A 404 if there was no link. */
 export const unlinkRelayGroup = (prison: number, chapter: number) => del<number>('/prison/relay', { prison, chapter })
+
+// --- The master mail-rule list (README "Changing the master list (admin)") ----
+
+export interface MailRuleInput {
+  /** lower_snake_case, 3 to 40 characters, unique. Never changes once created. */
+  tag: string
+  category: MailRuleCategory
+  /** 3 to 80 characters. */
+  label: string
+  description?: string | null
+}
+
+/**
+ * POST /prison/mail-rule (superadmin): a new rule on the master list. A 409
+ * DuplicateRuleError when the list already says the same thing in other words
+ * (the same words in another order, a singular for a plural).
+ */
+export const createMailRule = (rule: MailRuleInput) => post<MailRule>('/prison/mail-rule', rule)
+
+/**
+ * PUT /prison/mail-rule (superadmin): reword, recategorise, retire (`retired:
+ * true`) or restore. Answers with `prisons`, how many facilities carry it. The
+ * tag never changes (a 409 RuleTagError); a label another rule already has is a
+ * 409 DuplicateRuleError.
+ */
+export const updateMailRule = (id: number, changes: Partial<Omit<MailRuleInput, 'tag'>> & { retired?: boolean }) =>
+  put<MailRule & { prisons: number }>('/prison/mail-rule', { id, ...changes })
+
+/** DELETE /prison/mail-rule (superadmin): only a rule no facility carries; otherwise a 409 RuleInUseError, and it should be retired. */
+export const deleteMailRule = (id: number) => del<MailRule>('/prison/mail-rule', { id })
+
+/** GET /prison/history?id=: what happened to the facility's record, newest first, paginated. Staff only. */
+export const getFacilityHistory = (id: number, params?: Pick<ListParams, 'page' | 'page_size'>) =>
+  getList<HistoryEntry>('/prison/history', { id, ...params })

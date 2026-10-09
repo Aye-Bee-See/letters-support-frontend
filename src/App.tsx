@@ -38,6 +38,7 @@ const Join = lazy(() => import('./pages/auth/Join'))
 const InboxWriter = lazy(() => import('./pages/inbox/InboxWriter'))
 const InboxOrg = lazy(() => import('./pages/inbox/InboxOrg'))
 const PrintLetter = lazy(() => import('./pages/inbox/PrintLetter'))
+const PrintBatch = lazy(() => import('./pages/inbox/PrintBatch'))
 const Thread = lazy(() => import('./pages/correspondence/Thread'))
 const NewLetter = lazy(() => import('./pages/correspondence/NewLetter'))
 const RecordReply = lazy(() => import('./pages/correspondence/RecordReply'))
@@ -62,6 +63,7 @@ const EditPrisoner = lazy(() => import('./pages/admin/EditPrisoner'))
 const FacilitiesList = lazy(() => import('./pages/admin/FacilitiesList'))
 const GroupsList = lazy(() => import('./pages/admin/GroupsList'))
 const Invitations = lazy(() => import('./pages/admin/Invitations'))
+const MailRules = lazy(() => import('./pages/admin/MailRules'))
 const Queue = lazy(() => import('./pages/admin/Queue'))
 const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'))
 const Users = lazy(() => import('./pages/admin/Users'))
@@ -142,6 +144,7 @@ export default function App() {
                 <Route path="blocked-writers" element={<BlockedWriters />} />
                 <Route path="replies/new" element={<RecordReply />} />
                 <Route path="letters/:id/print" element={<PrintLetter />} />
+                <Route path="letters/print-batch" element={<PrintBatch />} />
               </Route>
             </Route>
           </Route>
@@ -163,6 +166,7 @@ export default function App() {
                 <Route path="audit" element={<AuditLog />} />
                 <Route path="invite" element={<Invitations />} />
                 <Route path="settings" element={<SiteSettings />} />
+                <Route path="mail-rules" element={<MailRules />} />
                 <Route path="users" element={<Users />} />
                 <Route path="users/:id" element={<EditUser />} />
                 <Route path="users/new" element={<NewAccount />} />

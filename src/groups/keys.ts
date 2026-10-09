@@ -1,7 +1,7 @@
 import { toApiError } from '../api/client'
 import { getKeys } from '../api/auth'
 import { handMemberKey } from '../api/groups'
-import { sealPrivateKeyTo, unlockGroupKey, type Keypair } from '../crypto'
+import { keyFingerprint, sealPrivateKeyTo, unlockGroupKey, type Keypair } from '../crypto'
 import type { KeyBundle } from '../types'
 
 // Group keys (README "Group keys"): the steps the keys page and the waiting
@@ -59,3 +59,14 @@ export const errorText = (err: unknown) => {
 
 /** How a group admin is named on the key screens: their name and username, or the username. */
 export const adminName = (m: { username: string; name: string | null }) => (m.name ? `${m.name} (${m.username})` : m.username)
+
+/**
+ * Fingerprints for the keys page (crypto/fingerprint.ts), one per distinct key:
+ * key → "xxxx-xxxx-…", or null for a key that isn't a public key at all (which
+ * the page says, since that alone means something is wrong).
+ */
+export async function fingerprintsOf(keys: (string | null | undefined)[]): Promise<Map<string, string | null>> {
+  const distinct = [...new Set(keys.filter((k): k is string => !!k))]
+  const pairs = await Promise.all(distinct.map(async (k) => [k, await keyFingerprint(k).catch(() => null)] as const))
+  return new Map(pairs)
+}

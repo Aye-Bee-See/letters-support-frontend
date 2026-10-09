@@ -10,6 +10,7 @@ import {
   type FacilityFields,
 } from '../../api/facilities'
 import { getAllGroups } from '../../api/groups'
+import RecordHistory from '../../components/admin/RecordHistory'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, MailRuleCategory, MailRuleList, Prison, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
@@ -191,6 +192,7 @@ export default function EditFacility() {
             />
             {/* Keyed on id only: linking a group mustn't reload the record and drop unsaved form edits. */}
             <RelayGroups key={facility.data.id} facility={facility.data} />
+            <RecordHistory resource="prison" id={facility.data.id} version={facility.data.updatedAt} />
           </>
         )}
       </div>

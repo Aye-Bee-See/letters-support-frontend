@@ -6,7 +6,7 @@ import { getUnreadNotifications, markNotificationsRead } from '../../api/notific
 import { MembersWaitingNotice } from '../../components/group'
 import LoadState from '../../components/ui/LoadState'
 import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../../crypto'
-import { adminName, errorText, EVERY_HOLDER, handKeyTo, isStaleKey, type OrgKey } from '../../groups/keys'
+import { adminName, errorText, EVERY_HOLDER, fingerprintsOf, handKeyTo, isStaleKey, type OrgKey } from '../../groups/keys'
 import { checkResealed, reseal } from '../../groups/rotation'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useAuth } from '../../hooks/useAuth'
@@ -173,6 +173,8 @@ export default function GroupKeys() {
             noticeKey={version}
           />
         )}
+
+        {data && <Fingerprints roster={data} />}
 
         {data && data.publicKey && group.isOwner && group.keyState === 'ready' && (
           <Rotate
@@ -492,6 +494,101 @@ function Roster({
         </p>
       )}
       <NoteLine note={note} />
+    </section>
+  )
+}
+
+// --- Fingerprints -------------------------------------------------------------------
+
+/**
+ * A fingerprint of every public key on this page (crypto/fingerprint.ts), so
+ * group admins can compare them out of band (web audit 8 Oct, section 6). Every
+ * key here comes from the server; only this admin's own key and, if they hold
+ * it, the group's are opened in this browser, so those two are also checked
+ * against what the server lists. Nothing is pinned: the page remembers no
+ * fingerprint between visits.
+ */
+function Fingerprints({ roster }: { roster: MemberKeyRoster }) {
+  const { user, keypair, groupKeypair } = useAuth()
+  const keys = [roster.publicKey, keypair?.publicKey, groupKeypair?.publicKey, ...roster.members.map((m) => m.publicKey)]
+  const wanted = keys.filter(Boolean).join(',')
+  const [prints, setPrints] = useState<{ for: string; map: Map<string, string | null> } | null>(null)
+
+  useEffect(() => {
+    let live = true
+    void fingerprintsOf(wanted.split(',')).then((map) => live && setPrints({ for: wanted, map }))
+    return () => {
+      live = false
+    }
+  }, [wanted])
+
+  const map = prints?.for === wanted ? prints.map : null
+  const show = (key: string | null | undefined) => {
+    if (!key) return '—'
+    if (!map) return '…'
+    return map.get(key) ?? 'not a valid key: tell your site admin'
+  }
+  const me = roster.members.find((m) => m.id === user?.id)
+  // These two were opened (or derived) here, so a difference from the server's copy means the server's is wrong.
+  const ownDiffers = !!keypair && !!me?.publicKey && me.publicKey !== keypair.publicKey
+  const groupDiffers = !!groupKeypair && !!roster.publicKey && roster.publicKey !== groupKeypair.publicKey
+
+  return (
+    <section className="settings-section">
+      <h2 className="settings-section-heading">Key fingerprints</h2>
+      <p className="settings-hint">
+        A fingerprint is a short summary of a public key. Every public key on this page, and every one your browser seals a letter or the group key
+        to, comes from the server. A server that was broken into could hand out a key of its own instead of a group admin’s or the group’s, and
+        then read whatever is sealed to it. Comparing fingerprints outside this site is how you check: in person or on a call, each group admin
+        reads out their own fingerprint from this page, and the others check that it matches the line here.
+      </p>
+      <p className="settings-hint">
+        The group’s fingerprint changes when the key is rotated, and an admin’s when they set up new keys: compare again then. The phone apps
+        don’t show fingerprints yet, so compare website with website. Each fingerprint is the first half of the SHA-256 of the key, as eight
+        groups of four characters.
+      </p>
+      {(ownDiffers || groupDiffers) && (
+        <div className="danger-zone danger-zone-body" role="alert">
+          {ownDiffers && 'The server lists a different public key for you than the one your own keys open to. '}
+          {groupDiffers && 'The server lists a different group key than the one you hold. '}
+          Don’t hand out the group key or rotate it until a site admin has looked into this.
+        </div>
+      )}
+      <div style={{ overflowX: 'auto' }}>
+        <table className="prisons-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Fingerprint</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>The group’s key{roster.publicKey ? ` (version ${roster.keyVersion})` : ''}</td>
+              <td>
+                <code>{roster.publicKey ? show(roster.publicKey) : 'No key yet'}</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Your own key, as your browser holds it</td>
+              <td>
+                <code>{show(keypair?.publicKey)}</code>
+              </td>
+            </tr>
+            {roster.members.map((m) => (
+              <tr key={m.id}>
+                <td>
+                  {adminName(m)}
+                  {m.id === user?.id && ' (you, as the server lists you)'}
+                </td>
+                <td>
+                  <code>{m.publicKey ? show(m.publicKey) : 'No keys yet'}</code>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }
