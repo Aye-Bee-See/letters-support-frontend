@@ -2,6 +2,7 @@
 // blocks, its history, and its key (README "Group keys"), which the API serves
 // under /auth.
 import { del, getAllPages, getList, getOne, post, put } from './client'
+import { forgetWriters } from './writers'
 import type {
   AccountStatus,
   Chapter,
@@ -176,7 +177,8 @@ export interface RotationInput {
  * a writer claimed their account, since getRotation) means start again.
  */
 export const postRotation = (input: RotationInput) =>
+  // Every writer's key is sealed anew: a kept writer list holds the old ones.
   post<{ chapter: number; publicKey: string; keyVersion: number; envelopes: number; writers: number; members: number[]; removed: number[] }>(
     '/auth/chapter-rotation',
     input,
-  )
+  ).finally(forgetWriters)

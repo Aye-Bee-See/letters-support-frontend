@@ -15,6 +15,39 @@ import type { User, Writer } from '../types'
  */
 export const getAllWriters = (params?: { chapter?: number; q?: string }) => getAllPages<Writer>('/auth/writers', params)
 
+/** How long getCachedWriters keeps the list. */
+const WRITERS_FRESH_MS = 60_000
+let writersCache: { account: number; at: number; rows: Promise<Writer[]> } | null = null
+
+/**
+ * The signed-in group's writers (getAllWriters), kept for a minute for that
+ * account: the pages about one writer (hand-off, edit) each need one row of
+ * it, and GET /auth/user strips the keys they need. Any writer change made
+ * through this module, and a group key rotation, forgets it; a failed fetch
+ * isn't kept.
+ */
+export function getCachedWriters(account: number): Promise<Writer[]> {
+  const now = Date.now()
+  if (writersCache && writersCache.account === account && now - writersCache.at < WRITERS_FRESH_MS) return writersCache.rows
+  const rows = getAllWriters()
+  const entry = { account, at: now, rows }
+  writersCache = entry
+  rows.catch(() => {
+    if (writersCache === entry) writersCache = null
+  })
+  return rows
+}
+
+/** Drop the kept list, so the next getCachedWriters asks again. */
+export function forgetWriters() {
+  writersCache = null
+}
+
+/** Run a writer change, then forget the kept list whether it worked or not. */
+function changing<T>(request: Promise<T>): Promise<T> {
+  return request.finally(forgetWriters)
+}
+
 export interface NewWriter {
   /** Required, 3 to 32 characters. */
   name: string
@@ -33,7 +66,7 @@ export interface NewWriter {
 }
 
 /** POST /auth/writer: a managed writer in the caller's own group (a superadmin adds `chapter`). */
-export const createWriter = (writer: NewWriter & { chapter?: number }) => post<User>('/auth/writer', writer)
+export const createWriter = (writer: NewWriter & { chapter?: number }) => changing(post<User>('/auth/writer', writer))
 
 /**
  * What a group may change on its own unclaimed writer through PUT /auth/user.
@@ -51,14 +84,14 @@ export type WriterFields = Partial<Pick<User, 'name' | 'email' | 'managerNote' |
  * sealed to them (README "Latecomers", API #194); any other edit has none.
  */
 export const updateWriter = (id: number, fields: WriterFields) =>
-  put<{ updatedRows: number[]; newUser: Partial<User> & { id: number }; caughtUp?: CaughtUp }>('/auth/user', { id, ...fields })
+  changing(put<{ updatedRows: number[]; newUser: Partial<User> & { id: number }; caughtUp?: CaughtUp }>('/auth/user', { id, ...fields }))
 
 /**
  * DELETE /auth/user for an unclaimed writer of the caller's group: the account,
  * its letters, replies, attachments and threads all go. Answers what was removed.
  */
 export const deleteWriter = (id: number) =>
-  del<{ deleted: 1; letters: number; replies: number; attachments: number; threads: number }>('/auth/user', { id })
+  changing(del<{ deleted: 1; letters: number; replies: number; attachments: number; threads: number }>('/auth/user', { id }))
 
 /**
  * POST /auth/writer/token with the material from createClaimToken (src/crypto):
@@ -68,7 +101,7 @@ export const deleteWriter = (id: number) =>
  * ClaimError for the group's anonymous writer, which can never be claimed.
  */
 export const issueClaimToken = (writer: number, fields: ClaimMaterial['fields']) =>
-  post<{ writer: number; expiresAt: string }>('/auth/writer/token', { writer, ...fields })
+  changing(post<{ writer: number; expiresAt: string }>('/auth/writer/token', { writer, ...fields }))
 
 /** DELETE /auth/writer/token: revoke the live claim token. A 404 if there is none. */
-export const revokeClaimToken = (writer: number) => del<number>('/auth/writer/token', { writer })
+export const revokeClaimToken = (writer: number) => changing(del<number>('/auth/writer/token', { writer }))
