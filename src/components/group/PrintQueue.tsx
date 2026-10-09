@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import { getMessages, setLetterStatusBatch } from '../../api/letters'
@@ -39,6 +39,10 @@ import { DeclineForm } from './DeclineLetter'
 // selected" opens the chosen queued or held letters on one batch sheet
 // (pages/inbox/PrintBatch.tsx), held ones after the same confirmation, and the
 // sheet marks them printed together.
+//
+// Each filter chip carries its count: the API has no counts endpoint, so it is
+// one page_size=1 request per chip (its `total`), six small requests when the
+// queue opens and again after a batch action here. Nothing polls.
 
 const PAGE_SIZE = 50
 
@@ -49,6 +53,25 @@ const BATCH_MOVE: Partial<Record<QueueFilter, { target: 'printed' | 'mailed'; la
   queued: { target: 'printed', label: 'Mark printed' },
   held: { target: 'printed', label: 'Mark printed', release: true },
   printed: { target: 'mailed', label: 'Mark mailed' },
+}
+
+/** How many letters each filter holds, from one page_size=1 request per filter; `refresh` reads them again. */
+function useQueueCounts(chapterId: number): { counts: Partial<Record<QueueFilter, number>>; refresh: () => void } {
+  const [version, setVersion] = useState(0)
+  const [counts, setCounts] = useState<Partial<Record<QueueFilter, number>>>({})
+  useEffect(() => {
+    let live = true
+    for (const f of QUEUE_FILTERS) {
+      getMessages({ relayChapter: chapterId, status: f.status, held: f.held, page: 1, page_size: 1 })
+        .then((r) => live && setCounts((c) => ({ ...c, [f.key]: r.total })))
+        // A count that can't be read is left off the chip; the list says why if it can't load either.
+        .catch(() => live && setCounts((c) => ({ ...c, [f.key]: undefined })))
+    }
+    return () => {
+      live = false
+    }
+  }, [chapterId, version])
+  return { counts, refresh: () => setVersion((v) => v + 1) }
 }
 
 /** The date a row shows, and what it means for this filter. */
@@ -142,6 +165,7 @@ function QueueList({
   keyState,
   carried,
   onClamp,
+  onChanged,
 }: {
   chapterId: number
   filter: QueueFilter
@@ -150,6 +174,8 @@ function QueueList({
   /** The notice from the page this list was moved back from. */
   carried: Notice | null
   onClamp: (last: number, notice: Notice | null) => void
+  /** Letters moved: the chips' counts are read again. */
+  onChanged: () => void
 }) {
   const [, setParams] = useSearchParams()
   const navigate = useNavigate()
@@ -205,6 +231,7 @@ function QueueList({
       setSelected(new Set())
       setConfirming(false)
       list.reload()
+      onChanged()
     } catch (err) {
       const apiError = toApiError(err)
       setNotice({ kind: 'error', text: statusRefusal(apiError, chosen, move.target) })
@@ -227,6 +254,7 @@ function QueueList({
       setSelected(new Set())
       setDeclining(false)
       list.reload()
+      onChanged()
       return null
     } catch (err) {
       const apiError = toApiError(err)
@@ -259,6 +287,7 @@ function QueueList({
                   setRefused(new Set())
                   setNotice(null)
                   list.reload()
+                  onChanged()
                 }}
               >
                 Reload the list
@@ -399,6 +428,7 @@ export default function PrintQueue({ chapterId, keyState }: { chapterId: number;
   const filter = queueFilter(params.get('filter')).key
   const page = Math.max(1, Number(params.get('page')) || 1)
   const at = `${filter}:${page}`
+  const { counts, refresh } = useQueueCounts(chapterId)
   // A notice carried to the page a list was moved back to; dropped once the list is elsewhere.
   const [carried, setCarried] = useState<{ from: string; at: string; notice: Notice } | null>(null)
   if (carried && at !== carried.at && at !== carried.from) setCarried(null)
@@ -421,7 +451,7 @@ export default function PrintQueue({ chapterId, keyState }: { chapterId: number;
       <div className="queue-filters" role="navigation" aria-label="Letters by status">
         {QUEUE_FILTERS.map((f) => (
           <FilterChip key={f.key} to={{ search: `?tab=print&filter=${f.key}` }} active={f.key === filter}>
-            {f.label}
+            {counts[f.key] === undefined ? f.label : `${f.label} (${counts[f.key]})`}
           </FilterChip>
         ))}
       </div>
@@ -433,6 +463,7 @@ export default function PrintQueue({ chapterId, keyState }: { chapterId: number;
         keyState={keyState}
         carried={carried?.at === at ? carried.notice : null}
         onClamp={clamp}
+        onChanged={refresh}
       />
     </div>
   )
