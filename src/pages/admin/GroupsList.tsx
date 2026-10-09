@@ -8,8 +8,9 @@ import type { AccountStatus, ApiError, Chapter, NetworkRole, RecordStatus } from
 
 // Every group, pending and suspended included, with the superadmin's one job
 // here: approving groups that joined by invitation, and suspending or
-// reactivating them (accountStatus is admin-only). full=true adds the
-// facilities each relays for. Filters live in the URL under the API's names.
+// reactivating them (accountStatus is admin-only). Rows come without `full`
+// (which embeds every facility each relays for and every prisoner it
+// supports): the edit page lists those. Filters live in the URL under the API's names.
 
 const PAGE_SIZE = 25
 
@@ -40,7 +41,6 @@ export default function GroupsList() {
     networkRole: role,
     recordStatus: record,
     sort,
-    full: true,
     page,
     page_size: PAGE_SIZE,
   }
@@ -172,7 +172,6 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
             <th>Account</th>
             <th>Record</th>
             <th>Group key</th>
-            <th>Relays for</th>
             <th>Letters mailed</th>
             <th>
               <span className="visually-hidden">Actions</span>
@@ -182,7 +181,6 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
         <tbody>
           {groups.map((g) => {
             const relays = g.networkRole !== 'collecting'
-            const facilities = g.relay_prisons?.length ?? 0
             return (
               <tr key={g.id}>
                 <td>
@@ -251,7 +249,6 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                     </span>
                   )}
                 </td>
-                <td>{relays ? `${facilities} ${facilities === 1 ? 'facility' : 'facilities'}` : '—'}</td>
                 <td>{g.lettersCounted ?? '—'}</td>
                 <td className="actions">
                   <Link to={`/admin/groups/${g.id}/edit`} className="a-btn a-btn-sm">

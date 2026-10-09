@@ -8,9 +8,10 @@ import { isStale, ROUTING_LABELS } from '../../utils/facilities'
 import { shortDate } from '../../utils/prisoners'
 
 // Every facility record, drafts and pending included (superadmins are staff).
-// full=true adds each facility's relay groups and prisoners, which this list
-// needs to show who mails there and who is held there. Filters live in the URL
-// under the API's own names.
+// Rows come without `full`, which would embed every prisoner held at each
+// facility: the edit page names the relay groups and the prisoners. Whether a
+// facility has an active relay group comes from one more request, the same
+// filters with relay=false. Filters live in the URL under the API's own names.
 
 const PAGE_SIZE = 25
 
@@ -42,11 +43,21 @@ export default function FacilitiesList() {
     ...(relay ? { relay: relay === 'true' } : {}),
     ...(stale ? { stale: true as const } : {}),
     sort,
-    full: true,
     page,
     page_size: PAGE_SIZE,
   }
   const list = useApi(() => getFacilities(query), [q, record, country, routing, relay, stale, sort, page])
+  // Which of the matching facilities have no active relay group: the same
+  // filters with relay=false, ids only. Not needed when the relay filter says.
+  const unrelayed = useApi(
+    () =>
+      relay
+        ? Promise.resolve(null)
+        : getFacilities({ ...query, relay: false, sort: undefined, page: 1, page_size: 100 }).then((r) =>
+            r.total > r.items.length ? null : new Set(r.items.map((f) => f.id)),
+          ),
+    [q, record, country, routing, relay, stale],
+  )
   // The countries present, with counts, for the country filter.
   const filters = useApi(getFacilityFilters, [])
 
@@ -148,7 +159,12 @@ export default function FacilitiesList() {
           {list.data && list.data.total === 0 && (
             <p className="dash-note">{filtered ? 'No facilities match these filters.' : 'There are no facilities in the directory yet.'}</p>
           )}
-          {list.data && list.data.items.length > 0 && <FacilityTable facilities={list.data.items} />}
+          {list.data && list.data.items.length > 0 && (
+            <FacilityTable
+              facilities={list.data.items}
+              hasRelay={(f) => (relay ? relay === 'true' : unrelayed.data ? !unrelayed.data.has(f.id) : null)}
+            />
+          )}
         </div>
 
         {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
@@ -159,15 +175,15 @@ export default function FacilitiesList() {
 
 const RECORD_BADGES: Record<RecordStatus, string> = { published: 'badge-published', pending: 'badge-pending', draft: 'badge-draft' }
 
-function FacilityTable({ facilities }: { facilities: Prison[] }) {
+/** `hasRelay`: whether the facility has an active relay group; null when not known (over 100 without one). */
+function FacilityTable({ facilities, hasRelay }: { facilities: Prison[]; hasRelay: (f: Prison) => boolean | null }) {
   return (
     <table className="admin-table">
       <thead>
         <tr>
           <th>Facility</th>
           <th>Routing</th>
-          <th>Relay groups</th>
-          <th>Prisoners</th>
+          <th>Active relay group</th>
           <th>Record</th>
           <th>Verified</th>
           <th>
@@ -189,9 +205,8 @@ function FacilityTable({ facilities }: { facilities: Prison[] }) {
               </td>
               <td>{f.routing ? ROUTING_LABELS[f.routing] : '—'}</td>
               <td>
-                <RelayGroups facility={f} />
+                <RelayState facility={f} has={hasRelay(f)} />
               </td>
-              <td>{f.prisoners?.length ?? '—'}</td>
               <td>{f.recordStatus && <span className={`badge ${RECORD_BADGES[f.recordStatus]}`}>{f.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
                 {shortDate(f.verifiedAt) ?? 'Never'}
@@ -216,24 +231,11 @@ function FacilityTable({ facilities }: { facilities: Prison[] }) {
 }
 
 /**
- * The groups linked to this facility. Only active ones can take letters, so any
- * other is marked; a facility routed "relay only" with no active group can't be
- * written to at all.
+ * Whether the facility has an active relay group (the edit page names them).
+ * A facility routed "relay only" with none can't be written to at all.
  */
-function RelayGroups({ facility: f }: { facility: Prison }) {
-  const groups = f.relay_groups ?? []
-  const active = groups.filter((g) => g.accountStatus === 'active')
-  if (groups.length === 0)
-    return f.routing === 'relay_only' ? <span className="list-stale">None: can’t be written to</span> : <span className="list-sub">None</span>
-  return (
-    <>
-      {groups.map((g) => (
-        <div key={g.id}>
-          <Link to={`/groups/${g.id}`}>{g.name}</Link>
-          {g.accountStatus !== 'active' && <span className="list-sub"> ({g.accountStatus})</span>}
-        </div>
-      ))}
-      {active.length === 0 && f.routing === 'relay_only' && <div className="list-stale">No active group: can’t be written to</div>}
-    </>
-  )
+function RelayState({ facility: f, has }: { facility: Prison; has: boolean | null }) {
+  if (has === null) return <span className="list-sub">—</span>
+  if (has) return <span>Yes</span>
+  return f.routing === 'relay_only' ? <span className="list-stale">None: can’t be written to</span> : <span className="list-sub">None</span>
 }

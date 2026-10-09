@@ -40,6 +40,23 @@ export function useListParams() {
 }
 
 /**
+ * The search string for a link that changes some list parameters and keeps
+ * the rest: a filter chip that sets or clears its own filter and leaves the
+ * others, so filters combine. An empty or undefined value clears; any change
+ * but paging goes back to page 1, as `update` does.
+ */
+export function listSearch(params: URLSearchParams, changes: Record<string, string | undefined>): string {
+  const next = new URLSearchParams(params)
+  for (const [key, value] of Object.entries(changes)) {
+    if (value) next.set(key, value)
+    else next.delete(key)
+  }
+  if (!('page' in changes)) next.delete('page')
+  const search = next.toString()
+  return search ? `?${search}` : ''
+}
+
+/**
  * A reload that leaves the page past the end (its last items decided, moved or
  * deleted meanwhile) goes to the last page instead of showing an empty one with
  * no pager. `pages` is null until the list has loaded, so a page still loading

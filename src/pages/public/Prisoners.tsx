@@ -1,24 +1,34 @@
 import { useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { getAllPrisoners, getPrisonerFilters } from '../../api/prisoners'
+import { getPrisonerFilters, getPrisoners } from '../../api/prisoners'
+import { DirectoryPager, DirectorySearch } from '../../components/ui/DirectoryControls'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
 import { useApi } from '../../hooks/useApi'
+import { listSearch, useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { PrisonerStatus } from '../../types'
 import { STATUS_LABELS } from '../../utils/prisoners'
 
 const STATUS_ORDER: PrisonerStatus[] = ['incarcerated', 'pretrial', 'free']
+const PAGE_SIZE = 24
 
-// Markup and classes from solidarity-site/prisoners.html. Chips come from
-// GET /prisoner/filters (the values present); one is active at a time, kept in
-// the URL, and the API returns only the matching records.
+// Markup and classes from solidarity-site/prisoners.html. The API searches,
+// filters and pages (README "Searching, filtering, and sorting lists"): a
+// search box (`q`), chips from GET /prisoner/filters for the values present,
+// one country and one status at a time but the two together, and a pager,
+// all kept in the URL under the API's own names.
 export default function Prisoners() {
-  const [params] = useSearchParams()
+  const { params, page, update } = useListParams()
+  const q = params.get('q') ?? ''
   const country = params.get('country') ?? undefined
-  const status = (params.get('status') ?? undefined) as PrisonerStatus | undefined
+  const statusParam = params.get('status')
+  const status = STATUS_ORDER.find((s) => s === statusParam)
   const filters = useApi(getPrisonerFilters, [])
-  const prisoners = useApi(() => getAllPrisoners({ sort: 'name', country, status }), [country, status])
+  const prisoners = useApi(
+    () => getPrisoners({ q: q || undefined, country, status, sort: 'name', page, page_size: PAGE_SIZE }),
+    [q, country, status, page],
+  )
+  const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
   const countries = useMemo(
     () => (filters.data?.country ?? []).map((c) => c.value).sort((a, b) => a.localeCompare(b)),
@@ -29,7 +39,10 @@ export default function Prisoners() {
     return STATUS_ORDER.filter((s) => present.has(s))
   }, [filters.data])
 
-  const count = prisoners.data?.length ?? 0
+  const total = prisoners.data?.total ?? 0
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  /** A chip's link: its own filter on, or off when it is the one on; the others kept. */
+  const chip = (key: string, value: string, on: boolean) => `/prisoners${listSearch(params, { [key]: on ? undefined : value })}`
 
   return (
     <>
@@ -46,23 +59,24 @@ export default function Prisoners() {
 
       <div className="filter-bar">
         <div className="wrap">
+          <DirectorySearch label="Search by name" value={search} onChange={setSearch} />
           <span className="filter-label">Filter:</span>
-          <FilterChip to="/prisoners" active={!country && !status}>
+          <FilterChip to={`/prisoners${listSearch(params, { country: undefined, status: undefined })}`} active={!country && !status}>
             All
           </FilterChip>
           {countries.map((c) => (
-            <FilterChip key={c} to={`/prisoners?country=${encodeURIComponent(c)}`} active={country === c}>
+            <FilterChip key={c} to={chip('country', c, country === c)} active={country === c}>
               {c}
             </FilterChip>
           ))}
           {statuses.map((s) => (
-            <FilterChip key={s} to={`/prisoners?status=${s}`} active={status === s}>
+            <FilterChip key={s} to={chip('status', s, status === s)} active={status === s}>
               {STATUS_LABELS[s]}
             </FilterChip>
           ))}
           {prisoners.data && (
             <span className="results-count">
-              {count} {count === 1 ? 'record' : 'records'}
+              {total} {total === 1 ? 'record' : 'records'}
             </span>
           )}
         </div>
@@ -71,13 +85,15 @@ export default function Prisoners() {
       <div className="index-grid-wrap">
         <div className="wrap">
           <LoadState state={prisoners} what="prisoners" />
+          {prisoners.data && total === 0 && <p>{q || country || status ? 'Nobody matches this search.' : 'The directory is empty.'}</p>}
           {prisoners.data && (
             <div className="prisoner-grid">
-              {prisoners.data.map((p) => (
+              {prisoners.data.items.map((p) => (
                 <PrisonerTile key={p.id} prisoner={p} since="date" />
               ))}
             </div>
           )}
+          {prisoners.data && <DirectoryPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
         </div>
       </div>
     </>
