@@ -5,11 +5,13 @@ import { decryptFile, encryptLetter, generateKeypair } from '../crypto'
 const posted: Record<string, unknown>[] = []
 const uploaded: { message: number; bytes: Uint8Array; nonce: string; idempotencyKey: string }[] = []
 let reply: (body: Record<string, unknown>) => Promise<Record<string, unknown>>
+// The API's Idempotent-Replayed header on the next answer.
+let replayed = false
 vi.mock('../api/letters', () => ({
   getGroupPublicKey: vi.fn(),
   postLetter: vi.fn(async (body: Record<string, unknown>) => {
     posted.push(body)
-    return reply(body)
+    return { message: await reply(body), replayed }
   }),
   uploadAttachment: vi.fn(async (input: (typeof uploaded)[number]) => {
     uploaded.push(input)
@@ -18,7 +20,7 @@ vi.mock('../api/letters', () => ({
 }))
 
 const { getGroupPublicKey, uploadAttachment } = await import('../api/letters')
-const { AttachmentNotUploaded, MAX_FILE_BYTES, sendLetter, uploadLetterFile } = await import('./send')
+const { AttachmentNotUploaded, MAX_FILE_BYTES, ReplayedFileRefused, sendLetter, uploadLetterFile } = await import('./send')
 
 describe('sendLetter', () => {
   beforeEach(async () => {
@@ -26,6 +28,7 @@ describe('sendLetter', () => {
     uploaded.length = 0
     // A new letter: the API answers with the letter as sent, envelopes included.
     reply = async (body) => ({ id: 99, chat: 1, envelopes: body.envelopes })
+    replayed = false
     vi.mocked(uploadAttachment).mockClear()
     const group = await generateKeypair()
     vi.mocked(getGroupPublicKey).mockResolvedValue({ chapter: 7, publicKey: group.publicKey, keyVersion: 1 })
@@ -52,10 +55,31 @@ describe('sendLetter', () => {
     // The first attempt's letter, sealed with its own content key.
     const first = await encryptLetter('Hello', [{ readerType: 'user', readerId: 2, publicKey: writer.keypair.publicKey }])
     reply = async () => ({ id: 98, chat: 1, envelopes: first.fields.envelopes })
+    replayed = true
     await sendLetter({ ...draft, file: scan() }, writer)
     const file = uploaded[0]
     expect(file.message).toBe(98)
     await expect(decryptFile(file.bytes, file.nonce, first.contentKey)).resolves.toEqual(new Uint8Array([1, 2, 3, 4]))
+  })
+
+  it('says when the answer is an earlier attempt’s letter, and whether it reads as this one would', async () => {
+    const writer = { userId: 2, keypair: await generateKeypair() }
+    expect((await sendLetter(draft, writer)).replay).toBeNull()
+
+    // A retry after a lost answer: the first version, stored and replayed.
+    const first = await encryptLetter('Hello', [{ readerType: 'user', readerId: 2, publicKey: writer.keypair.publicKey }])
+    reply = async () => ({ id: 98, chat: 1, ...first.fields })
+    replayed = true
+    expect(await sendLetter(draft, writer)).toMatchObject({ message: { id: 98 }, replay: { sameText: true } })
+    // The writer changed the text before trying again: the first version is the one that went.
+    expect((await sendLetter({ ...draft, text: 'Hello, edited' }, writer)).replay).toEqual({ sameText: false })
+  })
+
+  it('takes a different envelope as a replay even without the header', async () => {
+    const writer = { userId: 2, keypair: await generateKeypair() }
+    const first = await encryptLetter('Hello', [{ readerType: 'user', readerId: 2, publicKey: writer.keypair.publicKey }])
+    reply = async () => ({ id: 98, chat: 1, ...first.fields })
+    expect((await sendLetter(draft, writer)).replay).toEqual({ sameText: true })
   })
 
   it('says the letter was sent when only the file failed, and the file can be retried with the same key', async () => {
@@ -88,6 +112,7 @@ describe('sendLetter for a group, as one of its writers', () => {
   beforeEach(async () => {
     posted.length = 0
     reply = async (body) => ({ id: 99, chat: 1, envelopes: body.envelopes })
+    replayed = false
     groups.set(7, await generateKeypair())
     groups.set(8, await generateKeypair())
     vi.mocked(getGroupPublicKey).mockImplementation(async (chapter: number) => ({ chapter, publicKey: groups.get(chapter)!.publicKey, keyVersion: chapter === 7 ? 3 : 1 }))
@@ -128,5 +153,23 @@ describe('sendLetter for a group, as one of its writers', () => {
     await sendLetter({ ...draft, file: scan }, { groupId: 7, groupKeypair: groups.get(7)!, writer: null })
     const file = uploaded[uploaded.length - 1]
     await expect(decryptFile(file.bytes, file.nonce, first.contentKey)).resolves.toEqual(new Uint8Array([5, 6]))
+  })
+
+  // Web audit 8 Oct, §2: another admin rotated the group key between the first
+  // attempt and the retry, and the stored letter was re-sealed to the new key.
+  it('refuses the file of a replayed letter it cannot open, rather than encrypting it under a key no envelope holds', async () => {
+    const rotated = await generateKeypair()
+    const first = await encryptLetter('Hello', [{ readerType: 'chapter', readerId: 7, publicKey: rotated.publicKey, keyVersion: 4 }])
+    reply = async () => ({ id: 98, chat: 1, ...first.fields })
+    replayed = true
+    uploaded.length = 0
+    const scan = new File([new Uint8Array([5, 6])], 'scan.pdf', { type: 'application/pdf' })
+    const failure = await sendLetter({ ...draft, file: scan }, { groupId: 7, groupKeypair: groups.get(7)!, writer: null }).catch((e: unknown) => e)
+    expect(failure).toBeInstanceOf(ReplayedFileRefused)
+    expect((failure as InstanceType<typeof ReplayedFileRefused>).letter.id).toBe(98)
+    expect(uploaded).toHaveLength(0)
+
+    // Without a file there is nothing to refuse: the letter went, and the answer says it can't tell how it reads.
+    expect(await sendLetter(draft, { groupId: 7, groupKeypair: groups.get(7)!, writer: null })).toMatchObject({ message: { id: 98 }, replay: { sameText: null } })
   })
 })

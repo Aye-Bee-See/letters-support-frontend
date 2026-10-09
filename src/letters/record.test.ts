@@ -10,7 +10,7 @@ vi.mock('../api/letters', () => ({
   getUserPublicKey: vi.fn(),
   postLetter: vi.fn(async (body: Record<string, unknown>) => {
     posted.push(body)
-    return { id: 50, chat: 4, sender: 'prisoner', status: 'received', envelopes: body.envelopes }
+    return { message: { id: 50, chat: 4, sender: 'prisoner', status: 'received', envelopes: body.envelopes }, replayed: false }
   }),
   uploadAttachment: vi.fn(async (input: (typeof uploaded)[number]) => {
     uploaded.push(input)
