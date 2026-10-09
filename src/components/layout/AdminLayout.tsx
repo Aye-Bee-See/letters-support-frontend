@@ -52,6 +52,7 @@ export default function AdminLayout() {
             <li><NavLink to="/admin/prisoners">Prisoners</NavLink></li>
             <li><NavLink to="/admin/facilities">Facilities</NavLink></li>
             <li><NavLink to="/admin/groups">Groups</NavLink></li>
+            <li><NavLink to="/admin/mail-rules">Mail rules</NavLink></li>
           </ul>
         </div>
 
