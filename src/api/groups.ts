@@ -35,6 +35,17 @@ export const getAllGroups = (params?: Omit<GroupListParams, 'page' | 'page_size'
 export const getGroup = (id: number, full = true) =>
   getOne<Chapter>('/chapter/chapter', { id, full })
 
+/**
+ * A few groups by id, without their embeds, for naming them: one request each
+ * (the list has no id filter). One that can't be read (not published, deleted)
+ * is left out rather than failing the rest.
+ */
+export async function getGroupsByIds(ids: Iterable<number>): Promise<Map<number, Chapter>> {
+  const unique = [...new Set(ids)]
+  const found = await Promise.all(unique.map((id) => getGroup(id, false).catch(() => null)))
+  return new Map(found.filter((g): g is Chapter => g !== null).map((g) => [g.id, g]))
+}
+
 /** The fields PUT /chapter/chapter accepts (CHAPTER_FIELDS in the API). lettersSent and averageTimeDays are counted, not set. */
 export type GroupFields = Partial<
   Pick<

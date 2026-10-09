@@ -9,8 +9,10 @@ import {
   updateFacility,
   type FacilityFields,
 } from '../../api/facilities'
-import { getAllGroups } from '../../api/groups'
+import { getGroups } from '../../api/groups'
 import { Field, Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, MailRuleCategory, MailRuleList, Prison, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
@@ -451,18 +453,19 @@ function RulePicker(props: { list: MailRuleList; held: Set<string>; selected: Se
 }
 
 /**
- * Linked relay groups, each unlinkable, and a picker to link another. Changes
- * apply at once, and the list updates from the API's answers rather than by
- * reloading the record, which would reset the form above.
+ * Linked relay groups, each unlinkable, and a picker to link another (searched
+ * for by name, not picked from every group). Changes apply at once, and the
+ * list updates from the API's answers rather than by reloading the record,
+ * which would reset the form above.
  */
 function RelayGroups({ facility: f }: { facility: Prison }) {
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
   const [linked, setLinked] = useState<Chapter[]>(() => f.relay_groups ?? [])
-  const [choice, setChoice] = useState('')
+  const [choice, setChoice] = useState<Chapter | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const available = (groups.data ?? []).filter((g) => !linked.some((l) => l.id === g.id))
+  /** A group as the picker and the chosen line name it: any but an active one is marked. */
+  const nameOf = (g: Chapter) => `${g.name}${g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}`
   const active = linked.filter((g) => g.accountStatus === 'active')
 
   async function run(action: () => Promise<Chapter[]>) {
@@ -470,7 +473,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
     setError(null)
     try {
       setLinked(await action())
-      setChoice('')
+      setChoice(null)
     } catch (err) {
       setError((err as ApiError).message)
     } finally {
@@ -515,16 +518,26 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
           <div className="admin-alert admin-alert-warn">This facility takes mail through a relay group only, and has no active one: nobody can write to it.</div>
         )}
         <div className="relay-add">
-          <select className="form-select" aria-label="Group to link" value={choice} disabled={busy || !groups.data} onChange={(e) => setChoice(e.target.value)}>
-            <option value="">{groups.data ? 'Choose a group to link…' : groups.error ? 'Couldn’t load the groups' : 'Loading groups…'}</option>
-            {available.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-                {g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="a-btn a-btn-sm" disabled={!choice || busy} onClick={() => void run(async () => (await linkRelayGroup(f.id, Number(choice))).updatedRows.relay_groups ?? linked)}>
+          <RecordPicker
+            classes={{ input: 'form-input' }}
+            label="Group to link"
+            placeholder="Search groups by name…"
+            disabled={busy}
+            fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+            exclude={linked.map((g) => g.id)}
+            render={nameOf}
+            onSelect={setChoice}
+          />
+          {choice && <span className="form-static">{nameOf(choice)}</span>}
+          <button
+            type="button"
+            className="a-btn a-btn-sm"
+            disabled={!choice || busy}
+            onClick={() => {
+              const added = choice
+              if (added) void run(async () => (await linkRelayGroup(f.id, added.id)).updatedRows.relay_groups ?? linked)
+            }}
+          >
             Link group
           </button>
         </div>

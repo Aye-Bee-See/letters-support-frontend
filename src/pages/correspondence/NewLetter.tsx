@@ -1,10 +1,12 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getFacility } from '../../api/facilities'
-import { getAllPrisoners } from '../../api/prisoners'
+import { getPrisoner, getPrisoners } from '../../api/prisoners'
 import { getAllWriters } from '../../api/writers'
-import AddressSearch from '../../components/forms/AddressSearch'
+import AddressSearch, { AddressOptionText } from '../../components/forms/AddressSearch'
 import AttachmentRetry from '../../components/forms/AttachmentRetry'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { ADDRESS_PICKER, PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import UploadZone from '../../components/forms/UploadZone'
 import { isAnonymousWriter } from '../../groups/writers'
 import { writerLabel } from '../../utils/groupLetters'
@@ -48,15 +50,21 @@ export default function NewLetter() {
   const unknownWriter = isGroup && Boolean(writerParam) && writerParam !== 'anonymous' && writers.data !== null && !chosenWriter
   const writerName = writeAs?.kind === 'anonymous' ? 'the anonymous writer' : chosenWriter ? writerLabel(chosenWriter) : null
 
-  const directory = useApi(() => getAllPrisoners({ sort: 'name' }), [])
-  const prisoner = useMemo(() => directory.data?.find((p) => p.id === prisonerId) ?? null, [directory.data, prisonerId])
+  // The one prisoner the link names (full: with the "Held at" summary); the
+  // picker below searches the directory a page at a time.
+  const chosen = useApi(() => (prisonerId !== null ? getPrisoner(prisonerId, true) : Promise.resolve(null)), [prisonerId])
+  const prisoner = chosen.data ?? null
+  // full=true for the facility's relay groups (the groups that can mail the
+  // letter), which the API embeds only with its prisoners: README "The `full` parameter".
   const facilityState = useApi(
     () => (prisoner?.prison ? getFacility(prisoner.prison, true) : Promise.resolve(null)),
     [prisoner?.prison ?? null],
   )
   const facility: Prison | null = facilityState.data ?? null
   /** A `?prisoner=` that names nobody in the directory (unpublished, removed, or a typo). */
-  const unknownPrisoner = prisonerId !== null && directory.data !== null && !prisoner
+  const unknownPrisoner = prisonerId !== null && chosen.error?.status === 404
+  /** Looking the linked prisoner up failed some other way: worth a retry. */
+  const lookupError = chosen.error && chosen.error.status !== 404 ? chosen.error : null
   /** In the directory, but held at no facility on record: there is nowhere to mail a letter. */
   const noFacility = prisoner !== null && !prisoner.prison
 
@@ -342,10 +350,10 @@ export default function NewLetter() {
           <div className="addr-tile">
             <div className="addr-tile-header">Prisoner</div>
             <div className="addr-tile-body">
-              {directory.error && (
+              {lookupError && (
                 <p className="relay-select-hint" role="alert">
-                  Couldn't load the directory ({directory.error.message}).{' '}
-                  <button type="button" className="addr-remove-btn" onClick={directory.reload}>
+                  Couldn't load the prisoner in this link ({lookupError.message}).{' '}
+                  <button type="button" className="addr-remove-btn" onClick={chosen.reload}>
                     Try again
                   </button>
                 </p>
@@ -356,17 +364,15 @@ export default function NewLetter() {
                   for them below.
                 </p>
               )}
-              {!prisoner && !directory.error && (
-                <AddressSearch
-                  placeholder={directory.loading ? 'Loading the directory…' : 'Search by name…'}
+              {prisonerId !== null && chosen.loading && <p className="relay-select-hint">Loading…</p>}
+              {!prisoner && !chosen.loading && !lookupError && (
+                <RecordPicker
+                  classes={ADDRESS_PICKER}
+                  placeholder="Search by name…"
                   label="Prisoner to write to"
-                  loading={directory.loading}
-                  options={(directory.data ?? []).map((p) => ({
-                    id: p.id,
-                    label: displayName(p),
-                    sub: heldAt(p.prison_details as PrisonSummary | null | undefined) ?? undefined,
-                  }))}
-                  onSelect={choosePrisoner}
+                  fetch={(q) => getPrisoners({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+                  render={(p) => <AddressOptionText label={displayName(p)} sub={heldAt(p.prison_details as PrisonSummary | null | undefined)} />}
+                  onSelect={(p) => choosePrisoner(p.id)}
                 />
               )}
               {prisoner && (

@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAllPrisoners, linkSupportGroup, unlinkSupportGroup } from '../../api/prisoners'
-import { useApi } from '../../hooks/useApi'
+import { getPrisoners, linkSupportGroup, unlinkSupportGroup } from '../../api/prisoners'
 import type { Chapter, Prisoner } from '../../types'
 import { displayName } from '../../utils/prisoners'
 import { Section } from '../forms/ClassedParts'
+import RecordPicker from '../forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../forms/recordPickerState'
 import type { UiClasses } from '../forms/uiClasses'
 import { linkRefusal, useLinkAction } from './useLinkAction'
 
 // The prisoners a group supports, each with a short public description: PUT and
 // DELETE /prisoner/support (README "PUT /prisoner/support and DELETE
 // /prisoner/support"). A site admin links any group; a group admin their own
-// active group (README "What each role can do"). Changes apply at once.
+// active group (README "What each role can do"). Changes apply at once. The
+// prisoner to link is searched for (RecordPicker), not picked from the whole directory.
 
 type Supported = Prisoner & { PrisonerSupport?: { description: string | null } }
 
@@ -23,12 +25,12 @@ interface Props {
 }
 
 export default function SupportedPrisonersPanel({ group: g, classes: c, linkTo }: Props) {
-  const prisoners = useApi(() => getAllPrisoners({ sort: 'name' }), [])
   const [linked, setLinked] = useState<Supported[]>(() => g.supported_prisoners ?? [])
-  const [choice, setChoice] = useState('')
+  const [choice, setChoice] = useState<Prisoner | null>(null)
   const [description, setDescription] = useState('')
   const { busy, error, run } = useLinkAction(linkRefusal)
-  const available = (prisoners.data ?? []).filter((p) => !linked.some((l) => l.id === p.id))
+  /** A prisoner as the picker and the chosen line name them; a site admin sees records not yet published, marked. */
+  const nameOf = (p: Prisoner) => `${displayName(p)}${p.recordStatus && p.recordStatus !== 'published' ? ` [${p.recordStatus}]` : ''}`
 
   return (
     <div className={c.panel}>
@@ -63,15 +65,17 @@ export default function SupportedPrisonersPanel({ group: g, classes: c, linkTo }
           </ul>
         )}
         <div className={c.addRow}>
-          <select className={c.select} aria-label="Prisoner to link" value={choice} disabled={busy || !prisoners.data} onChange={(e) => setChoice(e.target.value)}>
-            <option value="">{prisoners.data ? 'Choose a prisoner…' : prisoners.error ? 'Couldn’t load the prisoners' : 'Loading prisoners…'}</option>
-            {available.map((p) => (
-              <option key={p.id} value={p.id}>
-                {displayName(p)}
-                {p.recordStatus && p.recordStatus !== 'published' ? ` [${p.recordStatus}]` : ''}
-              </option>
-            ))}
-          </select>
+          <RecordPicker
+            classes={{ input: c.input }}
+            label="Prisoner to link"
+            placeholder="Search prisoners by name…"
+            disabled={busy}
+            fetch={(q) => getPrisoners({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+            exclude={linked.map((p) => p.id)}
+            render={nameOf}
+            onSelect={setChoice}
+          />
+          {choice && <span className={c.static}>{nameOf(choice)}</span>}
           <input
             className={c.input}
             aria-label="Description"
@@ -84,16 +88,17 @@ export default function SupportedPrisonersPanel({ group: g, classes: c, linkTo }
             type="button"
             className={c.button}
             disabled={!choice || busy}
-            onClick={() =>
-              void run(async () => {
-                const text = description.trim() || null
-                await linkSupportGroup(Number(choice), g.id, text)
-                const added = prisoners.data?.find((p) => String(p.id) === choice)
-                if (added) setLinked((l) => [...l, { ...added, PrisonerSupport: { description: text } }])
-                setChoice('')
-                setDescription('')
-              })
-            }
+            onClick={() => {
+              const added = choice
+              if (added)
+                void run(async () => {
+                  const text = description.trim() || null
+                  await linkSupportGroup(added.id, g.id, text)
+                  setLinked((l) => [...l, { ...added, PrisonerSupport: { description: text } }])
+                  setChoice(null)
+                  setDescription('')
+                })
+            }}
           >
             Link prisoner
           </button>

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { deleteGroup, getAllGroups, getGroup, updateGroup, type GroupFields } from '../../api/groups'
+import { deleteGroup, getGroup, getGroups, updateGroup, type GroupFields } from '../../api/groups'
 import { getTwoFactorPolicy, setGroupTwoFactor } from '../../api/twoFactor'
 import { Field, Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { ADMIN_UI } from '../../components/forms/uiClasses'
 import RelayFacilitiesPanel from '../../components/group/RelayFacilitiesPanel'
 import SupportedPrisonersPanel from '../../components/group/SupportedPrisonersPanel'
@@ -52,8 +54,6 @@ function adminChanges(g: Chapter, initial: FormValues, v: FormValues, services: 
 export default function EditGroup() {
   const id = Number(useParams().id)
   const group = useApi(() => getGroup(id, true), [id])
-  // Every group, for "vouched for by" (and nothing else on the page needs them).
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
   const [saved, setSaved] = useState(false)
   // How many facilities it relays for now: the panel below changes it without a reload.
   const [relayCount, setRelayCount] = useState<number | null>(null)
@@ -89,7 +89,6 @@ export default function EditGroup() {
             <GroupForm
               key={group.data.updatedAt}
               group={group.data}
-              others={(groups.data ?? []).filter((g) => g.id !== id)}
               relayCount={relayCount ?? group.data.relay_prisons?.length ?? 0}
               onSaved={() => {
                 setSaved(true)
@@ -121,13 +120,12 @@ export default function EditGroup() {
 
 interface FormProps {
   group: Chapter
-  others: Chapter[]
   relayCount: number
   onSaved: () => void
   onEdit: () => void
 }
 
-function GroupForm({ group: g, others, relayCount, onSaved, onEdit }: FormProps) {
+function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
   const navigate = useNavigate()
   const initial = useMemo(() => toAdminForm(g), [g])
   const [values, setValues] = useState(initial)
@@ -139,6 +137,12 @@ function GroupForm({ group: g, others, relayCount, onSaved, onEdit }: FormProps)
   // left unpublished stays out of the public directory with nothing saying so.
   const [recordChosen, setRecordChosen] = useState(false)
   const [publishedWithActivation, setPublishedWithActivation] = useState(false)
+  // "Vouched for by": the stored group's name, fetched by id; another is found with the picker.
+  const storedVoucher = useApi(() => (g.vouchedBy !== null ? getGroup(g.vouchedBy, false) : Promise.resolve(null)), [g.vouchedBy])
+  const [pickedVoucher, setPickedVoucher] = useState<Chapter | null>(null)
+  const voucherName = !values.vouchedBy
+    ? 'Nobody'
+    : ([pickedVoucher, storedVoucher.data].find((o) => o && String(o.id) === values.vouchedBy)?.name ?? `Group #${values.vouchedBy}`)
 
   const diff = useMemo(() => adminChanges(g, initial, values, services), [g, initial, values, services])
   const dirty = Object.keys(diff).length > 0
@@ -366,15 +370,28 @@ function GroupForm({ group: g, others, relayCount, onSaved, onEdit }: FormProps)
             </select>
           </Field>
           <Field label="Vouched for by" htmlFor="f-vouchedBy" hint="The group that brought this one into the network.">
-            <select className="form-select" {...field('vouchedBy')}>
-              <option value="">Nobody</option>
-              {values.vouchedBy && !others.some((o) => String(o.id) === values.vouchedBy) && <option value={values.vouchedBy}>Group #{values.vouchedBy}</option>}
-              {others.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
+            <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+              <span className="form-static">{voucherName}</span>
+              {values.vouchedBy && (
+                <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set({ vouchedBy: '' })}>
+                  Clear
+                </button>
+              )}
+            </div>
+            <RecordPicker
+              id="f-vouchedBy"
+              label="Vouched for by"
+              classes={{ input: 'form-input' }}
+              placeholder="Search groups to change it…"
+              disabled={busy}
+              fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+              exclude={[g.id]}
+              render={(o) => o.name}
+              onSelect={(o) => {
+                setPickedVoucher(o)
+                set({ vouchedBy: String(o.id) })
+              }}
+            />
           </Field>
         </div>
         <div className="form-row">

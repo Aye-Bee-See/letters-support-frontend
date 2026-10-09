@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAllFacilities, linkRelayGroup, unlinkRelayGroup } from '../../api/facilities'
-import { useApi } from '../../hooks/useApi'
+import { getFacilities, linkRelayGroup, unlinkRelayGroup } from '../../api/facilities'
 import type { Chapter, Prison } from '../../types'
 import { Section } from '../forms/ClassedParts'
+import RecordPicker from '../forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../forms/recordPickerState'
 import type { UiClasses } from '../forms/uiClasses'
 import { linkRefusal, useLinkAction } from './useLinkAction'
 
@@ -11,7 +12,8 @@ import { linkRefusal, useLinkAction } from './useLinkAction'
 // (README "PUT /prison/relay and DELETE /prison/relay"). A site admin links any
 // group (pages/admin/EditGroup.tsx); a group admin links their own active group
 // (pages/org/OrgSettings.tsx; README "What each role can do"). Changes apply at
-// once, apart from the form's Save.
+// once, apart from the form's Save. The facility to link is searched for
+// (RecordPicker), not picked from the whole directory.
 
 interface Props {
   group: Chapter
@@ -23,12 +25,10 @@ interface Props {
 }
 
 export default function RelayFacilitiesPanel({ group: g, classes: c, linkTo, onCount }: Props) {
-  const facilities = useApi(() => getAllFacilities({ sort: 'name' }), [])
   const [linked, setLinked] = useState<Prison[]>(() => g.relay_prisons ?? [])
   useEffect(() => onCount?.(linked.length), [linked, onCount])
-  const [choice, setChoice] = useState('')
+  const [choice, setChoice] = useState<Prison | null>(null)
   const { busy, error, run } = useLinkAction(linkRefusal)
-  const available = (facilities.data ?? []).filter((f) => !linked.some((l) => l.id === f.id))
 
   return (
     <div className={c.panel}>
@@ -64,27 +64,40 @@ export default function RelayFacilitiesPanel({ group: g, classes: c, linkTo, onC
           </ul>
         )}
         <div className={c.addRow}>
-          <select className={c.select} aria-label="Facility to link" value={choice} disabled={busy || !facilities.data} onChange={(e) => setChoice(e.target.value)}>
-            <option value="">{facilities.data ? 'Choose a facility…' : facilities.error ? 'Couldn’t load the facilities' : 'Loading facilities…'}</option>
-            {available.map((f) => (
-              <option key={f.id} value={f.id}>
+          <RecordPicker<Prison>
+            classes={{ input: c.input }}
+            label="Facility to link"
+            placeholder="Search facilities by name…"
+            disabled={busy}
+            fetch={(q) => getFacilities({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+            exclude={linked.map((f) => f.id)}
+            render={(f) => (
+              <>
                 {f.prisonName}
                 {f.country ? ` (${f.country})` : ''}
-              </option>
-            ))}
-          </select>
+              </>
+            )}
+            onSelect={setChoice}
+          />
+          {choice && (
+            <span className={c.static}>
+              {choice.prisonName}
+              {choice.country ? ` (${choice.country})` : ''}
+            </span>
+          )}
           <button
             type="button"
             className={c.button}
             disabled={!choice || busy}
-            onClick={() =>
-              void run(async () => {
-                await linkRelayGroup(Number(choice), g.id)
-                const added = facilities.data?.find((f) => String(f.id) === choice)
-                if (added) setLinked((l) => [...l, added].sort((a, b) => a.prisonName.localeCompare(b.prisonName)))
-                setChoice('')
-              })
-            }
+            onClick={() => {
+              const added = choice
+              if (added)
+                void run(async () => {
+                  await linkRelayGroup(added.id, g.id)
+                  setLinked((l) => [...l, added].sort((a, b) => a.prisonName.localeCompare(b.prisonName)))
+                  setChoice(null)
+                })
+            }}
           >
             Link facility
           </button>

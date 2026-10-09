@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { getAllFacilities } from '../../api/facilities'
+import { getFacilities, getFacility } from '../../api/facilities'
 import { deletePrisoner, getPrisoner, updatePrisoner, type PrisonerFields, type PrisonerMailChange } from '../../api/prisoners'
 import { Field, Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
@@ -101,7 +103,6 @@ function changes(before: FormValues, after: FormValues): PrisonerFields {
 export default function EditPrisoner() {
   const id = Number(useParams().id)
   const prisoner = useApi(() => getPrisoner(id, false), [id])
-  const facilities = useApi(() => getAllFacilities({ sort: 'name' }), [])
   const [saved, setSaved] = useState<{ mail?: PrisonerMailChange } | null>(null)
 
   const name = prisoner.data ? displayName(prisoner.data) : 'Prisoner'
@@ -137,8 +138,6 @@ export default function EditPrisoner() {
           <PrisonerForm
             key={prisoner.data.updatedAt}
             prisoner={prisoner.data}
-            facilities={facilities.data}
-            facilitiesError={facilities.error}
             onSaved={(result) => {
               setSaved(result)
               prisoner.reload()
@@ -167,13 +166,11 @@ function SavedNotice({ mail }: { mail?: PrisonerMailChange }) {
 
 interface FormProps {
   prisoner: Prisoner
-  facilities: Prison[] | null
-  facilitiesError: ApiError | null
   onSaved: (result: { mail?: PrisonerMailChange }) => void
   onEdit: () => void
 }
 
-function PrisonerForm({ prisoner, facilities, facilitiesError, onSaved, onEdit }: FormProps) {
+function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
   const navigate = useNavigate()
   const initial = useMemo(() => toForm(prisoner), [prisoner])
   const [values, setValues] = useState(initial)
@@ -205,9 +202,14 @@ function PrisonerForm({ prisoner, facilities, facilitiesError, onSaved, onEdit }
 
   const warnings = mailWarnings(initial, diff)
 
-  // A facility that isn't in the list (e.g. one deleted since) still shows as itself.
-  const facilityOptions = facilities ?? []
-  const unknownFacility = values.prison && facilities && !facilities.some((f) => String(f.id) === values.prison)
+  // The facility's name: the stored one fetched by id (without its prisoners),
+  // another found with the picker. One that can't be fetched (deleted since) shows as its number.
+  const storedFacility = useApi(() => (prisoner.prison !== null ? getFacility(prisoner.prison, false) : Promise.resolve(null)), [prisoner.prison])
+  const [pickedFacility, setPickedFacility] = useState<Prison | null>(null)
+  const facilityLabel = (f: Prison) =>
+    `${f.prisonName}${f.country ? ` (${f.country})` : ''}${f.recordStatus && f.recordStatus !== 'published' ? ` [${f.recordStatus}]` : ''}`
+  const currentFacility = [pickedFacility, storedFacility.data].find((f) => f && String(f.id) === values.prison)
+  const facilityName = !values.prison ? 'Not listed' : currentFacility ? facilityLabel(currentFacility) : `Facility #${values.prison}`
 
   async function save() {
     onEdit()
@@ -286,19 +288,30 @@ function PrisonerForm({ prisoner, facilities, facilitiesError, onSaved, onEdit }
           <Field
             label="Facility"
             htmlFor="f-prison"
-            hint={facilitiesError ? `Couldn't load the facilities (${facilitiesError.message}).` : undefined}
+            hint={storedFacility.loading && values.prison ? 'Loading the facility’s name…' : undefined}
           >
-            <select className="form-select" {...field('prison')} disabled={busy || !facilities}>
-              <option value="">{facilities ? 'Not listed' : 'Loading…'}</option>
-              {unknownFacility && <option value={values.prison}>Facility #{values.prison}</option>}
-              {facilityOptions.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.prisonName}
-                  {f.country ? ` (${f.country})` : ''}
-                  {f.recordStatus && f.recordStatus !== 'published' ? ` [${f.recordStatus}]` : ''}
-                </option>
-              ))}
-            </select>
+            <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+              <span className="form-static">{facilityName}</span>
+              {values.prison && (
+                <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set('prison', '')}>
+                  Clear
+                </button>
+              )}
+            </div>
+            <RecordPicker
+              id="f-prison"
+              label="Facility"
+              classes={{ input: 'form-input' }}
+              placeholder="Search facilities to change it…"
+              disabled={busy}
+              fetch={(q) => getFacilities({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+              exclude={values.prison ? [Number(values.prison)] : null}
+              render={facilityLabel}
+              onSelect={(f) => {
+                setPickedFacility(f)
+                set('prison', String(f.id))
+              }}
+            />
           </Field>
         </div>
         {warnings.map((text) => (
