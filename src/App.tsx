@@ -38,6 +38,7 @@ const Join = lazy(() => import('./pages/auth/Join'))
 const InboxWriter = lazy(() => import('./pages/inbox/InboxWriter'))
 const InboxOrg = lazy(() => import('./pages/inbox/InboxOrg'))
 const PrintLetter = lazy(() => import('./pages/inbox/PrintLetter'))
+const PrintBatch = lazy(() => import('./pages/inbox/PrintBatch'))
 const Thread = lazy(() => import('./pages/correspondence/Thread'))
 const NewLetter = lazy(() => import('./pages/correspondence/NewLetter'))
 const RecordReply = lazy(() => import('./pages/correspondence/RecordReply'))
@@ -137,6 +138,7 @@ export default function App() {
                 <Route path="blocked-writers" element={<BlockedWriters />} />
                 <Route path="replies/new" element={<RecordReply />} />
                 <Route path="letters/:id/print" element={<PrintLetter />} />
+                <Route path="letters/print-batch" element={<PrintBatch />} />
               </Route>
             </Route>
           </Route>
