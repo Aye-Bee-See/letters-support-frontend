@@ -1,4 +1,5 @@
 import type { KdfParams } from '../types'
+import { argon2id } from './kdfRunner'
 import { fromBase64, getSodium, toBase64, wipe } from './sodium'
 
 // Key derivation, byte for byte as agreed with the API and the Android client
@@ -96,6 +97,11 @@ export async function newSalt(): Promise<string> {
  * costs later still open, within bounds: anything but Argon2id is refused, and
  * so are costs below KDF_PARAMS or above KDF_MAX (checkKdfParams). Every
  * derivation in the client passes through here.
+ *
+ * Checked here, then run in a Web Worker where the browser has one (kdfRunner.ts,
+ * kdf.worker.ts), so the page does not freeze for the second or two it takes;
+ * on the main thread where there is none (the tests, in Node). The same bytes
+ * either way. The caller still owns `secret` and wipes it.
  */
 export async function deriveKey(secret: Uint8Array, saltB64: string, params: KdfParams): Promise<Uint8Array> {
   const s = await getSodium()
@@ -105,7 +111,7 @@ export async function deriveKey(secret: Uint8Array, saltB64: string, params: Kdf
   checkKdfParams(params)
   const salt = await fromBase64(saltB64)
   if (salt.length !== s.crypto_pwhash_SALTBYTES) throw new Error('Key derivation salt must be 16 bytes.')
-  return s.crypto_pwhash(32, secret, salt, params.opslimit!, params.memlimit!, params.alg)
+  return argon2id(secret, salt, params.opslimit!, params.memlimit!, params.alg)
 }
 
 export interface SplitKeys {

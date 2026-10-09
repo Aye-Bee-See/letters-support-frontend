@@ -55,10 +55,14 @@ export const getUserPublicKey = (user: number) => getOne<{ user: number; publicK
  * POST /messaging/message with an Idempotency-Key (the same key on every retry of
  * one letter, so it is never mailed twice). In end-to-end mode the body is
  * `ciphertext`, `nonce` and `envelopes`; `messageText` is refused.
+ *
+ * `replayed` is the API's `Idempotent-Replayed: true` (README "Sending exactly
+ * once"): an earlier request with this key had already made the letter, and the
+ * answer is that letter as it is now, not one made from this body.
  */
-export async function postLetter(body: Record<string, unknown>, idempotencyKey: string): Promise<Message> {
+export async function postLetter(body: Record<string, unknown>, idempotencyKey: string): Promise<{ message: Message; replayed: boolean }> {
   const response = await client.post<{ data: Message }>('/messaging/message', body, { headers: { 'Idempotency-Key': idempotencyKey } })
-  return response.data.data
+  return { message: response.data.data, replayed: String(response.headers?.['idempotent-replayed'] ?? '').toLowerCase() === 'true' }
 }
 
 /** POST /messaging/attachment: the file as ciphertext, with its nonce; `type` and `name` describe the original. */

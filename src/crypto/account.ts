@@ -65,11 +65,11 @@ export interface LockedKeys {
 /**
  * Lock an existing private key under a new password (split scheme) and a new
  * recovery code. Used when claiming: the keypair is the one the group made, and
- * letters are already sealed to it.
+ * letters are already sealed to it. The two Argon2id runs are independent, so
+ * they go side by side (each in its own worker, in a browser).
  */
 export async function lockKeys(privateKey: string, password: string): Promise<LockedKeys> {
-  const pw = await passwordKeys(privateKey, password)
-  const rc = await recoveryKeys(privateKey)
+  const [pw, rc] = await Promise.all([passwordKeys(privateKey, password), recoveryKeys(privateKey)])
   return { authKey: pw.authKey, recoveryCode: rc.recoveryCode, keyFields: { ...pw.fields, ...rc.fields } }
 }
 

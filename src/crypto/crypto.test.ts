@@ -19,7 +19,9 @@ import {
   unlockWithRecoveryCode,
 } from './account'
 import { decryptFile, decryptLetter, encryptFile, encryptLetter, envelopeFor, openEnvelope, reencryptLetter } from './letters'
-import { generateKeypair, sealTo } from './primitives'
+import { decrypt, decryptBytes, encrypt, encryptBytes, generateKeypair, sealTo } from './primitives'
+import { runKdfJob } from './kdf.worker'
+import { argon2idRunsIn } from './kdfRunner'
 import { fromBase64, getSodium, toBase64 } from './sodium'
 
 // Argon2id at 64 MiB takes a fraction of a second per run; flows run it several times.
@@ -53,6 +55,27 @@ describe('cross-client test vectors (must match the API and Android byte for byt
     const expected = 'lEpmh4tmC0xaD5DhMboQo/3Hw7JqT3VThdqq0n1pImc='
     expect(await toBase64(await deriveKey(passwordBytes('café'), salt, KDF_PARAMS))).toBe(expected)
     expect(await toBase64(await deriveKey(passwordBytes('café'), salt, KDF_PARAMS))).toBe(expected)
+  })
+
+  // The worker path (kdf.worker.ts) runs exactly this job. Node has no Web Worker, so
+  // deriveKey falls back to the main thread here; the job is run directly instead,
+  // and must give the vector byte for byte, as the fallback does.
+  it('gives the same key in the worker’s job as on the main thread, and wipes the worker’s copy of the secret', { timeout: SLOW }, async () => {
+    expect(argon2idRunsIn()).toBe('main')
+    const salt = await toBase64(bytes(16))
+    const main = await deriveKey(passwordBytes('correct horse battery staple'), salt, KDF_PARAMS)
+    const secret = passwordBytes('correct horse battery staple')
+    const answer = await runKdfJob({ id: 1, secret, salt: bytes(16), opslimit: KDF_PARAMS.opslimit!, memlimit: KDF_PARAMS.memlimit!, alg: KDF_PARAMS.alg! })
+    if (!('key' in answer)) throw new Error(answer.error)
+    expect(await toBase64(answer.key)).toBe('wFzkxN1+DkXuYBHMWdBoreR98bAfwM+c1GeL32ilt7A=')
+    expect(answer.key).toEqual(main)
+    expect(secret.every((b) => b === 0)).toBe(true)
+  })
+
+  it('leaves the caller’s secret to the caller', { timeout: SLOW }, async () => {
+    const secret = passwordBytes('x')
+    await deriveKey(secret, await toBase64(bytes(16)), KDF_PARAMS)
+    expect(secret).toEqual(passwordBytes('x'))
   })
 
   it('writes the agreed kdfParams', () => {
@@ -307,5 +330,34 @@ describe('letters', () => {
     const sealed = await encryptFile(file, contentKey)
     expect(sealed.bytes).not.toEqual(file)
     expect(await decryptFile(sealed.bytes, sealed.nonce, contentKey)).toEqual(file)
+  })
+
+  it('encrypts and decrypts bytes without base64, and refuses a wrong key', async () => {
+    const key = (await getSodium()).crypto_aead_xchacha20poly1305_ietf_keygen()
+    const plain = new Uint8Array(256 * 1024).map((_, i) => (i * 7) % 256)
+    const { ciphertext, nonce } = await encryptBytes(plain, key)
+    expect(nonce).toHaveLength(24)
+    expect(ciphertext).toHaveLength(plain.length + 16) // the tag at the end
+    expect(await decryptBytes(ciphertext, nonce, key)).toEqual(plain)
+    const other = (await getSodium()).crypto_aead_xchacha20poly1305_ietf_keygen()
+    await expect(decryptBytes(ciphertext, nonce, other)).rejects.toThrow()
+  })
+
+  // The API stores a file as its ciphertext bytes, with the nonce as a separate base64
+  // field (sqlite-express-api test/e2e-client.js encryptFile: the base64 path, decoded).
+  // A file uploaded by the app, or before this change, must open here, and the reverse.
+  it('makes files in the format the text path and the other clients make', async () => {
+    const reader = await generateKeypair()
+    const { contentKey } = await encryptLetter('scan', [{ readerType: 'user', readerId: 1, publicKey: reader.publicKey }])
+    const file = new Uint8Array(5000).map((_, i) => i % 253)
+
+    // As the reference client (and this client before) makes it: base64 text path, then decoded.
+    const viaText = await encrypt(file, contentKey)
+    expect(await decryptFile(await fromBase64(viaText.ciphertext), viaText.nonce, contentKey)).toEqual(file)
+
+    // As this client makes it now: opens with the text path.
+    const viaBytes = await encryptFile(file, contentKey)
+    expect(viaBytes.nonce).toMatch(/^[A-Za-z0-9+/]{32}$/)
+    expect(await decrypt(await toBase64(viaBytes.bytes), viaBytes.nonce, contentKey)).toEqual(file)
   })
 })

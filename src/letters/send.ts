@@ -1,6 +1,6 @@
 import { getGroupPublicKey, postLetter, uploadAttachment } from '../api/letters'
 import { toApiError } from '../api/client'
-import { encryptFile, encryptLetter, forgetContentKey, openEnvelope, type Keypair, type Reader } from '../crypto'
+import { decryptLetter, encryptFile, encryptLetter, forgetContentKey, openEnvelope, type Keypair, type Reader } from '../crypto'
 import type { Message, ReaderType } from '../types'
 
 // Sending a letter (README "End-to-end mode: Sending and reading letters",
@@ -30,13 +30,52 @@ export class AttachmentNotUploaded extends Error {
   readonly letter: Message
   readonly contentKey: Uint8Array
   readonly cause: unknown
-  constructor(letter: Message, contentKey: Uint8Array, cause: unknown) {
+  /** The letter was an earlier attempt's (see SentLetter). */
+  readonly replay: Replay | null
+  constructor(letter: Message, contentKey: Uint8Array, cause: unknown, replay: Replay | null = null) {
     super('The letter was sent, but its attachment didn’t upload.')
     this.name = 'AttachmentNotUploaded'
     this.letter = letter
     this.contentKey = contentKey
     this.cause = cause
+    this.replay = replay
   }
+}
+
+/**
+ * The letter was sent, by an earlier attempt under the same Idempotency-Key,
+ * and this session cannot open the letter that was stored: typically a group's
+ * key was rotated in between, and the stored letter is sealed to the new one.
+ * Its file is refused rather than encrypted under a key no envelope holds,
+ * which nobody could ever open. Signing in again gets the new key; then the
+ * file can be added to the letter.
+ */
+export class ReplayedFileRefused extends Error {
+  readonly letter: Message
+  constructor(letter: Message) {
+    super(
+      'The file wasn’t added. The letter itself had already gone through on an earlier try, and this session can’t open ' +
+        'the letter that was saved, so a file added now couldn’t be read by anyone. Sign out and in again, then add the file to the letter.',
+    )
+    this.name = 'ReplayedFileRefused'
+    this.letter = letter
+  }
+}
+
+/**
+ * The API answered with the letter an earlier attempt under this
+ * Idempotency-Key made (`Idempotent-Replayed`), not one made from this attempt.
+ * `sameText`: whether its body and note read as this attempt's would have; null
+ * when this session can't open it to tell.
+ */
+export interface Replay {
+  sameText: boolean | null
+}
+
+/** A sent letter: as stored, and whether it was an earlier attempt's (`replay`). */
+export interface SentLetter {
+  message: Message
+  replay: Replay | null
 }
 
 export interface LetterDraft {
@@ -89,40 +128,58 @@ export interface SealedPost {
   self: { readerType: ReaderType; readerId: number; keypair: Keypair }
 }
 
+type EncryptedFields = Awaited<ReturnType<typeof encryptLetter>>['fields']
+
+/** The envelope this client opens on a letter. */
+const ownEnvelope = (envelopes: Message['envelopes'] | EncryptedFields['envelopes'], self: SealedPost['self']) =>
+  envelopes?.find((e) => e.readerType === self.readerType && e.readerId === self.readerId)
+
 /**
- * The key the stored letter was sealed with. Normally this attempt's; but a
- * retry of a letter already made gets that letter back (the Idempotency-Key),
- * sealed with the first attempt's key, which only its envelope still holds.
+ * Whether the stored letter is an earlier attempt's: the API says so
+ * (`Idempotent-Replayed`), or the envelope it returns is not the one just sent
+ * (sealed boxes are randomised, so this attempt's copy never matches an
+ * earlier one's).
  */
-async function storedContentKey(message: Message, self: SealedPost['self'], attemptKey: Uint8Array): Promise<Uint8Array> {
-  const mine = message.envelopes?.find((e) => e.readerType === self.readerType && e.readerId === self.readerId)
-  if (!mine) return attemptKey
-  if (self.readerType !== 'chapter') {
-    await forgetContentKey(attemptKey)
-    return openEnvelope(mine, self.keypair)
-  }
+function isReplay(message: Message, self: SealedPost['self'], sent: EncryptedFields, replayedHeader: boolean): boolean {
+  if (replayedHeader) return true
+  const stored = ownEnvelope(message.envelopes, self)
+  const mine = ownEnvelope(sent.envelopes, self)
+  return Boolean(stored && mine && stored.wrappedKey !== mine.wrappedKey)
+}
+
+/**
+ * The content key of a stored letter an earlier attempt made, from this
+ * client's own envelope on it; null when there is none, or it won't open (for a
+ * group, sealed to a group key newer than this session's).
+ */
+async function storedContentKey(message: Message, self: SealedPost['self']): Promise<Uint8Array | null> {
+  const mine = ownEnvelope(message.envelopes, self)
+  if (!mine) return null
+  return openEnvelope(mine, self.keypair).catch(() => null)
+}
+
+/** Whether the stored letter's body and note are the ones this attempt would have sent; null if it won't decrypt. */
+async function readsTheSame(message: Message, contentKey: Uint8Array, post: SealedPost): Promise<boolean | null> {
   try {
-    const key = await openEnvelope(mine, self.keypair)
-    await forgetContentKey(attemptKey)
-    return key
+    const stored = await decryptLetter(message, contentKey)
+    return stored.text === post.text && (stored.relayNote ?? '') === (post.relayNote?.trim() ?? '')
   } catch {
-    // Sealed to a group key newer than this session's (a rotation in between): keep this attempt's.
-    return attemptKey
+    return null
   }
 }
 
 /**
  * Encrypt and post, re-sealing once if a group's key changed meanwhile (409
- * KeyVersionError). Returns the stored letter and the content key it was
- * sealed with.
+ * KeyVersionError). Returns the stored letter, this attempt's content key, and
+ * whether the letter is an earlier attempt's (then that key did not seal it).
  */
-async function encryptAndPost(post: SealedPost): Promise<{ message: Message; contentKey: Uint8Array }> {
+async function encryptAndPost(post: SealedPost): Promise<{ message: Message; attemptKey: Uint8Array; replayed: boolean }> {
   for (let attempt = 0; ; attempt++) {
     const readers = await post.readers()
     const { contentKey, fields } = await encryptLetter(post.text, readers, post.relayNote?.trim() || undefined)
     try {
-      const message = await postLetter({ ...post.body, ...fields }, post.idempotencyKey)
-      return { message, contentKey: await storedContentKey(message, post.self, contentKey) }
+      const { message, replayed } = await postLetter({ ...post.body, ...fields }, post.idempotencyKey)
+      return { message, attemptKey: contentKey, replayed: isReplay(message, post.self, fields, replayed) }
     } catch (err) {
       await forgetContentKey(contentKey)
       const e = toApiError(err)
@@ -195,22 +252,37 @@ function checkFile(file: File | null) {
 
 /**
  * Encrypt and post a letter, then upload its file encrypted with the same
- * content key. Throws AttachmentNotUploaded if the letter went but its file
- * didn't. Shared by sendLetter and recordReply (src/letters/record.ts).
+ * content key. Shared by sendLetter and recordReply (src/letters/record.ts).
+ *
+ * A retry may get back the letter an earlier attempt made (the
+ * Idempotency-Key): that letter was sealed with the earlier attempt's key, which
+ * only its envelope still holds. The file is encrypted with that key, opened
+ * from this client's envelope; if it won't open (a group key rotated in
+ * between) the file is refused with ReplayedFileRefused, never encrypted under
+ * a key no envelope holds. Throws AttachmentNotUploaded if the letter went but
+ * its file didn't.
  */
-export async function sealAndSend(post: SealedPost, file: File | null): Promise<Message> {
+export async function sealAndSend(post: SealedPost, file: File | null): Promise<SentLetter> {
   checkFile(file)
-  const { message, contentKey } = await encryptAndPost(post)
-  if (file) {
+  const { message, attemptKey, replayed } = await encryptAndPost(post)
+  let contentKey: Uint8Array | null = attemptKey
+  let replay: Replay | null = null
+  if (replayed) {
+    await forgetContentKey(attemptKey)
+    contentKey = await storedContentKey(message, post.self)
+    replay = { sameText: contentKey ? await readsTheSame(message, contentKey, post) : null }
+    if (!contentKey && file) throw new ReplayedFileRefused(message)
+  }
+  if (file && contentKey) {
     try {
       await uploadLetterFile(message, file, contentKey, post.idempotencyKey)
     } catch (err) {
       // The key goes with the error, for the retry.
-      throw new AttachmentNotUploaded(message, contentKey, err)
+      throw new AttachmentNotUploaded(message, contentKey, err, replay)
     }
   }
-  await forgetContentKey(contentKey)
-  return message
+  if (contentKey) await forgetContentKey(contentKey)
+  return { message, replay }
 }
 
 /**
@@ -233,10 +305,12 @@ export async function uploadLetterFile(letter: Message, file: File, contentKey: 
 
 /**
  * Send a letter, as the signed-in writer or, for a group admin, as one of the
- * group's writers; returns the stored letter (its `chat` is the thread). Throws
- * AttachmentNotUploaded if the letter went but its file didn't.
+ * group's writers; returns the stored letter (its `chat` is the thread) and, if
+ * it was an earlier attempt's, `replay`. Throws AttachmentNotUploaded if the
+ * letter went but its file didn't, and ReplayedFileRefused if it went on an
+ * earlier attempt and its file can't be encrypted for it from this session.
  */
-export function sendLetter(draft: LetterDraft, sender: Sender): Promise<Message> {
+export function sendLetter(draft: LetterDraft, sender: Sender): Promise<SentLetter> {
   return sealAndSend(
     {
       // A paper letter still carries the encryption of an empty body: its content key encrypts the photo.

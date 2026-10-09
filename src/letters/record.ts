@@ -3,7 +3,7 @@ import { getGroupPublicKey, getUserPublicKey } from '../api/letters'
 import type { Keypair, Reader } from '../crypto'
 import type { Message } from '../types'
 import { describeReferenceError, normalizeReference } from '../utils/replyReference'
-import { sealAndSend } from './send'
+import { sealAndSend, type Replay } from './send'
 
 // Recording a prisoner's reply (README "Reply reference": filing a reply;
 // "Message fields": sender prisoner, reference; "End-to-end mode: Sending and
@@ -61,16 +61,21 @@ export const replyHasContent = (d: Pick<ReplyDraft, 'text' | 'file'>) => d.text.
 
 /**
  * Record a prisoner's reply. Returns the stored reply (its `chat` is the
- * thread) and whether it was sealed to the writer too. Throws
- * AttachmentNotUploaded (src/letters/send.ts) if the reply was filed but its
- * file didn't upload; retry the file with uploadLetterFile.
+ * thread), whether it was sealed to the writer too, and `replay` when a retry
+ * got back the reply an earlier attempt filed. Throws AttachmentNotUploaded
+ * (src/letters/send.ts) if the reply was filed but its file didn't upload;
+ * retry the file with uploadLetterFile. ReplayedFileRefused if an earlier
+ * attempt filed it and this session can't open it to add the file.
  */
-export async function recordReply(draft: ReplyDraft, group: RecordingGroup): Promise<{ message: Message; sealedToWriter: boolean }> {
+export async function recordReply(
+  draft: ReplyDraft,
+  group: RecordingGroup,
+): Promise<{ message: Message; sealedToWriter: boolean; replay: Replay | null }> {
   if (!replyHasContent(draft)) throw new Error('Type the reply, or add a scan or photo of it.')
   const reference = draft.reference ? normalizeReference(draft.reference) : null
   if (!reference && !draft.prisonerId) throw new Error('Choose who the reply is from.')
   let sealedToWriter = false
-  const message = await sealAndSend(
+  const { message, replay } = await sealAndSend(
     {
       // A scan alone still carries the encryption of an empty body: its content key encrypts the file.
       text: draft.text.trim() === '' ? '' : draft.text,
@@ -93,5 +98,5 @@ export async function recordReply(draft: ReplyDraft, group: RecordingGroup): Pro
     },
     draft.file,
   )
-  return { message, sealedToWriter }
+  return { message, sealedToWriter, replay }
 }

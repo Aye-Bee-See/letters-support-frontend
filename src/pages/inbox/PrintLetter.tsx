@@ -10,7 +10,7 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { useGroup, type GroupKeyState } from '../../hooks/useGroup'
-import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
+import { forgetReplacedKeys, openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, LetterStatus, MailRule, Message, Prison } from '../../types'
 import { addressLines } from '../../utils/facilities'
 import { declineText, footerSentence, heldPrintQuestion, heldReasonText, returnReasonText, writerLabel, type QueueFilter } from '../../utils/groupLetters'
@@ -263,6 +263,8 @@ export default function PrintLetter() {
   const opened = page.data?.opened ?? null
   const contentKey = opened?.state === 'open' ? opened.contentKey : null
   const files = useLetterFiles(id, contentKey)
+  // The letter's content key is wiped when a reload replaces it and when the page goes.
+  useEffect(() => () => forgetReplacedKeys([{ opened }]), [opened])
 
   if (!page.data) {
     return (

@@ -13,7 +13,7 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { announceUnreadCount } from '../../hooks/useUnreadCount'
-import { openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
+import { forgetReplacedKeys, openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
 import type { Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { declineReasonForWriter, heldReasonText, isGroupAnonymous, returnReasonText, writerInSentence, writerLabel } from '../../utils/groupLetters'
@@ -521,8 +521,12 @@ export default function Thread() {
   const blocksState = useApi(() => (isChapter ? Promise.resolve(NO_BLOCKS) : getMyBlocks()), [isChapter])
   const blocks = new Map((blocksState.data ?? []).map((b) => [b.chapter.id, b]))
   useEffect(() => {
+    // Content keys a reload replaced are wiped; ones it kept (unchanged letters) stay in use.
+    forgetReplacedKeys(opened.current, page.data?.letters)
     opened.current = page.data?.letters ?? null
   }, [page.data])
+  // And every one still held when the page goes.
+  useEffect(() => () => forgetReplacedKeys(opened.current), [])
 
   if (!page.data) {
     return (

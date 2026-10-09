@@ -1,5 +1,5 @@
 import { downloadAttachment } from '../api/letters'
-import { decryptFile, decryptLetter, openEnvelope, type Keypair } from '../crypto'
+import { decryptFile, decryptLetter, forgetContentKey, openEnvelope, type Keypair } from '../crypto'
 import type { Attachment, Envelope, Message, StoredEnvelope } from '../types'
 
 // Opening letters (README "End-to-end mode: Sending and reading letters").
@@ -49,14 +49,17 @@ function envelopeFor(envelopes: (Envelope | StoredEnvelope)[], reader: LetterRea
 export async function openLetter(message: Message, reader: LetterReader): Promise<OpenedLetter> {
   const found = envelopeFor(message.envelopes ?? [], reader)
   if (!found) return { state: 'waiting' }
+  let contentKey: Uint8Array | null = null
   try {
-    const contentKey = await openEnvelope(found.envelope, found.keypair)
+    contentKey = await openEnvelope(found.envelope, found.keypair)
     if (!message.ciphertext || !message.nonce) {
       return { state: 'open', text: null, relayNote: null, contentKey }
     }
     const { text, relayNote } = await decryptLetter(message, contentKey)
     return { state: 'open', text, relayNote, contentKey }
   } catch {
+    // The envelope opened but the body would not: the key goes no further.
+    if (contentKey) await forgetContentKey(contentKey)
     const sealedWith = found.envelope.readerType === 'chapter' ? found.envelope.keyVersion : null
     const holding = reader.groupKeyVersion
     if (typeof sealedWith === 'number' && typeof holding === 'number' && sealedWith !== holding) return { state: 'old-key', sealedWith, holding }
@@ -70,4 +73,20 @@ export async function openAttachment(attachment: Attachment, contentKey: Uint8Ar
   if (!attachment.nonce) throw new Error('This attachment was stored without encryption details.')
   const plain = await decryptFile(stored, attachment.nonce, contentKey)
   return new Blob([plain as BlobPart], { type: attachment.mimeType })
+}
+
+/** Anything that carries an opened letter: a thread's rows, the print page's letter. */
+type HoldsOpened = { opened: OpenedLetter | null } | null | undefined
+
+/**
+ * Wipe the content keys of letters opened earlier (`before`) that `now` no
+ * longer holds: on leaving a page (`now` empty), or when a reload replaced
+ * them. A letter a reload kept as it was (Thread's loadThread reuses unchanged
+ * ones) keeps the same key object, which stays in use. Each key is wiped once.
+ */
+export function forgetReplacedKeys(before: readonly HoldsOpened[] | null | undefined, now: readonly HoldsOpened[] | null | undefined = []): void {
+  const keys = (list: readonly HoldsOpened[] | null | undefined) =>
+    (list ?? []).flatMap((item) => (item?.opened?.state === 'open' ? [item.opened.contentKey] : []))
+  const kept = new Set(keys(now))
+  for (const key of new Set(keys(before))) if (!kept.has(key)) void forgetContentKey(key)
 }
