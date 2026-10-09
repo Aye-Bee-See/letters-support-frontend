@@ -1,5 +1,5 @@
-import { del, getAllPages, getList, getOne, put } from './client'
-import type { FilterValues, ListParams, Prisoner, PrisonerStatus, RecordStatus } from '../types'
+import client, { del, getAllPages, getList, getOne, put } from './client'
+import type { ApiEnvelope, FilterValues, HistoryEntry, ListParams, Prisoner, PrisonerPhoto, PrisonerStatus, RecordStatus } from '../types'
 
 export interface PrisonerListParams extends ListParams {
   status?: PrisonerStatus
@@ -73,3 +73,44 @@ export const linkSupportGroup = (prisoner: number, chapter: number, description:
 
 /** Remove a support link: the same people as linking. A 404 if there was none. */
 export const unlinkSupportGroup = (prisoner: number, chapter: number) => del<number>('/prisoner/support', { prisoner, chapter })
+
+// --- Photos (README "Photos") ---------------------------------------------------
+// A superadmin, or any group admin of an active group (API #166). Published at
+// once, without moderation, so the client asks first: a group admin confirms
+// the person agreed to it; a superadmin names the public support page it comes
+// from in `credit` (at most 200 characters, shown beside the picture). The API
+// strips EXIF and the rest, orientation included, and never rotates.
+
+/** The largest photo the API takes (`PHOTO_MAX_BYTES`, 5 MiB); it reads the type from the bytes. */
+export const PHOTO_MAX_BYTES = 5 * 1024 * 1024
+export const PHOTO_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image/webp']
+
+/**
+ * POST /prisoner/photo, multipart: `prisoner` first, then the image in `photo`
+ * (the API checks who is sending before reading the file), and `credit` only
+ * when given. Replaces any photo the record had. A 400 names the problem on
+ * `photo` (`not_allowed_value`, `out_of_range`, `wrong_type`).
+ */
+export async function uploadPrisonerPhoto(prisoner: number, file: Blob & { name?: string }, credit?: string | null) {
+  const form = new FormData()
+  form.append('prisoner', String(prisoner))
+  if (credit) form.append('credit', credit)
+  form.append('photo', file, file.name ?? 'photo')
+  const response = await client.post<ApiEnvelope<{ id: number; photo: PrisonerPhoto; bytesStored: number; bytesUploaded: number }>>(
+    '/prisoner/photo',
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return response.data.data
+}
+
+/** DELETE /prisoner/photo: takes the photo off the record and deletes the file. The same people as adding one. */
+export const removePrisonerPhoto = (prisoner: number) => del<unknown>('/prisoner/photo', { prisoner })
+
+/**
+ * GET /prisoner/history?id=: what happened to the record, newest first,
+ * paginated (README "The history of one record"). Staff only; entries are
+ * routine audit entries, kept 180 days by default.
+ */
+export const getPrisonerHistory = (id: number, params?: Pick<ListParams, 'page' | 'page_size'>) =>
+  getList<HistoryEntry>('/prisoner/history', { id, ...params })

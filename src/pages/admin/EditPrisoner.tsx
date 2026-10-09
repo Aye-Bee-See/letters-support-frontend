@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getFacilities, getFacility } from '../../api/facilities'
 import { deletePrisoner, getPrisoner, updatePrisoner, type PrisonerFields, type PrisonerMailChange } from '../../api/prisoners'
+import PhotoPanel from '../../components/admin/PhotoPanel'
+import RecordHistory from '../../components/admin/RecordHistory'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
@@ -104,6 +106,7 @@ export default function EditPrisoner() {
   const id = Number(useParams().id)
   const prisoner = useApi(() => getPrisoner(id, false), [id])
   const [saved, setSaved] = useState<{ mail?: PrisonerMailChange } | null>(null)
+  const [photoChanges, setPhotoChanges] = useState(0)
 
   const name = prisoner.data ? displayName(prisoner.data) : 'Prisoner'
 
@@ -145,6 +148,12 @@ export default function EditPrisoner() {
             onEdit={() => setSaved(null)}
           />
         )}
+        {/* Keyed on id only: a photo change mustn't reload the record and drop unsaved form edits. */}
+        {prisoner.data && (
+          <PhotoPanel key={`photo-${prisoner.data.id}`} prisoner={prisoner.data} onChanged={() => setPhotoChanges((n) => n + 1)} />
+        )}
+        {/* A photo change is in the history too, without touching the record's updatedAt. */}
+        {prisoner.data && <RecordHistory resource="prisoner" id={prisoner.data.id} version={`${prisoner.data.updatedAt}/${photoChanges}`} />}
       </div>
     </>
   )

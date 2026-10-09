@@ -4,6 +4,7 @@
 export { KDF_MAX, KDF_PARAMS, KdfParamsError, normalizeCode } from './kdf'
 export { CODE_LENGTH, formatCode, generateCode, hashCode, INVITE_CODE_LENGTH } from './codes'
 export { generateKeypair, type Keypair } from './primitives'
+export { keyFingerprint } from './fingerprint'
 export {
   createAccountKeys,
   createClaimToken,
