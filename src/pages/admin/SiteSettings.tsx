@@ -235,7 +235,7 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
 
 function ResetTwoFactor() {
   const [q, setQ] = useState('')
-  const [results, setResults] = useState<User[] | null>(null)
+  const [results, setResults] = useState<{ q: string; users: User[]; total: number } | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -244,7 +244,8 @@ function ResetTwoFactor() {
     setBusy(true)
     setMessage(null)
     try {
-      setResults((await searchAccounts(q.trim())).items)
+      const found = await searchAccounts(q.trim())
+      setResults({ q: q.trim(), users: found.items, total: found.total })
     } catch (err) {
       setMessage({ ok: false, text: errorText(err) })
     } finally {
@@ -281,13 +282,15 @@ function ResetTwoFactor() {
           Find
         </button>
       </form>
-      {results && results.length === 0 && <p className="form-static">No account matches.</p>}
-      {results && results.length > 0 && (
+      {results && results.total === 0 && <p className="form-static">No account matches.</p>}
+      {results && results.users.length > 0 && (
         <ul className="relay-list">
-          {results.map((u) => (
+          {results.users.map((u) => (
             <li key={u.id}>
               <span>
-                <strong>{u.username}</strong>
+                <Link to={`/admin/users/${u.id}`}>
+                  <strong>{u.username}</strong>
+                </Link>
                 {u.name && <span className="list-sub"> {u.name}</span>}
                 <span className="list-sub"> · {u.role === 'admin' ? 'superadmin' : u.role === 'chapter' ? 'group admin' : u.role === 'user' ? 'writer' : u.role}</span>
               </span>
@@ -297,6 +300,12 @@ function ResetTwoFactor() {
             </li>
           ))}
         </ul>
+      )}
+      {results && results.total > results.users.length && (
+        <p className="form-hint">
+          {results.total} accounts match; these are the first {results.users.length}.{' '}
+          <Link to={`/admin/users?q=${encodeURIComponent(results.q)}`}>See them all in Accounts</Link>, or search for more of the name.
+        </p>
       )}
       {message && <div className={`admin-alert ${message.ok ? 'admin-alert-ok' : 'admin-alert-err'}`}>{message.text}</div>}
     </>

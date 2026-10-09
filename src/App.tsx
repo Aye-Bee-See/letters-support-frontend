@@ -65,6 +65,7 @@ const Invitations = lazy(() => import('./pages/admin/Invitations'))
 const Queue = lazy(() => import('./pages/admin/Queue'))
 const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'))
 const Users = lazy(() => import('./pages/admin/Users'))
+const EditUser = lazy(() => import('./pages/admin/EditUser'))
 
 /** /inbox shows the writer or the group view by role; superadmins have no inbox. */
 function InboxRoute() {
@@ -159,6 +160,7 @@ export default function App() {
                 <Route path="invite" element={<Invitations />} />
                 <Route path="settings" element={<SiteSettings />} />
                 <Route path="users" element={<Users />} />
+                <Route path="users/:id" element={<EditUser />} />
               </Route>
             </Route>
           </Route>

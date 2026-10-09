@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { getAllGroups } from '../../api/groups'
-import { getUsers, type UserListParams } from '../../api/users'
+import { getUsers, type DeletedAccount, type UserListParams } from '../../api/users'
 import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
@@ -20,6 +20,8 @@ const PAGE_SIZE = 25
 
 export default function Users() {
   const { params, page, update, clear } = useListParams()
+  // Set by the account page after a delete.
+  const deleted = (useLocation().state as { deleted?: DeletedAccount & { username: string } } | null)?.deleted
   const q = params.get('q') ?? ''
   const roleParam = params.get('role')
   const role = isRole(roleParam) ? roleParam : undefined
@@ -43,6 +45,12 @@ export default function Users() {
       </div>
 
       <div className="admin-content">
+        {deleted && (
+          <div className="admin-alert admin-alert-ok" role="status">
+            {deleted.username} is deleted, with {deleted.letters} {deleted.letters === 1 ? 'letter' : 'letters'}, {deleted.replies}{' '}
+            {deleted.replies === 1 ? 'reply' : 'replies'} and {deleted.threads} {deleted.threads === 1 ? 'thread' : 'threads'}.
+          </div>
+        )}
         <p className="dash-note">
           Writers, group admins and site admins. An account holds no letters: nothing here can read one, and changing an account never opens its letters.
         </p>
