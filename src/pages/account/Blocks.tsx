@@ -3,12 +3,14 @@ import { getMyBlocks } from '../../api/auth'
 import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { longDate } from '../../utils/dates'
+import '../../assets/styles/pages/blocked-writers.css'
 
 // Groups not mailing the writer's letters (README "Blocking a writer", GET
 // /auth/blocks): the group, the reason it gave and when. Only what the writer
 // was told, never who blocked them. Markup from the claim page's classes
 // (pages/claim.css), as the other account pages use; the list is Blocked
-// writers' (pages/blocked-writers.css).
+// writers' (pages/blocked-writers.css, imported here as the group pages do,
+// so a fresh load of this page has it).
 
 export default function Blocks() {
   const blocks = useApi(getMyBlocks, [])
