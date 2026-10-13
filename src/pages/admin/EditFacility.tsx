@@ -18,6 +18,7 @@ import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, MailRuleCategory, MailRuleList, Prison, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
 import { shortDate } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
 
 // Edit one facility record (PUT /prison/prison, superadmins only). Only changed
 // fields are sent, so the audit log says what was edited; `address` is one JSON
@@ -170,7 +171,7 @@ export default function EditFacility() {
         {facility.loading && <p className="dash-note">Loading the record…</p>}
         {facility.error && (
           <div className="admin-alert admin-alert-err">
-            {facility.error.status === 404 ? `There is no facility #${id}.` : `Couldn't load facility #${id} (${facility.error.message}).`}
+            {facility.error.status === 404 ? `There is no facility #${id}.` : `Couldn't load facility #${id} (${refusalText(facility.error)}).`}
             {facility.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={facility.reload}>
                 Try again
@@ -268,7 +269,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
       onSaved()
     } catch (err) {
       const e = err as ApiError
-      setError(e.errors?.length ? e.errors.join(' ') : e.message)
+      setError(e.errors?.length ? e.errors.join(' ') : refusalText(e))
       setBusy(false)
     }
   }
@@ -286,7 +287,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
       setError(
         e.name === 'SequelizeForeignKeyConstraintError'
           ? 'Prisoners are listed at this facility, so it can’t be deleted. Move them first, or set it to draft to take it out of the directory.'
-          : e.message,
+          : refusalText(e),
       )
       setBusy(false)
     }
@@ -367,7 +368,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
         <div className="form-group">
           <span className="form-label">Mail rules</span>
           {!list && !rulesError && <p className="form-hint">Loading the list of rules…</p>}
-          {rulesError && <p className="form-hint">Couldn't load the list of rules ({rulesError.message}).</p>}
+          {rulesError && <p className="form-hint">Couldn't load the list of rules ({refusalText(rulesError)}).</p>}
           {list && <RulePicker list={list} held={new Set(f.mailRules ?? [])} selected={ruleTags} disabled={busy} onToggle={toggleRule} />}
         </div>
       </Section>
@@ -477,7 +478,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
       setLinked(await action())
       setChoice(null)
     } catch (err) {
-      setError((err as ApiError).message)
+      setError(refusalText(err as ApiError))
     } finally {
       setBusy(false)
     }

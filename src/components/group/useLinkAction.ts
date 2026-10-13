@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ApiError } from '../../types'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
 /**
  * What to say when a link change is refused, from the status, never the API's
@@ -16,10 +16,10 @@ export function linkRefusal(err: ApiError): string {
 
 /**
  * Shared by the link panels and the admin page's two-factor switch: run one
- * change that applies at once, and say why it failed (the API's message unless
- * `describe` words it).
+ * change that applies at once, and say why it failed (refusalText, worded from
+ * the status, unless `describe` words it).
  */
-export function useLinkAction(describe: (err: ApiError) => string = (err) => err.message) {
+export function useLinkAction(describe: (err: ApiError) => string = refusalText) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const run = async (action: () => Promise<void>) => {

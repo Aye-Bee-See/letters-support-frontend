@@ -7,7 +7,7 @@ import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import type { ApiError, InviteCodeBatch, InviteCodeSummary, IssuedInviteCodes } from '../../types'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
 // Invite codes (README "Invite codes"): the group issues a batch, prints the
 // codes as slips and hands them out; a newcomer joins with one at /join
@@ -97,7 +97,7 @@ export default function InviteCodes() {
             {summary.loading && <p className="settings-static">Loading your group’s batches…</p>}
             {summary.error && (
               <div className="settings-alert settings-alert-err">
-                Couldn’t load your group’s invite codes ({summary.error.message}).{' '}
+                Couldn’t load your group’s invite codes ({refusalText(summary.error)}).{' '}
                 <button type="button" className="settings-link-button" onClick={summary.reload}>
                   Try again
                 </button>

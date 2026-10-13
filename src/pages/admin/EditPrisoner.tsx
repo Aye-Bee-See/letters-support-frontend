@@ -11,6 +11,7 @@ import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, shortDate, STATUS_LABELS } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
 
 // Edit one prisoner record (PUT /prisoner/prisoner, superadmins only). Only the
 // fields that changed are sent, so the audit log says what was edited. A new
@@ -127,7 +128,7 @@ export default function EditPrisoner() {
         {prisoner.loading && <p className="dash-note">Loading the record…</p>}
         {prisoner.error && (
           <div className="admin-alert admin-alert-err">
-            {prisoner.error.status === 404 ? `There is no prisoner #${id}.` : `Couldn't load prisoner #${id} (${prisoner.error.message}).`}
+            {prisoner.error.status === 404 ? `There is no prisoner #${id}.` : `Couldn't load prisoner #${id} (${refusalText(prisoner.error)}).`}
             {prisoner.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={prisoner.reload}>
                 Try again
@@ -235,7 +236,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
       onSaved({ mail: result.mail })
     } catch (err) {
       const e = err as ApiError
-      setError(e.errors?.length ? e.errors.join(' ') : e.message)
+      setError(e.errors?.length ? e.errors.join(' ') : refusalText(e))
       setBusy(false)
     }
   }
@@ -254,7 +255,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
       setError(
         e.name === 'SequelizeForeignKeyConstraintError'
           ? 'This prisoner has letter threads, so the record can’t be deleted. Set it to draft to take it out of the directory instead.'
-          : e.message,
+          : refusalText(e),
       )
       setBusy(false)
     }

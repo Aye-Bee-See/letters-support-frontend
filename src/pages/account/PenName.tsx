@@ -5,6 +5,7 @@ import PenNameField from '../../components/forms/PenNameField'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignOut } from '../../hooks/useSignOut'
 import type { ApiError } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Choosing a pen name, for a writer whose account was made before pen names
 // were required (30 September; README "Pen names"). PenNameLock sends them here
@@ -13,7 +14,7 @@ import type { ApiError } from '../../types'
 
 const errorText = (err: unknown) => {
   const e = err as ApiError
-  return e.errors?.length ? e.errors.join(' ') : e.message
+  return e.errors?.length ? e.errors.join(' ') : refusalText(e)
 }
 
 export default function PenName() {

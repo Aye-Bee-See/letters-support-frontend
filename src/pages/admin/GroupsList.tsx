@@ -5,6 +5,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { AccountStatus, ApiError, Chapter, NetworkRole, RecordStatus } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Every group, pending and suspended included, with the superadmin's one job
 // here: approving groups that joined by invitation, and suspending or
@@ -125,7 +126,7 @@ export default function GroupsList() {
           {list.loading && <p className="dash-note">Loading groups…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load groups ({list.error.message}).{' '}
+              Couldn't load groups ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>
@@ -160,7 +161,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
       onChanged()
     } catch (err) {
       const e = err as ApiError
-      setError(`${g.name}: ${e.errors?.length ? e.errors.join(' ') : e.message}`)
+      setError(`${g.name}: ${e.errors?.length ? e.errors.join(' ') : refusalText(e)}`)
     } finally {
       setBusy(null)
     }

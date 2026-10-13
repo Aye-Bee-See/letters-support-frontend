@@ -677,7 +677,7 @@ export default function Thread() {
             {/* A reload that failed: what was on screen stays (useApi keepPrevious), with the reason. */}
             {page.error && (
               <p className="thread-updating" role="alert">
-                Couldn’t update the conversation ({page.error.message}).{' '}
+                Couldn’t update the conversation ({refusalText(page.error)}).{' '}
                 <button type="button" className="btn btn-sm" onClick={page.reload}>
                   Try again
                 </button>

@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { MIN_PASSWORD_LENGTH } from '../../utils/password'
 import CurrentPasswordField from './CurrentPasswordField'
 import { useSignInAgain } from './useSignInAgain'
+import { refusalText } from '../../utils/refusals'
 
 // Changing the password (PUT /auth/user, split; README "Account keys"). The
 // current password opens the private key on this device; the key is locked
@@ -60,7 +61,7 @@ export default function ChangePassword() {
           'The server couldn’t be reached, so we can’t tell whether your password was changed. If you are signed out, sign in with your new password; if not, your old one still works.',
         )
       }
-      setError(apiError.errors.length ? apiError.errors.join(' ') : apiError.message)
+      setError(apiError.errors.length ? apiError.errors.join(' ') : refusalText(apiError))
     }
   }
 

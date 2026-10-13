@@ -14,6 +14,7 @@ import { useApi } from '../../hooks/useApi'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
 import { capitalise, changes, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
+import { refusalText } from '../../utils/refusals'
 
 // Edit one group (PUT /chapter/chapter, superadmins only). Only changed fields
 // are sent; `location` and `socialLinks` are JSON values, so they go whole. The
@@ -76,7 +77,7 @@ export default function EditGroup() {
         {group.loading && <p className="dash-note">Loading the group…</p>}
         {group.error && (
           <div className="admin-alert admin-alert-err">
-            {group.error.status === 404 ? `There is no group #${id}.` : `Couldn't load group #${id} (${group.error.message}).`}
+            {group.error.status === 404 ? `There is no group #${id}.` : `Couldn't load group #${id} (${refusalText(group.error)}).`}
             {group.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={group.reload}>
                 Try again
@@ -190,7 +191,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
       onSaved()
     } catch (err) {
       const e = err as ApiError
-      setError(e.errors?.length ? e.errors.join(' ') : e.message)
+      setError(e.errors?.length ? e.errors.join(' ') : refusalText(e))
       setBusy(false)
     }
   }
@@ -211,7 +212,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
       await deleteGroup(g.id)
       navigate('/admin/groups', { replace: true })
     } catch (err) {
-      setError((err as ApiError).message)
+      setError(refusalText(err as ApiError))
       setBusy(false)
     }
   }

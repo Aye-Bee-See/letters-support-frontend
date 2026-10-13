@@ -10,6 +10,7 @@ import { useGatedGroup } from '../../hooks/useGroup'
 import type { ApiError, Chapter, ChapterService, HistoryEntry, NetworkRole, SocialLinkKey } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
 import { capitalise, changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
+import { refusalText } from '../../utils/refusals'
 
 // A group admin's own group (group-admin-plan.md WP4a). The record through
 // PUT /chapter/chapter, which a group admin may send for their own active group
@@ -107,7 +108,7 @@ export default function OrgSettings() {
           {history.loading && <p className="settings-static">Loading the history…</p>}
           {history.error && (
             <div className="settings-alert settings-alert-err">
-              Couldn’t load the history ({history.error.message}).{' '}
+              Couldn’t load the history ({refusalText(history.error)}).{' '}
               <button type="button" className="settings-link-button" onClick={history.reload}>
                 Try again
               </button>
@@ -198,7 +199,7 @@ function GroupForm({ group: g, onSaved, onEdit }: FormProps) {
             ? 'Your group can’t change its record right now: only an active group edits its own record.'
             : e.status === 404
               ? 'Your group’s record isn’t there any more.'
-              : e.message,
+              : refusalText(e),
       )
       setBusy(false)
     }

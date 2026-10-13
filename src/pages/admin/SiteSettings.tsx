@@ -9,6 +9,7 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, User } from '../../types'
 import { ROLE_LABELS } from '../../utils/users'
+import { refusalText } from '../../utils/refusals'
 
 // Site settings. Today the API's one site-wide setting is who must use
 // two-factor sign-in (README "Two-factor sign-in"): every superadmin, every
@@ -21,7 +22,7 @@ import { ROLE_LABELS } from '../../utils/users'
 
 const errorText = (err: unknown) => {
   const e = err as ApiError
-  return e.errors?.length ? e.errors.join(' ') : e.message
+  return e.errors?.length ? e.errors.join(' ') : refusalText(e)
 }
 
 export default function SiteSettings() {
@@ -48,7 +49,7 @@ export default function SiteSettings() {
             {policy.loading && <p className="dash-note">Loading…</p>}
             {policy.error && (
               <div className="admin-alert admin-alert-err">
-                Couldn’t load who must use it ({policy.error.message}).
+                Couldn’t load who must use it ({refusalText(policy.error)}).
                 <button type="button" className="a-btn a-btn-sm" onClick={policy.reload}>
                   Try again
                 </button>
@@ -148,7 +149,7 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
       {superadminsBlocked && ownOn === null && !ownError && <p className="form-hint">Checking your own two-factor sign-in…</p>}
       {superadminsBlocked && ownError && (
         <p className="form-hint list-stale">
-          Couldn’t check whether your own two-factor sign-in is on ({ownError.message}), so this can’t be switched on yet.{' '}
+          Couldn’t check whether your own two-factor sign-in is on ({refusalText(ownError)}), so this can’t be switched on yet.{' '}
           <button type="button" className="link-button" onClick={onRetryOwn}>
             Try again
           </button>

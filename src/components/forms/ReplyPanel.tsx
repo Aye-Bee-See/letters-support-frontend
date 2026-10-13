@@ -6,6 +6,7 @@ import type { Message, Prison } from '../../types'
 import { mailRuleLines } from '../../utils/facilities'
 import AttachmentRetry from './AttachmentRetry'
 import UploadZone from './UploadZone'
+import { refusalText } from '../../utils/refusals'
 
 // The inline reply panel from solidarity-site/thread.html (pages/thread.css):
 // the same draft and send as New Letter (useLetterDraft, src/letters/send.ts),
@@ -76,7 +77,7 @@ export default function ReplyPanel({
           {/* The facility comes from the thread (one fetch for this and the held letters' group picker). */}
           {facility.error ? (
             <p className="reply-notes-hint" role="alert">
-              Couldn’t load the facility’s mail rules and the groups that mail there ({facility.error.message}), so the reply
+              Couldn’t load the facility’s mail rules and the groups that mail there ({refusalText(facility.error)}), so the reply
               can’t be sent yet.{' '}
               <button type="button" className="reply-notes-toggle" onClick={facility.reload}>
                 Try again

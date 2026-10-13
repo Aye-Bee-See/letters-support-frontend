@@ -6,7 +6,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { usePageClamp } from '../../hooks/useListParams'
 import type { AccountBrief, ApiError, Submission, SubmissionResource, SubmissionStatus } from '../../types'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
 // The moderation queue: directory proposals from group admins (and superadmins),
 // oldest first. A superadmin reads each one against the record's current values,
@@ -202,7 +202,7 @@ export default function Queue() {
         {list.loading && <p className="dash-note">Loading the queue…</p>}
         {list.error && (
           <div className="admin-alert admin-alert-err">
-            Couldn't load the queue ({list.error.message}).
+            Couldn't load the queue ({refusalText(list.error)}).
             <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
               Try again
             </button>
@@ -347,7 +347,7 @@ function Review({ submission: s, onClose, onDecided }: { submission: Submission;
       {detail.loading && <p className="dash-note">Loading the current values…</p>}
       {detail.error && (
         <div className="admin-alert admin-alert-err">
-          Couldn't load this proposal ({detail.error.message}).
+          Couldn't load this proposal ({refusalText(detail.error)}).
           <button type="button" className="a-btn a-btn-sm" onClick={detail.reload}>
             Try again
           </button>

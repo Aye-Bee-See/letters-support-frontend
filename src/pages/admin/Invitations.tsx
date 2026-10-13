@@ -11,6 +11,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { Chapter, Invitation, InvitationStatus } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Inviting groups (and members of groups) into the network: POST, GET, PUT
 // (renew) and DELETE (withdraw) /invitation. Groups aren't registered; a group
@@ -90,7 +91,7 @@ export default function Invitations() {
           {list.loading && <p className="dash-note">Loading invitations…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load invitations ({list.error.message}).{' '}
+              Couldn't load invitations ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>

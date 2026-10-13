@@ -6,6 +6,7 @@ import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, heldAt, shortDate, STATUS_LABELS } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
 
 // Every prisoner record, drafts and pending included (superadmins are staff, so
 // GET /prisoner/prisoners returns all record statuses). Filters live in the URL
@@ -128,7 +129,7 @@ export default function PrisonersList() {
           {list.loading && <p className="dash-note">Loading prisoners…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load prisoners ({list.error.message}).{' '}
+              Couldn't load prisoners ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>

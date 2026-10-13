@@ -162,7 +162,7 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
       )}
       {failed && (
         <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
-          {describeReferenceError(failed) ?? `Couldn't look that number up (${failed.message}).`}
+          {describeReferenceError(failed) ?? `Couldn't look that number up (${refusalText(failed)}).`}
         </p>
       )}
       {found && <FoundLetter found={found} />}

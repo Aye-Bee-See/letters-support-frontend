@@ -4,6 +4,7 @@ import { getAdminSummary, getAuditLog, getEncryptionReadiness } from '../../api/
 import { getSubmissions } from '../../api/corrections'
 import { useApi, type ApiState } from '../../hooks/useApi'
 import type { AccountBrief, AdminSummary, AuditEntry, EncryptionReadiness, Submission, SubmissionResource } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Built on GET /moderation/summary, /auth/encryption-readiness, /moderation/submissions
 // and /moderation/audit. Each panel loads on its own, so one failing request
@@ -98,7 +99,7 @@ function Panel({ state, what, children }: { state: ApiState<unknown>; what: stri
   if (state.error)
     return (
       <p className="dash-note">
-        Couldn't load {what} ({state.error.message}).{' '}
+        Couldn't load {what} ({refusalText(state.error)}).{' '}
         <button type="button" className="a-btn a-btn-sm" onClick={state.reload}>
           Try again
         </button>

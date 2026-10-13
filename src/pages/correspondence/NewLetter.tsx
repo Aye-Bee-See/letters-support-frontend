@@ -17,6 +17,7 @@ import { useLetterDraft, type WriteAs } from '../../hooks/useLetterDraft'
 import type { Prison, PrisonSummary } from '../../types'
 import { addressLine, mailRuleLines } from '../../utils/facilities'
 import { displayName, heldAt } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
 
 // Markup and classes from solidarity-site/new-letter.html (pages/new-letter.css).
 // A group admin writes as one of the group's managed writers (`?writer=<id>`,
@@ -136,7 +137,7 @@ export default function NewLetter() {
           <div className="facility-guidance" style={{ alignItems: 'stretch' }}>
             {prisoner && facilityState.error ? (
               <div className="facility-guidance-empty" role="alert">
-                Couldn’t load {displayName(prisoner)}’s facility and its mail rules ({facilityState.error.message}).{' '}
+                Couldn’t load {displayName(prisoner)}’s facility and its mail rules ({refusalText(facilityState.error)}).{' '}
                 <button type="button" className="addr-remove-btn" onClick={facilityState.reload}>
                   Try again
                 </button>
@@ -331,7 +332,7 @@ export default function NewLetter() {
               <div className="addr-tile-body">
                 {writers.error && (
                   <p className="relay-select-hint">
-                    Couldn't load your group's writers ({writers.error.message}).{' '}
+                    Couldn't load your group's writers ({refusalText(writers.error)}).{' '}
                     <button type="button" className="addr-remove-btn" onClick={writers.reload}>
                       Try again
                     </button>
@@ -385,7 +386,7 @@ export default function NewLetter() {
             <div className="addr-tile-body">
               {lookupError && (
                 <p className="relay-select-hint" role="alert">
-                  Couldn't load the prisoner in this link ({lookupError.message}).{' '}
+                  Couldn't load the prisoner in this link ({refusalText(lookupError)}).{' '}
                   <button type="button" className="addr-remove-btn" onClick={chosen.reload}>
                     Try again
                   </button>

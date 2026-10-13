@@ -5,6 +5,7 @@ import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { AccountBrief, AuditEntry } from '../../types'
 import { ROLE_LABELS } from '../../utils/users'
+import { refusalText } from '../../utils/refusals'
 
 // The audit log (GET /moderation/audit, superadmins only), newest first. The
 // API filters on exact values (actor, action, resource, target), and records
@@ -120,7 +121,7 @@ export default function AuditLog() {
           {list.loading && <p className="dash-note">Loading the audit log…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load the audit log ({list.error.message}).{' '}
+              Couldn't load the audit log ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>

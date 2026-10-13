@@ -10,6 +10,7 @@ import AccountFields from '../../components/forms/AccountFields'
 import { accountValuesReady, emptyAccountValues } from '../../components/forms/accountValues'
 import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import type { ApiError } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Markup and classes from solidarity-site/claim.html (pages/claim.css): the
 // error, form, working and done states, with the done state replaced by the
@@ -29,7 +30,7 @@ function codeProblem(error: ApiError): { title: string; body: string } {
   if (error.status === 404) return { title: 'This claim code is not valid', body: 'Check that it was typed correctly, or ask the group that set up your account for a new one.' }
   if (error.condition === 'used') return { title: 'This claim code has already been used', body: 'If you claimed your account, sign in instead. Otherwise, ask the group for a new code.' }
   if (error.condition === 'expired') return { title: 'This claim code has expired', body: 'Claim codes work for two weeks. Ask the group that set up your account for a new one.' }
-  return { title: 'This claim code could not be checked', body: error.message }
+  return { title: 'This claim code could not be checked', body: refusalText(error) }
 }
 
 const UNUSABLE = {
@@ -213,7 +214,7 @@ function ClaimForm({
       setErrors(
         apiError.errors.length
           ? apiError.errors
-          : [apiError.status ? apiError.message : 'This claim code could not open the account. Ask the group for a new one.'],
+          : [apiError.status ? refusalText(apiError) : 'This claim code could not open the account. Ask the group for a new one.'],
       )
       setBusy(false)
     }

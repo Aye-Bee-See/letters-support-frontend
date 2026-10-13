@@ -7,6 +7,7 @@ import { codeParamsRefusal } from '../../auth/signIn'
 import NewPasswordFields from '../../components/forms/NewPasswordFields'
 import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import { MIN_PASSWORD_LENGTH } from '../../utils/password'
+import { refusalText } from '../../utils/refusals'
 
 // Layout and classes from solidarity-site/forgot-password.html (pages/forgot-password.css);
 // fields and the working state use claim.html's classes. The prototype said there
@@ -28,7 +29,7 @@ function startProblem(err: unknown): string {
   if (e.status === 404) return 'We could not find an account with that username that can be recovered with a code.'
   if (e.status === 429) return 'Too many attempts. Please wait a while and try again.'
   if (e.status === 0) return 'Could not reach the server.'
-  return e.message
+  return refusalText(e)
 }
 
 export default function ForgotPassword() {
@@ -66,7 +67,7 @@ export default function ForgotPassword() {
       // Only a failure before the password is changed lands here. Once it is, a
       // failed sign-in comes back in the result, with the new recovery code.
       const apiError = toApiError(err)
-      setError(apiError.errors.length ? apiError.errors.join(' ') : apiError.message)
+      setError(apiError.errors.length ? apiError.errors.join(' ') : refusalText(apiError))
       setStep({ name: 'new-password', opened })
     }
   }

@@ -6,6 +6,7 @@ import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prison, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
 import { shortDate } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
 
 // Every facility record, drafts and pending included (superadmins are staff).
 // Rows come without `full`, which would embed every prisoner held at each
@@ -154,7 +155,7 @@ export default function FacilitiesList() {
           {list.loading && <p className="dash-note">Loading facilities…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load facilities ({list.error.message}).{' '}
+              Couldn't load facilities ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>

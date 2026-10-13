@@ -7,6 +7,7 @@ import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Chapter, User } from '../../types'
 import { shortDate } from '../../utils/prisoners'
 import { isRole, ROLE_LABELS, ROLES } from '../../utils/users'
+import { refusalText } from '../../utils/refusals'
 
 // Every account (GET /auth/users, superadmins only), oldest first, as the API
 // lists them. `q` searches username, email and name; `role` narrows to one
@@ -97,7 +98,7 @@ export default function Users() {
           {list.loading && !list.data && <p className="dash-note">Loading accounts…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load the accounts ({list.error.message}).{' '}
+              Couldn't load the accounts ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>
