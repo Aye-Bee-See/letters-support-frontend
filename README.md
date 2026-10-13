@@ -85,6 +85,22 @@ The public test API at `https://abctest.letters.support` follows the API's
 `main` within the hour; a build pointed at it must be served from an origin
 that server allows.
 
+**Content-Security-Policy.** `npm run build` puts a policy in `dist/index.html`
+as a `<meta http-equiv>`, naming the API origin the build was made for
+(`contentSecurityPolicy` in `vite.config.ts`; the dev server has none, as its
+client needs inline scripts). A static host should send the same policy as a
+header, with `frame-ancestors`, which a browser ignores in a `<meta>`; for a
+build against the test API:
+
+```
+Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' https://abctest.letters.support; img-src 'self' data: blob: https://abctest.letters.support; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+```
+
+The `<meta>` covers hosts that can't send headers. `'wasm-unsafe-eval'` is
+for libsodium's WebAssembly; `style-src` allows inline styles only for the two
+`<style>` elements the app adds at run time (admin.css under `/admin`, and the
+print pages' `@page` margins); no element carries a `style` attribute.
+
 ## Signing in on a fresh database
 
 This client never sends a password to the server. Sign-in derives two keys from
