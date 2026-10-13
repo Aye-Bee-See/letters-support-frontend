@@ -90,10 +90,10 @@ export default function GroupConversations() {
               Page {page} of {pages}
             </span>
             <div className="pagination-pages">
-              <button type="button" className="page-btn" disabled={page <= 1} onClick={() => goPage(page - 1)}>
+              <button type="button" className="page-btn" aria-label="Previous page" disabled={page <= 1} onClick={() => goPage(page - 1)}>
                 ←
               </button>
-              <button type="button" className="page-btn" disabled={page >= pages} onClick={() => goPage(page + 1)}>
+              <button type="button" className="page-btn" aria-label="Next page" disabled={page >= pages} onClick={() => goPage(page + 1)}>
                 →
               </button>
             </div>

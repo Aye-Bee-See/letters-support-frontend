@@ -370,14 +370,28 @@ h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
   white-space: nowrap;
 }
 
-.admin-table td {
+.admin-table td,
+.admin-table tbody th {
   padding: 0.65rem 1rem;
   border-bottom: 1px solid #f0f0ee;
   vertical-align: middle;
 }
 
-.admin-table tr:last-child td { border-bottom: none; }
-.admin-table tr:hover td { background: #fafaf8; }
+/* A row header (scope="row": the dashboard's label column) is drawn as a cell. */
+.admin-table tbody th {
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
+  text-align: left;
+  background: none;
+  white-space: normal;
+}
+
+.admin-table tr:last-child td,
+.admin-table tbody tr:last-child th { border-bottom: none; }
+.admin-table tr:hover td,
+.admin-table tbody tr:hover th { background: #fafaf8; }
 
 .admin-table td.actions {
   white-space: nowrap;

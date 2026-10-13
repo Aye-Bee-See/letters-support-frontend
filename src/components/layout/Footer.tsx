@@ -14,7 +14,7 @@ export default function Footer() {
             support groups and verified by network administrators.
           </p>
         </div>
-        <nav className="footer-nav">
+        <nav className="footer-nav" aria-label="Footer">
           <div className="footer-nav-col">
             <span className="footer-nav-heading">Directory</span>
             <Link to="/prisoners">Prisoners</Link>

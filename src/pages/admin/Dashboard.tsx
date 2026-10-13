@@ -249,9 +249,9 @@ function DirectoryTable({ summary }: { summary: AdminSummary }) {
           const counts = summary.records[r]
           return (
             <tr key={r}>
-              <td>
+              <th scope="row">
                 <Link to={RESOURCE_LINKS[r]}>{RESOURCE_LABELS[r] === 'Facility' ? 'Facilities' : `${RESOURCE_LABELS[r]}s`}</Link>
-              </td>
+              </th>
               <td>{counts.published}</td>
               <td>{counts.pending > 0 ? <span className="badge badge-pending">{counts.pending}</span> : 0}</td>
               <td>{counts.draft > 0 ? <span className="badge badge-draft">{counts.draft}</span> : 0}</td>
@@ -317,7 +317,7 @@ function EncryptionTable({ readiness }: { readiness: EncryptionReadiness }) {
       <tbody>
         {rows.map(([label, value]) => (
           <tr key={label}>
-            <td>{label}</td>
+            <th scope="row">{label}</th>
             <td>{value}</td>
           </tr>
         ))}
