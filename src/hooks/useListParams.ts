@@ -14,16 +14,16 @@ export function useListParams() {
   /**
    * Set or clear (undefined) some parameters. Any change but paging goes back to
    * page 1. Typing in the search box replaces the history entry rather than
-   * adding one per pause.
+   * adding one per pause; `replace` says so for any other change (usePageClamp's).
    */
-  const update = (changes: Record<string, string | undefined>) => {
+  const update = (changes: Record<string, string | undefined>, options: { replace?: boolean } = {}) => {
     const next = new URLSearchParams(params)
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value)
       else next.delete(key)
     }
     if (!('page' in changes)) next.delete('page')
-    setParams(next, { replace: Object.keys(changes).every((key) => key === 'q') })
+    setParams(next, { replace: options.replace ?? Object.keys(changes).every((key) => key === 'q') })
   }
 
   /** Drop every parameter except those named. */

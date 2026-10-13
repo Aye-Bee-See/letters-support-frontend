@@ -59,3 +59,12 @@ export function otherRefusal(error: ApiError): string {
 
 /** commonRefusal, else otherRefusal: for a place with nothing of its own to add. */
 export const refusalText = (error: ApiError) => commonRefusal(error) ?? otherRefusal(error)
+
+/**
+ * A site admin's write to the directory (the New prisoner, facility and group
+ * pages): a 403 there is about the role, never commonRefusal's inactive group.
+ */
+export function siteAdminRefusal(error: ApiError): string {
+  if (error.status === 403) return 'The server refused this: only a site admin can do it. Sign in again if your role changed.'
+  return commonRefusal(error) ?? otherRefusal(error)
+}

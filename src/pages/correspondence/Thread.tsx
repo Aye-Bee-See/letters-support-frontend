@@ -21,6 +21,7 @@ import { oldKeyText, threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 import { refusalText } from '../../utils/refusals'
 import { retentionLine, windowFor } from '../../utils/retention'
+import { longDate, shortDate } from '../../utils/dates'
 
 // Markup and classes from solidarity-site/thread.html (pages/thread.css). At
 // the bottom, a writer's reply panel, or for a group admin the panel that
@@ -76,12 +77,9 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
   return { chat, letters }
 }
 
-const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const NO_BLOCKS: WriterBlock[] = []
 /** Statuses of a letter that was mailed: mailed, a reply received to it, or returned after mailing. */
 const MAILED: LetterStatus[] = ['mailed', 'received', 'returned']
-
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
@@ -610,7 +608,7 @@ export default function Thread() {
       <div className="app-wrap">
         <title>Conversation · letters.support</title>
         <div className="wrap">
-          <LoadState state={page} what="conversation" />
+          <LoadState state={page} what="conversation" notFound="This conversation couldn’t be found." />
         </div>
       </div>
     )

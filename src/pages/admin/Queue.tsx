@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { approveSubmission, rejectSubmission } from '../../api/admin'
 import { getSubmission, getSubmissions } from '../../api/corrections'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
-import { usePageClamp } from '../../hooks/useListParams'
+import { useListParams, usePageClamp } from '../../hooks/useListParams'
 import type { AccountBrief, ApiError, Submission, SubmissionResource, SubmissionStatus } from '../../types'
 import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
+import { dateTime } from '../../utils/dates'
 
 // The moderation queue: directory proposals from group admins (and superadmins),
 // oldest first. A superadmin reads each one against the record's current values,
@@ -29,9 +31,6 @@ const VERIFIABLE: SubmissionResource[] = ['prisoner', 'prison']
 
 const isStatus = (v: string | null): v is SubmissionStatus | 'all' => STATUSES.includes(v as SubmissionStatus)
 const isResource = (v: string | null): v is SubmissionResource => RESOURCES.includes(v as SubmissionResource)
-
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 const who = (account: AccountBrief | null | undefined) => (account ? account.name || account.username : 'someone no longer here')
 
@@ -85,28 +84,16 @@ function bulkEligibility(items: Submission[]): Map<number, string | null> {
 }
 
 export default function Queue() {
-  const [params, setParams] = useSearchParams()
+  const { params, page, update } = useListParams()
   const statusParam = params.get('status')
   const resourceParam = params.get('resource')
   const status = isStatus(statusParam) ? statusParam : 'pending'
   const resource = isResource(resourceParam) ? resourceParam : undefined
-  const page = Math.max(1, Number(params.get('page')) || 1)
 
   const list = useApi(() => getSubmissions({ status, resource, page, page_size: PAGE_SIZE }), [status, resource, page], { keepPrevious: true })
 
-  const setFilter = (key: string, value: string | undefined) => {
-    const next = new URLSearchParams(params)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    next.delete('page')
-    setParams(next)
-  }
-  const goToPage = (n: number, replace = false) => {
-    const next = new URLSearchParams(params)
-    if (n > 1) next.set('page', String(n))
-    else next.delete('page')
-    setParams(next, { replace })
-  }
+  const setFilter = (key: string, value: string | undefined) => update({ [key]: value })
+  const goToPage = (n: number, replace = false) => update({ page: n > 1 ? String(n) : undefined }, { replace })
 
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -168,6 +155,7 @@ export default function Queue() {
 
   return (
     <>
+      <title>Moderation queue · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Moderation queue</span>
         <span className="topbar-right">
@@ -241,7 +229,7 @@ export default function Queue() {
           />
         ))}
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => goToPage(n)} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => goToPage(n)} />}
       </div>
     </>
   )

@@ -1,5 +1,6 @@
 import type { RetentionRules } from '../api/letters'
 import type { LetterStatus, Message } from '../types'
+import { longDate } from './dates'
 
 // README "Retention": a letter is deleted once it has been mailed, returned or
 // declined (or a reply recorded) for longer than its writer's window, unless
@@ -33,8 +34,6 @@ export function deletionDate(m: Pick<Message, 'status' | 'statusChangedAt' | 'cr
   const since = m.statusChangedAt ?? m.createdAt
   return new Date(new Date(since).getTime() + days * DAY_MS)
 }
-
-const longDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
 /**
  * The retention line under a settled letter, for its writer or a group that

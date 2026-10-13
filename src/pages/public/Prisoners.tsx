@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { getPrisonerFilters, getPrisoners } from '../../api/prisoners'
-import { DirectoryPager, DirectorySearch } from '../../components/ui/DirectoryControls'
+import { PUBLIC_PAGER } from '../../components/forms/uiClasses'
+import { DirectorySearch } from '../../components/ui/DirectoryControls'
+import Pager from '../../components/ui/Pager'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
@@ -46,6 +48,7 @@ export default function Prisoners() {
 
   return (
     <>
+      <title>Political Prisoners · letters.support</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Directory</p>
@@ -93,7 +96,7 @@ export default function Prisoners() {
               ))}
             </div>
           )}
-          {prisoners.data && <DirectoryPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+          {prisoners.data && <Pager classes={PUBLIC_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
         </div>
       </div>
     </>

@@ -9,6 +9,7 @@ import { RETURN_REASONS, statusRefusal } from '../../utils/groupLetters'
 import { displayName } from '../../utils/prisoners'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import NoteField from './NoteField'
+import { longDate } from '../../utils/dates'
 
 // "It came back" (README "Letter lifecycle", Returned mail): a mailed letter the
 // post brought back, with one of six reasons and an optional note of what the
@@ -112,7 +113,7 @@ export default function ReturnLetter({ message, onDone }: { message: Message; on
 
 // --- Proposing the directory change ---------------------------------------------
 
-const today = () => new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+const today = () => longDate(new Date())
 
 /** What the proposal offers for each reason. */
 const OFFER: Record<DirectoryReason, { heading: string; why: string }> = {

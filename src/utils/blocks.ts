@@ -46,8 +46,6 @@ export function personLabel(person: { id: number; username: string; name: string
   return person.name || person.username
 }
 
-export const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-
 /** The group's block of this writer, if it has one. */
 export const blockOf = (blocks: GroupBlock[] | null, writerId: number) => blocks?.find((b) => b.writer?.id === writerId) ?? null
 

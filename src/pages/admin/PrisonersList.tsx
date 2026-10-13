@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import { getPrisoners, type PrisonerListParams } from '../../api/prisoners'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, heldAt, STATUS_LABELS } from '../../utils/prisoners'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
 // Every prisoner record, drafts and pending included (superadmins are staff, so
@@ -60,6 +61,7 @@ export default function PrisonersList() {
 
   return (
     <>
+      <title>Prisoners · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Prisoners</span>
         <span className="topbar-right">
@@ -143,7 +145,7 @@ export default function PrisonersList() {
           {list.data && list.data.items.length > 0 && <PrisonerTable prisoners={list.data.items} />}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )
@@ -183,7 +185,7 @@ function PrisonerTable({ prisoners }: { prisoners: Prisoner[] }) {
               <td>{p.status ? STATUS_LABELS[p.status] : '—'}</td>
               <td>{p.recordStatus && <span className={`badge ${RECORD_BADGES[p.recordStatus]}`}>{p.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
-                {p.verifiedAt ? date(p.verifiedAt) : 'Never'}
+                {p.verifiedAt ? shortDate(p.verifiedAt) : 'Never'}
                 {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">

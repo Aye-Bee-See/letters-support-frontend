@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { getGroupsByIds } from '../../api/groups'
 import { getInvitations } from '../../api/invitations'
-import { ADMIN_UI } from '../../components/forms/uiClasses'
+import { ADMIN_PAGER, ADMIN_UI } from '../../components/forms/uiClasses'
 import InvitationTable from '../../components/invitations/InvitationTable'
 import InviteForm from '../../components/invitations/InviteForm'
 import TokenNotice from '../../components/invitations/TokenNotice'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { ADMIN_KIND_LABELS } from '../../components/invitations/wording'
-import ListPager from '../../components/ui/ListPager'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { Chapter, Invitation, InvitationStatus } from '../../types'
@@ -54,6 +54,7 @@ export default function Invitations() {
 
   return (
     <>
+      <title>Invitations · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Invitations</span>
       </div>
@@ -114,7 +115,7 @@ export default function Invitations() {
             />
           )}
         </div>
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )
