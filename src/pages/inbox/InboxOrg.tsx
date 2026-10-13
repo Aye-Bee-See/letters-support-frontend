@@ -5,6 +5,7 @@ import GroupWriters from '../../components/group/GroupWriters'
 import MembersWaitingNotice from '../../components/group/MembersWaitingNotice'
 import PrintQueue from '../../components/group/PrintQueue'
 import AppShell from '../../components/layout/AppShell'
+import Tabs, { type TabDef } from '../../components/ui/Tabs'
 import { useAuth } from '../../hooks/useAuth'
 import { useGatedGroup } from '../../hooks/useGroup'
 import { useSignOut } from '../../hooks/useSignOut'
@@ -19,7 +20,7 @@ import { useSignOut } from '../../hooks/useSignOut'
 
 type Tab = 'print' | 'conversations' | 'writers'
 
-const TABS: { key: Tab; label: string }[] = [
+const TABS: TabDef<Tab>[] = [
   { key: 'print', label: 'To print' },
   { key: 'conversations', label: 'Conversations' },
   { key: 'writers', label: 'Writers' },
@@ -93,24 +94,11 @@ export default function InboxOrg() {
       {/* The group-owner admin hands the key to admins waiting for it; renders nothing for anyone else. */}
       <MembersWaitingNotice />
 
-      <div className="group-tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={t.key === tab}
-            className={t.key === tab ? 'group-tab active' : 'group-tab'}
-            onClick={() => setParams({ tab: t.key })}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {chapterId !== null && tab === 'print' && <PrintQueue chapterId={chapterId} keyState={group.keyState} />}
-      {tab === 'conversations' && <GroupConversations />}
-      {tab === 'writers' && <GroupWriters />}
+      <Tabs tabs={TABS} selected={tab} onSelect={(key) => setParams({ tab: key })} label="Group inbox" idPrefix="inbox">
+        {chapterId !== null && tab === 'print' && <PrintQueue chapterId={chapterId} keyState={group.keyState} />}
+        {tab === 'conversations' && <GroupConversations />}
+        {tab === 'writers' && <GroupWriters />}
+      </Tabs>
     </AppShell>
   )
 }
