@@ -735,6 +735,7 @@ export default function Thread() {
               resend={resend ?? undefined}
               onCancelResend={() => setResend(null)}
               onDraftChange={onReplyDraftChange}
+              onEarlierVersion={page.reload}
               onSent={() => {
                 setResend(null)
                 page.reload()

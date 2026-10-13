@@ -23,7 +23,7 @@ const STATUS_WORDS: Record<string, string> = {
   declined: 'marked as not sent',
 }
 
-export const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n: Notification) => string>> = {
+const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n: Notification) => string>> = {
   'letter.reply': () => 'A reply from a prisoner was recorded',
   // README "Paper letters": a paper letter arrives printed, to be mailed.
   'letter.queued': (d) => (d.paper === true ? 'A paper letter was handed to your group to mail' : 'A new letter is waiting to be printed'),

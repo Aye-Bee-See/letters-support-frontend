@@ -18,6 +18,7 @@ export default function ReplyPanel({
   onCancelResend,
   onDraftChange,
   onSent,
+  onEarlierVersion,
 }: {
   prisonerId: number
   /** The prisoner's facility with its relay groups (full=true), loaded once by the thread and shared with its group picker. */
@@ -33,6 +34,8 @@ export default function ReplyPanel({
   /** Whether the reply has anything typed or attached, so the thread can ask before replacing it. */
   onDraftChange?: (hasContent: boolean) => void
   onSent: (message: Message) => void
+  /** A send came back as an earlier version of the letter: show the thread with it, where Edit is. */
+  onEarlierVersion?: () => void
 }) {
   const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup, resend ? { text: resend.text, resendOf: resend.kind === 'resend' ? resend.id : null } : undefined)
   const [notesOpen, setNotesOpen] = useState(false)
@@ -42,6 +45,9 @@ export default function ReplyPanel({
   useEffect(() => {
     onDraftChange?.(draft.hasContent)
   }, [draft.hasContent, onDraftChange])
+  useEffect(() => {
+    if (draft.earlierVersion) onEarlierVersion?.()
+  }, [draft.earlierVersion, onEarlierVersion])
 
   async function onSend() {
     const message = await draft.send()

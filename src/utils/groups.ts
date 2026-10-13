@@ -18,9 +18,3 @@ export const SERVICE_LABELS: Record<ChapterService, string> = {
 export function groupLocation(g: Pick<Chapter, 'subregion' | 'country'>): string {
   return [g.subregion, g.country].filter(Boolean).join(' — ')
 }
-
-/** Gathers letters (network role collecting or both). */
-export const collectsLetters = (g: Pick<Chapter, 'networkRole'>) => g.networkRole === 'collecting' || g.networkRole === 'both'
-
-/** Prints and mails (network role relay or both). */
-export const relaysMail = (g: Pick<Chapter, 'networkRole'>) => g.networkRole === 'relay' || g.networkRole === 'both'

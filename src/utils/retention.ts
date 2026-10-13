@@ -8,7 +8,7 @@ import type { LetterStatus, Message } from '../types'
 // mirror them so a page can say when.
 
 /** What retention counts from, and may remove. */
-export const SETTLED: LetterStatus[] = ['mailed', 'received', 'returned', 'declined']
+const SETTLED: LetterStatus[] = ['mailed', 'received', 'returned', 'declined']
 
 const DAY_MS = 24 * 60 * 60 * 1000
 

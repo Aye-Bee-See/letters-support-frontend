@@ -263,6 +263,12 @@ export default function NewLetter() {
               {draft.error && (
                 <p style={{ color: 'var(--alert)' }}>
                   <strong>Not sent.</strong> {draft.error}
+                  {draft.earlierVersion && (
+                    <>
+                      {' '}
+                      <Link to={`/threads/${draft.earlierVersion.chat}`}>Open the conversation</Link>
+                    </>
+                  )}
                 </p>
               )}
               {noFacility ? (

@@ -12,7 +12,7 @@ import type { Message, ReaderType } from '../types'
 // fields", `user`); the group then keeps an envelope too.
 
 /** Files the API accepts for a scan or a photo of a paper letter. */
-export const ACCEPTED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
+const ACCEPTED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 /** The API's upload limit (UPLOAD_MAX_BYTES), which applies to the encrypted file. */
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 /** What encryption adds to a file: XChaCha20-Poly1305's 16-byte tag. */

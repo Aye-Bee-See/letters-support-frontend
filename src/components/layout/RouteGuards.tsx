@@ -5,7 +5,7 @@ import type { UserRole } from '../../types'
 /** Where two-factor sign-in is set up; while it's required and not set up, the only page that works. */
 export const SECURITY_PATH = '/account/security'
 /** Where a writer without a pen name chooses one. */
-export const PEN_NAME_PATH = '/account/pen-name'
+const PEN_NAME_PATH = '/account/pen-name'
 
 /**
  * Signed-in routes. Without a session: to /login, remembering where the user

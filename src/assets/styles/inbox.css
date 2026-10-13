@@ -239,19 +239,6 @@
   margin-top: 0.15rem;
 }
 
-.unread-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--alert);
-  margin-right: 0.5rem;
-  vertical-align: middle;
-  position: relative;
-  top: -1px;
-  flex-shrink: 0;
-}
-
 /* Direction cell */
 .convo-direction {
   font-family: var(--sans);

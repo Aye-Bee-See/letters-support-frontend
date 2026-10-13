@@ -6,7 +6,7 @@
 
 import type { ApiError } from '../types'
 
-export const REFERENCE_LENGTH = 9
+const REFERENCE_LENGTH = 9
 
 /** The example the forms show (placeholder and help text): a number whose check digit is right. */
 export const REFERENCE_EXAMPLE = '4827-1935-8'

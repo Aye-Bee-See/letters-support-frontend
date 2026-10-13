@@ -19,7 +19,7 @@ export const SERVICES = Object.keys(SERVICE_LABELS) as ChapterService[]
 export const SOCIAL: Record<SocialLinkKey, string> = { instagram: 'Instagram', mastodon: 'Mastodon', bluesky: 'Bluesky', x: 'X', youtube: 'YouTube' }
 export const SOCIAL_KEYS = Object.keys(SOCIAL) as SocialLinkKey[]
 /** location keys the form edits; any others the record has are kept. */
-export const LOCATION_KEYS = ['street', 'city', 'postalCode']
+const LOCATION_KEYS = ['street', 'city', 'postalCode']
 /** README "Chapter fields": lettersSent stays null, and off the public page, until it reaches this. */
 export const LETTERS_SHOWN_FROM = 20
 

@@ -33,6 +33,7 @@ describe('wordEvent (README "The feed")', () => {
     expect(wordEvent(entry('group.waiting', { member: 9 }))).toContain('waiting')
     expect(wordEvent(entry('group.block', { action: 'blocked', writer: 12, held: 2 }))).toBe('A group admin blocked a writer from your group; 2 letters of theirs waiting in your queue are held')
     expect(wordEvent(entry('group.block', { action: 'lifted', writer: 12, released: 1 }))).toBe('A group admin unblocked a writer from your group; 1 letter went back into the queue')
+    expect(wordEvent(entry('ban.decided', { decision: 'banned' }))).toMatch(/blocked a writer/)
     expect(wordEvent(entry('ban.decided', { decision: 'dismissed' }))).toContain('dismissed')
     expect(wordEvent(entry('prisoner.moved', { prisoner: 12, prison: 7, held: 0 }))).toBe('Someone your group writes to was moved to another facility')
     expect(wordEvent(entry('prisoner.status', { status: 'free', held: 1 }))).toContain('1 letter is on hold')
