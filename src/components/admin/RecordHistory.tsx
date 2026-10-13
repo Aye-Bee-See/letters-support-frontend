@@ -2,7 +2,9 @@ import { getFacilityHistory } from '../../api/facilities'
 import { getGroupHistory } from '../../api/groups'
 import { getPrisonerHistory } from '../../api/prisoners'
 import { useApi } from '../../hooks/useApi'
+import { useAuth } from '../../hooks/useAuth'
 import type { HistoryEntry, SubmissionResource } from '../../types'
+import { actorName, HISTORY_ACTIONS } from '../../utils/history'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import { Section } from '../forms/AdminFormParts'
 
@@ -10,45 +12,18 @@ import { Section } from '../forms/AdminFormParts'
 // GET /prisoner/history, /prison/history or /chapter/history, newest first,
 // staff only. The first page, each entry with who, what, when, and its field
 // changes as from → to. Entries are routine audit entries, kept 180 days by
-// default (README "Retention"). Shared by the three admin edit pages; a group
-// admin's own settings page has its own shorter list (pages/org/OrgSettings.tsx).
+// default (README "Retention"). Shared by the three admin edit pages. A group
+// admin's own settings page (pages/org/OrgSettings.tsx) has its own shorter
+// list, of the same entries: HistoryItem with variant "group".
 
 const PAGE_SIZE = 20
 
 const LOADERS = { prisoner: getPrisonerHistory, prison: getFacilityHistory, chapter: getGroupHistory } as const
 
-/** Each kind of entry in words; an action not listed shows as the API names it. */
-const ACTIONS: Record<string, string> = {
-  'prisoner.create': 'Record created',
-  'prisoner.update': 'Record edited',
-  'prisoner.delete': 'Record deleted',
-  'prisoner.photo': 'Photo added or replaced',
-  'prisoner.photo.remove': 'Photo taken down',
-  'prisoner.support.add': 'Support group linked',
-  'prisoner.support.remove': 'Support group unlinked',
-  'prison.create': 'Record created',
-  'prison.update': 'Record edited',
-  'prison.delete': 'Record deleted',
-  'prison.relay.add': 'Relay group linked',
-  'prison.relay.remove': 'Relay group unlinked',
-  'chapter.create': 'Group created',
-  'chapter.update': 'Record edited',
-  'chapter.delete': 'Group deleted',
-  'chapter.keys': 'Group key set up',
-  'chapter.keys.rotate': 'Group key rotated',
-  'chapter.member-key': 'Group key handed to a group admin',
-  'chapter.member-key.remove': 'A group admin stopped being handed the group key',
-  'chapter.owner': 'Group-owner admin changed',
-  'chapter.two-factor': 'Two-factor sign-in requirement changed',
-  'chapter.block': 'Writer blocked',
-  'chapter.block.remove': 'Writer unblocked',
-  'invite-code.issue': 'Invite codes issued',
-  'invite-code.cancel': 'Invite codes cancelled',
-  'invite-code.join': 'An invite code was used',
-}
-
 const when = (iso: string) =>
   new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** "mailRules" → "Mail rules". */
 const fieldLabel = (field: string) => {
@@ -63,12 +38,6 @@ function formatValue(value: unknown): string {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value)
   // An object (an address) as JSON, never "[object Object]".
   return JSON.stringify(value) ?? '—'
-}
-
-function who(entry: HistoryEntry): string {
-  if (!entry.actor) return 'The site itself, or an account since deleted'
-  const name = entry.actor.name || entry.actor.username
-  return entry.actor.role === 'admin' ? `${name} (site admin)` : name
 }
 
 export default function RecordHistory({ resource, id, version }: { resource: SubmissionResource; id: number; version?: string }) {
@@ -104,13 +73,7 @@ export default function RecordHistory({ resource, id, version }: { resource: Sub
               </thead>
               <tbody>
                 {history.data.items.map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="dash-nowrap">{when(entry.at)}</td>
-                    <td>{who(entry)}</td>
-                    <td>
-                      <HistoryWhat entry={entry} />
-                    </td>
-                  </tr>
+                  <HistoryItem key={entry.id} entry={entry} variant="admin" />
                 ))}
               </tbody>
             </table>
@@ -130,6 +93,26 @@ export default function RecordHistory({ resource, id, version }: { resource: Sub
   )
 }
 
+/**
+ * One entry, with who and when. Variant "admin": a row of the admin pages'
+ * table, the field changes as from → to. Variant "group": a line of the group
+ * settings page's list (pages/org-settings.css), the changed fields named.
+ */
+export function HistoryItem({ entry, variant }: { entry: HistoryEntry; variant: 'admin' | 'group' }) {
+  const { user } = useAuth()
+  const who = actorName(entry.actor, user?.id)
+  if (variant === 'group') return <GroupLine entry={entry} who={who} />
+  return (
+    <tr>
+      <td className="dash-nowrap">{when(entry.at)}</td>
+      <td>{capitalise(who)}</td>
+      <td>
+        <HistoryWhat entry={entry} />
+      </td>
+    </tr>
+  )
+}
+
 /** The action in words, its field changes as from → to, and anything else it recorded. */
 function HistoryWhat({ entry }: { entry: HistoryEntry }) {
   const changes = Object.entries(entry.changes ?? {})
@@ -140,7 +123,7 @@ function HistoryWhat({ entry }: { entry: HistoryEntry }) {
   return (
     <>
       <div>
-        <strong>{ACTIONS[entry.action] ?? entry.action}</strong>
+        <strong>{HISTORY_ACTIONS[entry.action] ?? entry.action}</strong>
         {typeof viaSubmission === 'number' && <span className="list-sub"> · from proposal #{viaSubmission}</span>}
         {isEdit && changes.length === 0 && <span className="list-sub"> · saved with nothing changed</span>}
         {Boolean(replaced) && <span className="list-sub"> · replaced an earlier photo</span>}
@@ -164,5 +147,44 @@ function HistoryWhat({ entry }: { entry: HistoryEntry }) {
         </dl>
       )}
     </>
+  )
+}
+
+/** A group record's field names as its settings form says them. */
+const FIELD_NAMES: Record<string, string> = {
+  name: 'name',
+  location: 'address',
+  subregion: 'area',
+  country: 'country',
+  about: 'about',
+  website: 'website',
+  email: 'public email',
+  socialLinks: 'social links',
+  services: 'services',
+  announcement: 'announcement',
+  networkRole: 'network role',
+  accountStatus: 'account status',
+  vouchedBy: 'vouched for by',
+  lettersSentBefore: 'letters sent before joining',
+  recordStatus: 'record status',
+}
+
+/** The group settings page's line: when and who, then the action, with a count or the fields an edit changed. */
+function GroupLine({ entry, who }: { entry: HistoryEntry; who: string }) {
+  const fields = Object.keys(entry.changes ?? {}).map((f) => FIELD_NAMES[f] ?? f)
+  const count = typeof entry.details?.count === 'number' ? entry.details.count : typeof entry.details?.cancelled === 'number' ? entry.details.cancelled : null
+  return (
+    <li>
+      <div className="settings-history-when">
+        {when(entry.at)}
+        {/* Nobody is named for a code used: the group never learns who joined with one (README "Invite codes"). */}
+        {entry.action !== 'invite-code.join' && ` · ${who}`}
+      </div>
+      <div>
+        <span className="settings-history-what">{HISTORY_ACTIONS[entry.action] ?? entry.action}</span>
+        {count !== null && ` (${count})`}
+        {entry.action === 'chapter.update' && (fields.length > 0 ? `: ${fields.join(', ')}` : ': nothing changed')}
+      </div>
+    </li>
   )
 }
