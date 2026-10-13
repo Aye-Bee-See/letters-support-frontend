@@ -5,7 +5,7 @@ import { getAttachments, getMessage, setLetterStatusBatch } from '../../api/lett
 import PrintSheet, { PrintPageStyle, type SheetImage } from '../../components/group/PrintSheet'
 import { useAuth } from '../../hooks/useAuth'
 import { useGroup } from '../../hooks/useGroup'
-import { openAttachment, openLetter, type LetterReader } from '../../letters/open'
+import { forgetReplacedKeys, openAttachment, openLetter, type LetterReader } from '../../letters/open'
 import type { Message, Prison } from '../../types'
 import { heldReasonShort, heldReasonText, statusRefusal, writerLabel } from '../../utils/groupLetters'
 import { oldKeyText } from '../../utils/letters'
@@ -65,28 +65,34 @@ async function prepare(id: number, reader: LetterReader, chapterId: number, urls
   if (opened.state === 'old-key') return skip(`it was ${oldKeyText(opened.sealedWith, opened.holding).short.toLowerCase()}`)
   if (opened.state === 'unreadable') return skip('it couldn’t be opened with your group’s key')
 
-  let images: SheetImage[] = []
-  if (!message.paper) {
-    try {
-      const rows = (await getAttachments(id)).filter((a) => a.mimeType.startsWith('image/'))
-      images = await Promise.all(
-        rows.map(async (attachment) => {
-          try {
-            const url = URL.createObjectURL(await openAttachment(attachment, opened.contentKey))
-            urls.push(url)
-            return { attachment, url }
-          } catch {
-            return { attachment, url: null }
-          }
-        }),
-      )
-    } catch {
-      return skip('its enclosed files couldn’t be listed')
+  // The sheet keeps the text and the images' object URLs, not the key: it is
+  // wiped once they are open, whether the letter is kept or left out.
+  try {
+    let images: SheetImage[] = []
+    if (!message.paper) {
+      try {
+        const rows = (await getAttachments(id)).filter((a) => a.mimeType.startsWith('image/'))
+        images = await Promise.all(
+          rows.map(async (attachment) => {
+            try {
+              const url = URL.createObjectURL(await openAttachment(attachment, opened.contentKey))
+              urls.push(url)
+              return { attachment, url }
+            } catch {
+              return { attachment, url: null }
+            }
+          }),
+        )
+      } catch {
+        return skip('its enclosed files couldn’t be listed')
+      }
+      // Printing it without its enclosure and marking it printed would lose the image.
+      if (images.some((f) => !f.url)) return skip('an enclosed image wouldn’t open')
     }
-    // Printing it without its enclosure and marking it printed would lose the image.
-    if (images.some((f) => !f.url)) return skip('an enclosed image wouldn’t open')
+    return { id, state: 'ready', message, text: opened.text, images }
+  } finally {
+    forgetReplacedKeys([{ opened }])
   }
-  return { id, state: 'ready', message, text: opened.text, images }
 }
 
 /** Every letter, prepared a few at a time, in the order asked. */

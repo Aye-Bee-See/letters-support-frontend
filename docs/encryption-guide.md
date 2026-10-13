@@ -363,7 +363,7 @@ Tested against the local API: a typed letter with a note and a file, the same le
 | Two-factor sign-in: the wrap key, not the password, kept through the second step | Built (#48) |
 | Argon2id in a Web Worker, two runs side by side when joining, claiming or recovering, heap freed when idle | Built (round three, `round-three-crypto`) |
 | Files encrypted and decrypted as bytes, not base64 | Built (round three) |
-| Content keys wiped when the thread or the print page leaves or reloads; a wiped key refused | Built (round three) |
+| Content keys wiped when the thread or either print page leaves or reloads (the batch sheet wipes each letter's key once its text and images are open); a wiped key refused | Built (round three) |
 | A replayed letter's file never encrypted under the wrong key; edits after an ambiguous failure not dropped silently | Built (round three). The New Letter and reply pages show the message, but don't yet link to the letter's Edit (`earlierVersion` is there for it) |
 
 The branch names are the work packages of `group-admin-plan.md` (6 October); all of them merged to `master` together as #38 that day.
