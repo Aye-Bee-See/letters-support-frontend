@@ -42,7 +42,8 @@ img { display: block; max-width: 100%; }
 
 /* One focus ring for every focusable thing, links, fields, buttons and the
    role="button"/"radio" divs alike. Fields keep their #888 border on :focus
-   as well; nothing sets outline: none. White where the ground is black. */
+   as well; nothing sets outline: none but the focused heading below, and
+   only for a mouse. White where the ground is black. */
 :focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
@@ -56,6 +57,9 @@ img { display: block; max-width: 100%; }
 }
 /* A table row's ring sits inside it, where the table can't clip it. */
 tr:focus-visible { outline-offset: -2px; }
+/* The heading that takes focus after a navigation (layout/ScrollToTop): no
+   ring when a mouse click put it there, the keyboard's ring as ever. */
+h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
 
 /* ============================================================
    LAYOUT
@@ -184,6 +188,12 @@ tr:focus-visible { outline-offset: -2px; }
   font-size: 0.7rem;
   padding: 0.3rem 0.75rem;
 }
+
+/* A plain .btn on a light ground (a letter's body, a notice): ink, not the
+   header's white. .btn.x outranks .btn and .btn:hover. */
+.btn.btn-on-light { color: var(--text); border-color: var(--border); }
+.btn.btn-on-light:hover { background: var(--off-white); border-color: var(--text); }
+.btn.btn-on-light:disabled { opacity: 0.45; cursor: default; }
 
 /* ============================================================
    SECTION HEADINGS (with red rule)
@@ -408,6 +418,8 @@ tr:focus-visible { outline-offset: -2px; }
   border-top: 1px solid var(--border);
 }
 
+.section-more { margin-top: 2rem; }
+
 .section-header {
   margin-bottom: 2rem;
 }
@@ -597,6 +609,30 @@ tr:focus-visible { outline-offset: -2px; }
   color: var(--mid);
 }
 
+/* The directory pages' search box and filter dropdowns (components/ui/DirectoryControls). */
+.directory-field {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+}
+
+.directory-search { min-width: 13rem; }
+
+/* Their pager (components/ui/Pager, PUBLIC_PAGER): chips for Previous and Next. */
+.directory-pager {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0 0;
+}
+
+.directory-pager .filter-chip:disabled { opacity: 0.4; cursor: default; }
+.directory-pager .results-count { margin-left: 0; }
+
 /* Prisoner Index uses same grid but in page context */
 .index-grid-wrap {
   padding: 2.5rem 0;
@@ -706,6 +742,8 @@ tr:focus-visible { outline-offset: -2px; }
   max-width: 620px;
 }
 
+.profile-bio p + p { margin-top: 1rem; }
+
 .prison-rule-list {
   list-style: none;
   margin: 0;
@@ -760,7 +798,15 @@ tr:focus-visible { outline-offset: -2px; }
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
-  padding: 2.5rem 0;
+  padding: 2.5rem var(--gutter);
+  max-width: var(--col);
+  margin: 0 auto;
+}
+
+.groups-pager {
+  max-width: var(--col);
+  margin: -1.5rem auto 2.5rem;
+  padding: 0 var(--gutter);
 }
 
 .group-card {
@@ -819,7 +865,9 @@ tr:focus-visible { outline-offset: -2px; }
    PRISONS DIRECTORY
    ============================================================ */
 .prisons-table-wrap {
-  padding: 2.5rem 0;
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 2.5rem var(--gutter);
   overflow-x: auto;
 }
 
@@ -858,6 +906,9 @@ tr:focus-visible { outline-offset: -2px; }
   font-size: 0.875rem;
 }
 
+.prisons-table .prisons-table-rules { font-size: 0.8rem; line-height: 1.5; }
+.prisons-table-address { margin-top: 0.2rem; }
+
 .prison-routing {
   font-family: var(--mono);
   font-size: 0.7rem;
@@ -869,6 +920,15 @@ tr:focus-visible { outline-offset: -2px; }
   font-size: 0.7rem;
   color: var(--mid);
   white-space: nowrap;
+}
+
+.verified-by { font-size: 0.68rem; color: var(--mid); }
+
+/* A facility's address under its name (the facilities table, a prisoner's profile). */
+.address-line {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--mid);
 }
 
 .stale-warning {
@@ -963,6 +1023,9 @@ tr:focus-visible { outline-offset: -2px; }
 .breadcrumb a { color: var(--mid); text-decoration: none; }
 .breadcrumb a:hover { color: var(--text); }
 .breadcrumb span { color: var(--border); }
+.breadcrumb-trail { display: flex; gap: 0.4rem; align-items: center; }
+/* The page itself, last in the trail (here and in the group and facility pages' own). */
+.breadcrumb-current, .breadcrumb .breadcrumb-current { color: var(--text); }
 
 /* ============================================================
    ADMIN NAV HINT (edit record button in header)
@@ -1042,6 +1105,19 @@ tr:focus-visible { outline-offset: -2px; }
 }
 .nav-auth-link:hover { color: var(--white); }
 
+/* The inbox link's unread count, a pill. */
+.nav-unread {
+  margin-left: 0.4em;
+  padding: 0 0.45em;
+  border-radius: 999px;
+  background: var(--alert);
+  color: #fff;
+  font-size: 0.85em;
+}
+
+/* Sign out, in the prototype's colours, hovered or not. */
+.nav-auth .nav-sign-out, .nav-auth .nav-sign-out:hover { border-color: #666; color: #aaa; }
+
 @media (max-width: 860px) {
   /* Tighter, so the links and the signed-in buttons stay on one line until the menu takes over. */
   .site-nav { gap: 1.1rem; }
@@ -1097,6 +1173,54 @@ tr:focus-visible { outline-offset: -2px; }
     justify-content: flex-start;
   }
 }
+
+/* Read by screen readers only: a label the page shows no words for. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The search-as-you-type picker (components/forms/RecordPicker), on the admin
+   and group pages; the new-letter tiles give it new-letter.css's classes. The
+   highlighted option is the one with aria-selected, in either. */
+.record-picker { position: relative; flex: 1 1 14rem; min-width: 0; }
+/* Beats the admin and group add rows' `width: auto` on their inputs. */
+.record-picker input.record-picker-input { width: 100%; }
+.record-picker-dropdown {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 50;
+  background: var(--white);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  max-height: 18rem;
+  overflow-y: auto;
+  text-align: left;
+}
+.record-picker-dropdown.is-open { display: block; }
+.record-picker-option {
+  padding: 0.45rem 0.7rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  cursor: pointer;
+  border-bottom: 1px solid var(--off-white);
+}
+.record-picker [role="option"][aria-selected="true"] { background: var(--off-white); }
+.record-picker .record-picker-status { cursor: default; color: var(--mid); }
+
+/* The record chosen, above its picker (components/invitations/InviteForm and the admin edit pages). */
+.picked-row { margin-bottom: 0.4rem; }
+
+/* A file input behind its drop zone (components/forms/UploadZone). */
+.upload-file-input { display: none; }
 
 /* A letter sent without its file (components/forms/AttachmentRetry.tsx). */
 .attachment-retry {

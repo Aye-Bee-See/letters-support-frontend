@@ -46,7 +46,7 @@ export default function GroupProfile() {
   const isOwnGroup = user?.role === 'chapter' && user.chapterId === g.id
 
   return (
-    <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <div className="wrap">
       <title>{`${g.name} · letters.support`}</title>
       <div className="group-layout">
         <main className="group-main">
@@ -57,7 +57,7 @@ export default function GroupProfile() {
             <div className="group-breadcrumb">
               <Link to="/groups">Groups</Link>
               <span>/</span>
-              <span style={{ color: 'var(--text)' }}>{g.name}</span>
+              <span className="breadcrumb-current">{g.name}</span>
             </div>
             <h1 className="group-name">{g.name}</h1>
             <p className="group-location">{[g.subregion, g.country].filter(Boolean).join(' — ')}</p>

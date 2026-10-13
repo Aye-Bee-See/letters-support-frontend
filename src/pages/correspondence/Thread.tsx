@@ -113,7 +113,7 @@ function DeclinedNote({ m }: { m: Message }) {
   const group = m.relay_group?.name ?? 'The group'
   const reason = declineReasonForWriter(m.declineReason)
   return (
-    <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+    <p className="letter-body-scan-note letter-body-before">
       {group} didn’t send this letter, because {reason}
       {label ? `: “${label}”` : ''}.{m.declineNote ? ` They wrote: “${m.declineNote}”` : ''}
     </p>
@@ -219,7 +219,7 @@ function LetterAttachments({ message, contentKey }: { message: Message; contentK
           </span>
           {error && <span className="letter-body-scan-note">{error}</span>}
           {url && attachment.mimeType.startsWith('image/') && (
-            <img src={url} alt={attachment.originalName ?? 'Scan'} style={{ maxWidth: '100%', marginTop: '0.5rem' }} />
+            <img src={url} alt={attachment.originalName ?? 'Scan'} className="letter-scan-image" />
           )}
           {url && !attachment.mimeType.startsWith('image/') && (
             <a className="letter-body-scan-note" href={url} target="_blank" rel="noopener noreferrer" download={attachment.originalName ?? undefined}>
@@ -335,7 +335,7 @@ function LetterItem({
             <span className={`letter-expanded-status ${status.className}`}>{status.text}</span>
           </div>
 
-          {held && <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>{held}</p>}
+          {held && <p className="letter-body-scan-note letter-body-before">{held}</p>}
           {queued && outbound && m.status === 'queued' && (
             <QueuedLetterActions
               message={m}
@@ -359,28 +359,28 @@ function LetterItem({
             />
           )}
           {m.status === 'returned' && (
-            <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+            <p className="letter-body-scan-note letter-body-before">
               This letter came back: {lowerFirst(returnReasonText(m.returnReason))}.{m.returnNote ? ` The envelope said: “${m.returnNote}”.` : ''}
             </p>
           )}
           {m.status === 'declined' && <DeclinedNote m={m} />}
           {chain.replacedBy && (
-            <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+            <p className="letter-body-scan-note letter-body-before">
               Written again on {longDate(chain.replacedBy.createdAt)}, now {nowStatus(chain.replacedBy)}.
             </p>
           )}
           {chain.replaces !== undefined && (
-            <p className="letter-body-scan-note" style={{ marginBottom: '0.75rem' }}>
+            <p className="letter-body-scan-note letter-body-before">
               {chain.replaces
                 ? `Replaces ${forGroup ? 'the writer’s' : 'your'} letter of ${longDate(chain.replaces.createdAt)}, which ${chain.replaces.status === 'declined' ? 'wasn’t sent' : 'came back'}.`
                 : `Replaces ${forGroup ? 'a letter of the writer’s' : 'a letter of yours'} that came back or wasn’t sent.`}
             </p>
           )}
           {outbound && (m.status === 'returned' || m.status === 'declined') && onWriteAgain && !chain.replacedBy && (
-            <p style={{ marginBottom: '0.75rem' }}>
+            <p className="letter-body-before">
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn btn-sm btn-on-light"
                 onClick={() => onWriteAgain({ id: m.id, date: m.createdAt, text: opened.state === 'open' ? (opened.text ?? '') : '', kind: 'resend' })}
               >
                 Write it again
@@ -412,7 +412,7 @@ function LetterItem({
                 </div>
               )}
               {opened.relayNote && (
-                <p className="letter-body-scan-note" style={{ marginTop: '0.75rem' }}>
+                <p className="letter-body-scan-note letter-body-after">
                   Note to {m.relay_group?.name ?? 'the group'}: {opened.relayNote}
                 </p>
               )}
@@ -420,12 +420,12 @@ function LetterItem({
             </>
           )}
           {kept && (
-            <p className="letter-body-scan-note" style={{ marginTop: '0.75rem' }}>
+            <p className="letter-body-scan-note letter-body-after">
               {kept}
               {onKept && (
                 <>
                   {' '}
-                  <button type="button" className="btn btn-sm" disabled={keeping.busy} onClick={toggleKeep}>
+                  <button type="button" className={outbound ? 'btn btn-sm btn-on-light' : 'btn btn-sm'} disabled={keeping.busy} onClick={toggleKeep}>
                     {keeping.busy ? 'Saving…' : m.keep ? 'Stop keeping' : 'Keep'}
                   </button>
                 </>
@@ -685,7 +685,7 @@ export default function Thread() {
             {page.error && (
               <p className="thread-updating" role="alert">
                 Couldn’t update the conversation ({refusalText(page.error)}).{' '}
-                <button type="button" className="btn btn-sm" onClick={page.reload}>
+                <button type="button" className="btn btn-sm btn-on-light" onClick={page.reload}>
                   Try again
                 </button>
               </p>

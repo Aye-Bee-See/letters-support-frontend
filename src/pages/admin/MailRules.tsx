@@ -93,9 +93,9 @@ export default function MailRules() {
             </button>
           </div>
         )}
-        {/* Sticky below the sticky topbar (inline: admin.css has no rule for it) so the word on an action far down the list is seen where it was taken. */}
+        {/* Sticky below the sticky topbar (.admin-alert-sticky) so the word on an action far down the list is seen where it was taken. */}
         {notice && (
-          <div className="admin-alert admin-alert-ok" role="status" style={{ position: 'sticky', top: '3rem', zIndex: 1 }}>
+          <div className="admin-alert admin-alert-ok admin-alert-sticky" role="status">
             {notice}
           </div>
         )}
@@ -241,7 +241,7 @@ interface TableProps {
 
 function CategoryTable({ category, list, rules, onChanged, onEdit }: TableProps) {
   return (
-    <section className="admin-table-wrap" style={{ marginTop: '1.25rem' }}>
+    <section className="admin-table-wrap mail-rules-section">
       <div className="admin-table-toolbar">
         <span className="admin-table-toolbar-title">{categoryLabel(category)}</span>
         <span className="list-sub">{plural(rules.length, 'rule', 'rules')}</span>
@@ -353,7 +353,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
         <td>{rule.retired ? <span className="badge badge-pending">Retired</span> : <span className="badge badge-published">Offered</span>}</td>
         <td className="dash-nowrap">
           {!editing && (
-            <span style={{ display: 'inline-flex', gap: '0.4rem' }}>
+            <span className="mail-rule-actions">
               <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={startEditing}>
                 Edit
               </button>
@@ -464,7 +464,7 @@ function Parameters({ list }: { list: MailRuleList }) {
   const entries = Object.entries(list.parameters)
   if (entries.length === 0) return null
   return (
-    <section className="admin-table-wrap" style={{ marginTop: '1.25rem' }}>
+    <section className="admin-table-wrap mail-rules-section">
       <div className="admin-table-toolbar">
         <span className="admin-table-toolbar-title">Values set on each facility</span>
       </div>
@@ -500,7 +500,7 @@ function Parameters({ list }: { list: MailRuleList }) {
 function Conflicts({ list }: { list: MailRuleList }) {
   const label = (tag: string) => list.rules.find((r) => r.tag === tag)?.label
   return (
-    <section className="admin-table-wrap" style={{ marginTop: '1.25rem' }}>
+    <section className="admin-table-wrap mail-rules-section">
       <div className="admin-table-toolbar">
         <span className="admin-table-toolbar-title">Rules that conflict</span>
       </div>

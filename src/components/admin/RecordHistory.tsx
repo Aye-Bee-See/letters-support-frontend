@@ -4,6 +4,7 @@ import { getPrisonerHistory } from '../../api/prisoners'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { HistoryEntry, SubmissionResource } from '../../types'
+import { dateTime } from '../../utils/dates'
 import { actorName, HISTORY_ACTIONS } from '../../utils/history'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import { Section } from '../forms/AdminFormParts'
@@ -20,9 +21,6 @@ const PAGE_SIZE = 20
 
 const LOADERS = { prisoner: getPrisonerHistory, prison: getFacilityHistory, chapter: getGroupHistory } as const
 
-const when = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** "mailRules" → "Mail rules". */
@@ -34,7 +32,7 @@ const fieldLabel = (field: string) => {
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   if (Array.isArray(value)) return value.length ? value.map(formatValue).join(', ') : '—'
-  if (typeof value === 'string') return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? when(value) : value
+  if (typeof value === 'string') return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? dateTime(value) : value
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value)
   // An object (an address) as JSON, never "[object Object]".
   return JSON.stringify(value) ?? '—'
@@ -104,7 +102,7 @@ export function HistoryItem({ entry, variant }: { entry: HistoryEntry; variant: 
   if (variant === 'group') return <GroupLine entry={entry} who={who} />
   return (
     <tr>
-      <td className="dash-nowrap">{when(entry.at)}</td>
+      <td className="dash-nowrap">{dateTime(entry.at)}</td>
       <td>{capitalise(who)}</td>
       <td>
         <HistoryWhat entry={entry} />
@@ -176,7 +174,7 @@ function GroupLine({ entry, who }: { entry: HistoryEntry; who: string }) {
   return (
     <li>
       <div className="settings-history-when">
-        {when(entry.at)}
+        {dateTime(entry.at)}
         {/* Nobody is named for a code used: the group never learns who joined with one (README "Invite codes"). */}
         {entry.action !== 'invite-code.join' && ` · ${who}`}
       </div>

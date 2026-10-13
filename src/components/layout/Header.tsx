@@ -67,12 +67,9 @@ export default function Header() {
                   aria-label={!isAdmin && unread ? `Inbox, ${unread} unread` : undefined}
                 >
                   {isAdmin ? 'Admin' : 'Inbox'}
-                  {/* The unread count, a pill styled inline. */}
+                  {/* The unread count, a pill (style.css, .nav-unread). */}
                   {!isAdmin && unread ? (
-                    <span
-                      aria-hidden="true"
-                      style={{ marginLeft: '0.4em', padding: '0 0.45em', borderRadius: '999px', background: 'var(--alert)', color: '#fff', fontSize: '0.85em' }}
-                    >
+                    <span className="nav-unread" aria-hidden="true">
                       {unread > 99 ? '99+' : unread}
                     </span>
                   ) : null}
@@ -91,8 +88,8 @@ export default function Header() {
                 <Link to="/account/security" className="nav-auth-link">
                   Security
                 </Link>
-                {/* The prototype's colours, inline. */}
-                <button type="button" className="btn btn-sm" style={{ borderColor: '#666', color: '#aaa' }} onClick={signOut}>
+                {/* The prototype's colours (style.css, .nav-sign-out). */}
+                <button type="button" className="btn btn-sm nav-sign-out" onClick={signOut}>
                   Sign out
                 </button>
               </>

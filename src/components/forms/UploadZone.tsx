@@ -69,7 +69,7 @@ export default function UploadZone({
             ref={input}
             type="file"
             accept={accept}
-            style={{ display: 'none' }}
+            className="upload-file-input"
             onChange={(e) => {
               onFile(e.target.files?.[0] ?? null)
               e.target.value = ''
@@ -77,9 +77,9 @@ export default function UploadZone({
           />
         </div>
       )}
-      {/* The prototype's attached row is hidden with inline display:none until a file is chosen. */}
+      {/* The reply panel's attached row is hidden (thread.css) until a file is chosen: is-visible shows it. */}
       {file && (
-        <div className={c.attached} style={variant === 'reply' ? { display: 'flex' } : undefined}>
+        <div className={variant === 'reply' ? `${c.attached} is-visible` : c.attached}>
           {variant === 'compact' ? <span className="upload-attached-icon">📎</span> : <span>📎</span>}
           <span className={c.attachedName}>{file.name}</span>
           <button type="button" className={c.remove} onClick={() => onFile(null)} aria-label="Remove file">

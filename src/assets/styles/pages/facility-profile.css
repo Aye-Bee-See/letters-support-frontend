@@ -331,6 +331,12 @@
   line-height: 1.5;
 }
 
+.corr-hint.is-error { color: var(--alert); }
+.corr-evidence-hint { margin-top: 0.4rem; }
+.corr-rule-group { margin-top: 0.6rem; }
+.corr-select { cursor: pointer; }
+.corr-open { margin-top: 2rem; }
+
 .corr-divider {
   border: none;
   border-top: 1px solid var(--border);
@@ -459,3 +465,6 @@
   .facility-sidebar { position: static; padding: 1.5rem 0 0; border-top: 1px solid var(--border); }
   .facility-prisoner-grid { grid-template-columns: 1fr; }
 }
+
+/* How long ago the facility was verified, under the month. */
+.fac-verified-ago { font-family: var(--sans); font-size: 0.68rem; }

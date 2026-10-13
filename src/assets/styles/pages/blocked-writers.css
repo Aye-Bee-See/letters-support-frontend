@@ -106,6 +106,8 @@
   color: #2a6e2a;
 }
 
+.block-notice-lead { margin-bottom: 1rem; }
+
 .block-more {
   font-size: 0.7rem;
   color: var(--mid);

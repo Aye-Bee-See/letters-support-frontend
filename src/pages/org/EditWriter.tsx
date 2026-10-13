@@ -155,7 +155,7 @@ function EditForm({
             Name
           </label>
           <input className="cw-input" id="ewName" type="text" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} />
-          <span className="cw-hint" style={nameProblem ? { color: 'var(--alert)' } : undefined}>
+          <span className={nameProblem ? 'cw-hint is-error' : 'cw-hint'}>
             {nameProblem ?? 'How your group knows them. Without a pen name, their letters are signed with this.'}
           </span>
         </div>
@@ -204,7 +204,7 @@ function EditForm({
         </div>
 
         {error && (
-          <p className="cw-hint" role="alert" style={{ color: 'var(--alert)' }}>
+          <p className="cw-hint is-error" role="alert">
             <strong>Not saved.</strong> {error}
           </p>
         )}
@@ -222,7 +222,7 @@ function EditForm({
         )}
       </form>
 
-      <hr className="cw-divider" style={{ margin: '2.5rem 0 1.5rem' }} />
+      <hr className="cw-divider cw-divider-section" />
       <DeleteWriter writer={writer} label={label} onDeleted={onDeleted} />
     </Page>
   )
@@ -274,14 +274,13 @@ function DeleteWriter({
             Type “{label}” to confirm
           </label>
           <input className="cw-input" id="ewDelete" type="text" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '0.5rem' }}>
+          <div className="cw-delete-row">
             <button type="button" className="danger-btn" disabled={!confirmed || busy} onClick={() => void remove()}>
               {busy ? 'Deleting…' : 'Delete for good'}
             </button>
             <button
               type="button"
               className="cw-cancel"
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               onClick={() => {
                 setOpen(false)
                 setTyped('')
@@ -291,7 +290,7 @@ function DeleteWriter({
             </button>
           </div>
           {error && (
-            <p className="cw-hint" role="alert" style={{ color: 'var(--alert)' }}>
+            <p className="cw-hint is-error" role="alert">
               {error}
             </p>
           )}

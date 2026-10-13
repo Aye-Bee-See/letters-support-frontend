@@ -12,7 +12,7 @@ import type { ApiError, Prison, Prisoner, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, STATUS_LABELS } from '../../utils/prisoners'
 import { changes, facilityLabel, PRISONER_STATUSES, problems, RECORD_STATUSES, toForm, type PrisonerFormValues } from '../../utils/prisonerForm'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one prisoner record (PUT /prisoner/prisoner, superadmins only). Only the
@@ -217,7 +217,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
             htmlFor="f-prison"
             hint={storedFacility.loading && values.prison ? 'Loading the facility’s name…' : undefined}
           >
-            <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+            <div className="relay-add picked-row">
               <span className="form-static">{facilityName}</span>
               {values.prison && (
                 <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set('prison', '')}>
@@ -317,7 +317,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
         <div className="form-group">
           <span className="form-label">Last verified</span>
           <p className={`form-static${isStale(prisoner.verifiedAt) ? ' list-stale' : ''}`}>
-            {prisoner.verifiedAt ? date(prisoner.verifiedAt) : 'Never'}
+            {prisoner.verifiedAt ? shortDate(prisoner.verifiedAt) : 'Never'}
             {isStale(prisoner.verifiedAt) && ' — needs re-verifying'}
           </p>
           <label className="queue-check">

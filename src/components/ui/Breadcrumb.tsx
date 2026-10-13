@@ -7,15 +7,16 @@ export interface Crumb {
   to?: string
 }
 
-// .breadcrumb from style.css; inline styles as in solidarity-site/prisoner-profile.html.
+// .breadcrumb from style.css, with the row and the current page as in
+// solidarity-site/prisoner-profile.html (.breadcrumb-trail, .breadcrumb-current).
 export default function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
     <div className="breadcrumb">
-      <div className="wrap" style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+      <div className="wrap breadcrumb-trail">
         {items.map((item, i) => (
           <Fragment key={i}>
             {i > 0 && <span>/</span>}
-            {item.to ? <Link to={item.to}>{item.label}</Link> : <span style={{ color: 'var(--text)' }}>{item.label}</span>}
+            {item.to ? <Link to={item.to}>{item.label}</Link> : <span className="breadcrumb-current">{item.label}</span>}
           </Fragment>
         ))}
       </div>

@@ -39,12 +39,8 @@ export function canActOn(writer: BlockableWriter, chapterId: number | null): boo
   return true
 }
 
-/** One person on a block or a recommendation: `you`, their name, or their username. */
-export function personLabel(person: { id: number; username: string; name: string | null } | null, me: number | undefined): string {
-  if (!person) return 'someone no longer here'
-  if (person.id === me) return 'you'
-  return person.name || person.username
-}
+/** Who made a block or a recommendation, when that account is gone (utils/history.ts's actorName says the rest). */
+export const NO_LONGER_HERE = 'someone no longer here'
 
 /** The group's block of this writer, if it has one. */
 export const blockOf = (blocks: GroupBlock[] | null, writerId: number) => blocks?.find((b) => b.writer?.id === writerId) ?? null

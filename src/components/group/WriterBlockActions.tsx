@@ -12,12 +12,13 @@ import {
   blockRefusal,
   canActOn,
   letterCount,
-  personLabel,
+  NO_LONGER_HERE,
   type BlockableWriter,
 } from '../../utils/blocks'
 import { writerInSentence } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 import { longDate } from '../../utils/dates'
+import { actorName } from '../../utils/history'
 
 // A group admin's two ways to deal with a writer who is misusing the system
 // (web issue #9):
@@ -141,7 +142,7 @@ export default function WriterBlockActions({
 
       {block && (
         <div className="block-status">
-          <strong>Blocked by your group since {longDate(block.blockedAt)}</strong> ({personLabel(block.blockedBy, user?.id)}). The reason
+          <strong>Blocked by your group since {longDate(block.blockedAt)}</strong> ({actorName(block.blockedBy, user?.id, NO_LONGER_HERE)}). The reason
           they were told: “{block.reason}”
         </div>
       )}

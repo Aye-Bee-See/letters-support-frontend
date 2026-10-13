@@ -122,7 +122,7 @@ export default function Index() {
             </div>
           )}
 
-          <div style={{ marginTop: '2rem' }}>
+          <div className="section-more">
             <Link to="/prisoners" className="btn btn-primary">
               View all prisoners →
             </Link>

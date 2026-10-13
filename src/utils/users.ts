@@ -70,6 +70,3 @@ export function createRefusal(error: ApiError): string {
   if (error.status === 403) return 'The server refused this: only a site admin can make staff accounts.'
   return commonRefusal(error) ?? otherRefusal(error)
 }
-
-/** Moved to refusals.ts; re-exported for the New prisoner and New facility pages until they import it from there. */
-export { siteAdminRefusal } from './refusals'

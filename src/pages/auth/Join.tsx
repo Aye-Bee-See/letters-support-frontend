@@ -79,7 +79,7 @@ export default function Join() {
   return (
     <div className="claim-page">
       <title>Join · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
+      <div className="claim-column">
         <div className="claim-box">
           {step.name === 'enter-code' && (
             <form
@@ -131,7 +131,7 @@ export default function Join() {
                 <div className="token-error-title">{codeProblem(step.error).title}</div>
                 <div className="token-error-body">
                   <p>{codeProblem(step.error).body}</p>
-                  <p style={{ marginTop: '0.75rem' }}>
+                  <p className="token-error-action">
                     <a
                       href="/join"
                       onClick={(e) => {

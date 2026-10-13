@@ -13,7 +13,7 @@ import { useLinkAction } from '../../components/group/useLinkAction'
 import { useApi } from '../../hooks/useApi'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
-import { capitalise, changes, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
+import { capitalise, changes, problems, RECORD_STATUSES, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one group (PUT /chapter/chapter, superadmins only). Only changed fields
@@ -27,7 +27,6 @@ import { refusalText } from '../../utils/refusals'
 // the group's own members through /auth, never here.
 
 const ACCOUNT_STATUSES: AccountStatus[] = ['pending', 'active', 'suspended']
-const RECORD_STATUSES: RecordStatus[] = ['published', 'pending', 'draft']
 
 /** The shared group form (utils/groupForm.ts) plus the fields only a site admin sets. */
 interface FormValues extends GroupFormValues {
@@ -374,7 +373,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
             </select>
           </Field>
           <Field label="Vouched for by" htmlFor="f-vouchedBy" hint="The group that brought this one into the network.">
-            <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+            <div className="relay-add picked-row">
               <span className="form-static">{voucherName}</span>
               {values.vouchedBy && (
                 <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set({ vouchedBy: '' })}>

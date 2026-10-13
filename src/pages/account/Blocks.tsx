@@ -3,19 +3,21 @@ import { getMyBlocks } from '../../api/auth'
 import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { longDate } from '../../utils/dates'
+import '../../assets/styles/pages/blocked-writers.css'
 
 // Groups not mailing the writer's letters (README "Blocking a writer", GET
 // /auth/blocks): the group, the reason it gave and when. Only what the writer
 // was told, never who blocked them. Markup from the claim page's classes
 // (pages/claim.css), as the other account pages use; the list is Blocked
-// writers' (pages/blocked-writers.css).
+// writers' (pages/blocked-writers.css, imported here as the group pages do,
+// so a fresh load of this page has it).
 
 export default function Blocks() {
   const blocks = useApi(getMyBlocks, [])
   return (
     <div className="claim-page">
       <title>Groups not mailing your letters · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '520px' }}>
+      <div className="claim-column is-wider">
         <div className="claim-box">
           <div className="claim-state is-active">
             <div className="claim-header">
@@ -30,7 +32,7 @@ export default function Blocks() {
               <LoadState state={blocks} what="the groups not mailing your letters" />
               {blocks.data && blocks.data.length === 0 && <p className="block-empty">Every group is mailing your letters.</p>}
               {blocks.data && blocks.data.length > 0 && (
-                <ul className="block-list" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <ul className="block-list claim-block-list">
                   {blocks.data.map((b) => (
                     <li key={b.chapter.id} className="block-item">
                       <div className="block-item-head">

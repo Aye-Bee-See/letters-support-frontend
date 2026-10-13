@@ -10,6 +10,8 @@ import { SERVICE_LABELS } from './groups'
 // only a site admin sets (accountStatus, recordStatus, vouchedBy) stay in
 // EditGroup.tsx.
 
+/** A site admin's record statuses, in the order the prisoner and facility forms list them. */
+export { RECORD_STATUSES } from './facilityForm'
 export const ROLES: Record<NetworkRole, string> = {
   collecting: 'Collects letters (forwards them to relay groups)',
   relay: 'Prints and mails letters',

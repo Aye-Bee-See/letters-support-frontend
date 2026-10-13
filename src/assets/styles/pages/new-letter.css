@@ -55,7 +55,7 @@
    ============================================================ */
 .facility-guidance {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
   gap: 1.5rem;
   margin-bottom: 0.75rem;
@@ -516,3 +516,12 @@
 /* A group that has blocked this writer (API #179): shown, with its reason, but not choosable. */
 .relay-option.is-blocked { opacity: 0.55; cursor: not-allowed; }
 .relay-option.is-blocked:hover { opacity: 0.55; }
+
+/* The letter on paper, the freed prisoner's confirmation, a refusal. */
+.letter-meta-bar.is-paper { padding: 1rem 0; }
+.letter-meta-bar .is-error { color: var(--alert); }
+.paper-row { margin-top: 0.75rem; }
+.freed-note { margin-top: 1rem; }
+.freed-confirm { margin-top: 0.6rem; }
+.submit-notes .is-error { color: var(--alert); }
+.addr-info .addr-info-address { font-family: var(--mono); font-size: 0.67rem; line-height: 1.5; }

@@ -36,14 +36,19 @@ export const HISTORY_ACTIONS: Record<string, string> = {
 
 const ROLE_WORDS: Record<AccountBrief['role'], string> = { admin: 'a site admin', chapter: 'a group admin', user: 'a writer', banned: 'a banned account' }
 
+/** Someone named on a record: an entry's actor, or who made a block or a recommendation (no role given there). */
+type Actor = Pick<AccountBrief, 'id' | 'username' | 'name'> & { role?: AccountBrief['role'] }
+
 /**
- * Who made an entry: "you" for the signed-in account, else their name (a site
- * admin's marked so), else their role. Lower case, to go mid-sentence.
+ * Who did something: "you" for the signed-in account, else their name (a site
+ * admin's marked so), else their role. Lower case, to go mid-sentence. `gone`
+ * is what a null says: on a history entry, the site itself or an account since
+ * deleted; on a block or a recommendation, utils/blocks.ts's NO_LONGER_HERE.
  */
-export function actorName(actor: AccountBrief | null, me: number | undefined): string {
-  if (!actor) return 'the site itself, or an account since deleted'
+export function actorName(actor: Actor | null, me: number | undefined, gone = 'the site itself, or an account since deleted'): string {
+  if (!actor) return gone
   if (actor.id === me) return 'you'
   const name = actor.name || actor.username
-  if (!name) return ROLE_WORDS[actor.role]
+  if (!name) return actor.role ? ROLE_WORDS[actor.role] : name
   return actor.role === 'admin' ? `${name} (site admin)` : name
 }

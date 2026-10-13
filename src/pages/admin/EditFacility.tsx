@@ -11,7 +11,7 @@ import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, MailRuleList, Prison, RecordStatus } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
 import { changes, languageHint, MAX_PRINT_LINES, problems, RECORD_STATUSES, ROUTINGS, toForm, type FacilityFormValues } from '../../utils/facilityForm'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one facility record (PUT /prison/prison, superadmins only). Only changed
@@ -256,7 +256,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
         <div className="form-group">
           <span className="form-label">Last verified</span>
           <p className={`form-static${isStale(f.verifiedAt) ? ' list-stale' : ''}`}>
-            {f.verifiedAt ? date(f.verifiedAt) : 'Never'}
+            {f.verifiedAt ? shortDate(f.verifiedAt) : 'Never'}
             {isStale(f.verifiedAt) && ' — needs re-verifying'}
           </p>
           <label className="queue-check">

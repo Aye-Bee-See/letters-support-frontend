@@ -256,6 +256,8 @@
 }
 .letter-action-form textarea { min-height: 4.5rem; resize: vertical; }
 .letter-action-hint { color: var(--mid); font-size: 0.72rem; margin: 0.25rem 0 0.6rem; }
+.letter-action-hint.is-error { color: var(--alert); }
+.letter-action-hint.is-done { color: #234d23; }
 .letter-action-buttons { display: flex; gap: 0.4rem; }
 .letter-action-buttons .btn { width: auto; flex: 1; }
 

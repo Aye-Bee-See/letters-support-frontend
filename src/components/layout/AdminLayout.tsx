@@ -82,7 +82,7 @@ export default function AdminLayout() {
         </div>
 
         <div className="sidebar-footer">
-          Signed in as <strong style={{ color: 'var(--a-sidebar-t)' }}>{user?.username}</strong>
+          Signed in as <strong className="sidebar-user">{user?.username}</strong>
           <br />
           <Link to="/account/security">Two-factor sign-in</Link>
           <Link to="/">View public site</Link>

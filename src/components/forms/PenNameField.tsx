@@ -62,7 +62,7 @@ export default function PenNameField({
         }}
         onBlur={check}
       />
-      <span className="pw-strength-label" style={refused ? { color: 'var(--alert)' } : undefined}>
+      <span className={refused ? 'pw-strength-label is-error' : 'pw-strength-label'}>
         {note ?? hint}
       </span>
     </div>

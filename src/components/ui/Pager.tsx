@@ -20,15 +20,15 @@ export default function Pager({
 }) {
   if (pages <= 1 && page <= pages) return null
   const button = (to: number, text: string, disabled = false) => (
-    <button type="button" className={c.button} disabled={disabled} onClick={() => onPage(to)} style={disabled ? c.disabledStyle : undefined}>
+    <button type="button" className={c.button} disabled={disabled} onClick={() => onPage(to)}>
       {text}
     </button>
   )
   return (
-    <nav aria-label="Pages" className={c.nav} style={c.navStyle}>
+    <nav aria-label="Pages" className={c.nav}>
       {page > pages ? (
         <>
-          <span className={c.text} style={c.textStyle}>
+          <span className={c.text}>
             There {pages === 1 ? 'is only 1 page' : `are only ${pages} pages`}.
           </span>
           {button(pages, `Go to page ${pages}`)}
@@ -36,7 +36,7 @@ export default function Pager({
       ) : (
         <>
           {button(page - 1, '← Previous', page <= 1)}
-          <span className={c.text} style={c.textStyle}>
+          <span className={c.text}>
             Page {page} of {pages}
           </span>
           {button(page + 1, 'Next →', page >= pages)}

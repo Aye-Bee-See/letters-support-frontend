@@ -8,7 +8,7 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import type { ApiError, Prison, RecordStatus } from '../../types'
 import { STATUS_LABELS } from '../../utils/prisoners'
 import { EMPTY_PRISONER, facilityLabel, PRISONER_STATUSES, problems, RECORD_STATUSES, toRecord, type PrisonerFormValues } from '../../utils/prisonerForm'
-import { siteAdminRefusal } from '../../utils/users'
+import { siteAdminRefusal } from '../../utils/refusals'
 
 // A prisoner record made directly (POST /prisoner/prisoner, superadmins only),
 // rather than by approving a group's proposal. The same fields and checks as
@@ -97,7 +97,7 @@ export default function NewPrisoner() {
                 </select>
               </Field>
               <Field label="Facility" htmlFor="f-prison">
-                <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                <div className="relay-add picked-row">
                   <span className="form-static">{facility && values.prison ? facilityLabel(facility) : 'Not listed'}</span>
                   {values.prison && (
                     <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set('prison', '')}>

@@ -124,7 +124,7 @@ export default function OrgSettings() {
               ))}
             </ul>
           )}
-          <p className="settings-hint" style={{ marginTop: '0.75rem' }}>
+          <p className="settings-hint settings-history-note">
             {history.data && history.data.total > history.data.items.length
               ? `The latest ${history.data.items.length} of ${history.data.total} entries. `
               : ''}
@@ -411,7 +411,7 @@ function Numbers({ group: g, field }: { group: Chapter; field: FieldProps }) {
           <label className="settings-label" htmlFor={field.id}>
             Letters sent before joining
           </label>
-          <input className="settings-input" inputMode="numeric" style={{ maxWidth: '12rem' }} {...field} />
+          <input className="settings-input settings-input-short" inputMode="numeric" {...field} />
           <span className="settings-hint">What your group mailed before it used this site. Saved with the rest of the form.</span>
         </div>
       </div>
@@ -442,7 +442,7 @@ function PrisonerPhotos() {
       ) : (
         <ul className="settings-list">
           {supported.map((p) => (
-            <li key={p.id} style={open === p.id ? { display: 'block' } : undefined}>
+            <li key={p.id} className={open === p.id ? 'is-open' : undefined}>
               <span className="settings-list-name">{displayName(p)}</span>{' '}
               {open !== p.id && <span className="settings-sub">{p.photo ? 'Has a photo' : 'No photo'}</span>}{' '}
               {open !== p.id && (

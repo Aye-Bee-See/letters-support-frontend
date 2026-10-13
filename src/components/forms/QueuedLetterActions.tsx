@@ -56,7 +56,7 @@ function ChooseGroup({
     return (
       <p className="letter-body-scan-note">
         Couldn’t load the groups that mail there.{' '}
-        <button type="button" className="btn btn-sm" onClick={facility.reload}>
+        <button type="button" className="btn btn-sm btn-on-light" onClick={facility.reload}>
           Try again
         </button>
       </p>
@@ -73,7 +73,7 @@ function ChooseGroup({
   }
   return (
     <>
-      <p style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      <p className="letter-relay-row">
         <label className="letter-body-scan-note" htmlFor={`relay-${message.id}`}>
           Mailed by
         </label>
@@ -89,7 +89,7 @@ function ChooseGroup({
         </button>
       </p>
       {error && (
-        <p className="letter-body-scan-note" style={{ color: 'var(--alert)' }}>
+        <p className="letter-body-scan-note is-error">
           {error}
         </p>
       )}
@@ -146,11 +146,11 @@ function EditLetter({
   }
 
   return (
-    <div style={{ marginBottom: '0.75rem' }}>
+    <div className="letter-body-before">
       <textarea className="reply-textarea" aria-label="Your letter" value={text} disabled={busy} onChange={(e) => setText(e.target.value)} />
       {letter.relayNote !== null && (
         <>
-          <label className="letter-body-scan-note" htmlFor={`relay-note-${message.id}`} style={{ display: 'block', marginTop: '0.5rem' }}>
+          <label className="letter-body-scan-note letter-edit-label" htmlFor={`relay-note-${message.id}`}>
             Note to {groupName} (not sent to the prisoner)
           </label>
           <textarea
@@ -162,16 +162,16 @@ function EditLetter({
           />
         </>
       )}
-      <p style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+      <p className="letter-edit-actions">
         <button type="button" className="btn btn-primary btn-sm" disabled={busy || !changed || text.trim() === ''} onClick={save}>
           {busy ? 'Saving…' : 'Save the changes'}
         </button>
-        <button type="button" className="btn btn-sm" disabled={busy} onClick={onDone}>
+        <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={onDone}>
           Cancel
         </button>
       </p>
       {error && (
-        <p className="letter-body-scan-note" role="alert" style={{ color: 'var(--alert)' }}>
+        <p className="letter-body-scan-note is-error" role="alert">
           {error}
         </p>
       )}
@@ -250,7 +250,7 @@ export default function QueuedLetterActions({
     )
 
   return (
-    <div style={{ marginBottom: '0.75rem' }}>
+    <div className="letter-body-before">
       {held === 'choose_relay' && prisonId !== null && !confirming && (
         <ChooseGroup message={message} facility={facility} blocks={blocks} onChanged={onChanged} />
       )}
@@ -258,27 +258,27 @@ export default function QueuedLetterActions({
         <p className="letter-body-scan-note">
           {deleteQuestion(held, prisonerName, rewrite)}
           {message.attachments?.length && rewrite ? ' Its enclosed file isn’t carried over: add it again.' : ''}{' '}
-          <button type="button" className="btn btn-sm" disabled={busy} onClick={remove}>
+          <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={remove}>
             {busy ? 'Deleting…' : rewrite ? 'Yes, delete it and write it again' : 'Yes, delete it'}
           </button>{' '}
-          <button type="button" className="btn btn-sm" disabled={busy} onClick={() => setConfirming(false)}>
+          <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={() => setConfirming(false)}>
             Keep it
           </button>
         </p>
       ) : (
-        <p style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <p className="letter-actions">
           {editable && (
-            <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>
+            <button type="button" className="btn btn-sm btn-on-light" onClick={() => setEditing(true)}>
               Edit this letter
             </button>
           )}
-          <button type="button" className="btn btn-sm" onClick={() => setConfirming(true)}>
+          <button type="button" className="btn btn-sm btn-on-light" onClick={() => setConfirming(true)}>
             {rewrite ? 'Delete it and write it again' : 'Delete this letter'}
           </button>
         </p>
       )}
       {error && (
-        <p className="letter-body-scan-note" style={{ color: 'var(--alert)' }}>
+        <p className="letter-body-scan-note is-error">
           {error}
         </p>
       )}

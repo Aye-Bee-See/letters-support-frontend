@@ -62,7 +62,7 @@ export default function MarkLetter({ message, canPrint, onDone }: { message: Mes
         </div>
       )}
       {error && (
-        <p className="letter-action-hint" role="alert" style={{ color: 'var(--alert)' }}>
+        <p className="letter-action-hint is-error" role="alert">
           {error}
         </p>
       )}

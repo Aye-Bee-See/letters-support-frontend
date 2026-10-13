@@ -183,7 +183,7 @@ export default function RecordReplyPanel({
       </div>
 
       <div className="reply-panel-body">
-        <p className="reply-notes-hint" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+        <p className="reply-notes-hint reply-who">
           From <strong>{prisoner.name}</strong> to <strong>{writer.name}</strong>
           {reference ? ` · reference ${formatReference(reference)}` : ''}
         </p>
@@ -211,7 +211,7 @@ export default function RecordReplyPanel({
           />
         )}
         {error && (
-          <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
+          <p className="reply-notes-hint is-error">
             <strong>Not recorded.</strong> {error}
           </p>
         )}

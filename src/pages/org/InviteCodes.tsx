@@ -113,7 +113,7 @@ export default function InviteCodes() {
                 }}
               />
             )}
-            <p className="settings-hint" style={{ marginTop: '1rem' }}>
+            <p className="settings-hint settings-footnote">
               Codes never travel by email from this site: print them or copy them, and hand them over yourselves. Your group sees only these counts,
               never who used a code, and can’t list the accounts made with them.
             </p>
@@ -397,7 +397,7 @@ function Batches({ summary, onCancelled }: { summary: InviteCodeSummary; onCance
   return (
     <>
       {summary.outstanding > 0 && (
-        <p style={{ marginBottom: '1rem' }}>
+        <p className="invite-codes-cancel-all">
           <button
             type="button"
             className="settings-btn settings-btn-danger"
@@ -430,7 +430,7 @@ function Batches({ summary, onCancelled }: { summary: InviteCodeSummary; onCance
                 <th className="num">Cancelled</th>
                 <th className="num">Expired</th>
                 <th>
-                  <span className="settings-sr-only">Actions</span>
+                  <span className="visually-hidden">Actions</span>
                 </th>
               </tr>
             </thead>

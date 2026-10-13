@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiUrl } from '../../api/client'
 import { getPrisoner, PHOTO_TYPES } from '../../api/prisoners'
@@ -8,7 +8,7 @@ import type { Prisoner, PrisonerPhoto } from '../../types'
 import { PHOTO_MAX_MB, type PhotoRole } from '../../utils/photos'
 import { displayName } from '../../utils/prisoners'
 import { refusalText } from '../../utils/refusals'
-import { date } from '../invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { Field, Section } from './ClassedParts'
 import { ADMIN_UI, GROUP_UI, type UiClasses } from './uiClasses'
 
@@ -27,18 +27,15 @@ import { ADMIN_UI, GROUP_UI, type UiClasses } from './uiClasses'
 // a group admin's panel reads the record afresh, as the group's copy of it may
 // be older than its photo.
 
-const CLASSES: Record<PhotoRole, UiClasses & { actions: string }> = {
-  admin: { ...ADMIN_UI, primaryButton: 'a-btn a-btn-primary a-btn-sm', actions: 'queue-item-actions' },
-  group: { ...GROUP_UI, actions: 'settings-save-row' },
-}
-const IMAGE: Record<PhotoRole, { shown: CSSProperties; preview: CSSProperties }> = {
-  admin: {
-    shown: { display: 'block', maxWidth: '220px', maxHeight: '280px', height: 'auto' },
-    preview: { display: 'block', maxWidth: '160px', maxHeight: '200px', height: 'auto' },
-  },
+/** The page's class set, plus the row of buttons, the photo shown and the one chosen, and (a group's) the panel itself. */
+const CLASSES: Record<PhotoRole, UiClasses & { actions: string; photo: string; preview: string; photoPanel: string }> = {
+  admin: { ...ADMIN_UI, primaryButton: 'a-btn a-btn-primary a-btn-sm', actions: 'queue-item-actions', photo: 'photo-now', preview: 'photo-preview', photoPanel: '' },
   group: {
-    shown: { display: 'block', maxWidth: '10rem', maxHeight: '12rem' },
-    preview: { display: 'block', maxWidth: '10rem', maxHeight: '12rem', marginTop: '0.5rem' },
+    ...GROUP_UI,
+    actions: 'settings-save-row',
+    photo: 'settings-photo',
+    preview: 'settings-photo settings-photo-preview',
+    photoPanel: 'settings-photo-panel',
   },
 }
 const CREDIT_MAX = 200
@@ -128,13 +125,13 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
         <div className={c.field}>
           <span className={c.label}>Photo now</span>
           {current ? (
-            <img src={apiUrl(current.url)} alt={`${name}, as shown on their public page`} style={IMAGE[mode].shown} />
+            <img src={apiUrl(current.url)} alt={`${name}, as shown on their public page`} className={c.photo} />
           ) : (
             <span className={c.static}>No photo.</span>
           )}
           {current && (
             <span className={c.hint}>
-              {[current.credit ? `Photo: ${current.credit}.` : mode === 'admin' ? 'No credit given.' : '', `Added ${date(current.updatedAt)}.`]
+              {[current.credit ? `Photo: ${current.credit}.` : mode === 'admin' ? 'No credit given.' : '', `Added ${shortDate(current.updatedAt)}.`]
                 .filter(Boolean)
                 .join(' ')}
             </span>
@@ -161,7 +158,7 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
 
       {f.file && (
         <>
-          {f.preview && <img src={f.preview} alt="The photo chosen" style={IMAGE[mode].preview} />}
+          {f.preview && <img src={f.preview} alt="The photo chosen" className={c.preview} />}
           {mode === 'admin' && (
             <Field classes={c} label="Credit" htmlFor="photo-credit" hint="The public support page it comes from, named as it names itself. Shown beside the picture.">
               <input
@@ -237,7 +234,7 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
       </Section>
     </div>
   ) : (
-    <div className={c.body} style={{ marginTop: '0.5rem' }}>
+    <div className={`${c.body} ${c.photoPanel}`}>
       {body}
     </div>
   )

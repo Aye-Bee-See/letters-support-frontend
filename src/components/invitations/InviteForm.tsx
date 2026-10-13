@@ -127,7 +127,7 @@ export default function InviteForm(props: Props) {
                   : 'Required. Only an active group can take new group admins.'
               }
             >
-              <div className={c.addRow} style={{ marginBottom: '0.4rem' }}>
+              <div className={`${c.addRow} picked-row`}>
                 <span className={c.static}>{chosen ? chosen.name : kind === 'group' ? 'Nobody' : 'None chosen yet'}</span>
                 {chosen && (
                   <button type="button" className={c.button} disabled={busy} onClick={() => setChosen(null)}>

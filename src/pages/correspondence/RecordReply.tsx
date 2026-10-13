@@ -155,19 +155,19 @@ function ByReference({ initial, onTarget }: { initial: string; onTarget: (target
       </div>
       <p className="reply-notes-hint">The nine digits the prisoner copied from the bottom of the letter, usually at the top of their reply.</p>
       {problem && (
-        <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
+        <p className="reply-notes-hint is-error">
           {problem}
         </p>
       )}
       {failed && (
-        <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
+        <p className="reply-notes-hint is-error">
           {describeReferenceError(failed) ?? `Couldn't look that number up (${refusalText(failed)}).`}
         </p>
       )}
       {found && <FoundLetter found={found} />}
       {found && !ready && <p className="reply-notes-hint">The writer or the prisoner of this letter is gone, so a reply can't be filed under it.</p>}
       {ready && (
-        <p style={{ marginTop: '0.75rem' }}>
+        <p className="reply-found-next">
           <button type="button" className="btn btn-primary btn-sm" onClick={() => onTarget(ready)}>
             Record the reply to this letter
           </button>
@@ -227,7 +227,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
 
       {submitted && matches.loading && <p className="reply-notes-hint">Searching…</p>}
       {submitted && matches.error && (
-        <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
+        <p className="reply-notes-hint is-error">
           Couldn't search. {refusalText(matches.error)}
         </p>
       )}
@@ -235,7 +235,7 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
         <p className="reply-notes-hint">No writer whose letters your group mailed goes by “{submitted}”, now or before.</p>
       )}
       {matches.data && matches.data.length > 0 && (
-        <table className="convo-table" style={{ marginTop: '0.75rem' }}>
+        <table className="convo-table reply-matches">
           <thead>
             <tr>
               <th>Writer</th>
@@ -274,11 +274,11 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
       )}
 
       {writer && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="reply-threads">
           <div className="thread-sidebar-heading">Who wrote the reply?</div>
           {threads.loading && <p className="reply-notes-hint">Loading their conversations…</p>}
           {threads.error && (
-            <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
+            <p className="reply-notes-hint is-error">
               Couldn't load their conversations. {refusalText(threads.error)}
             </p>
           )}
@@ -372,10 +372,10 @@ export default function RecordReply() {
             </div>
           ) : (
             <>
-              <div className="reply-panel" style={{ marginTop: 0 }}>
+              <div className="reply-panel is-first">
                 <div className="reply-panel-header">
                   <span className="reply-panel-title">1 · Whose reply is it?</span>
-                  <span className="reply-submit-note" style={{ flex: 'none', alignSelf: 'center' }}>
+                  <span className="reply-submit-note is-aside">
                     <button
                       type="button"
                       className="reply-notes-toggle"

@@ -87,7 +87,7 @@ export default function RecoveryCode() {
   return (
     <div className="claim-page">
       <title>Recovery code · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '460px' }}>
+      <div className="claim-column is-wide">
         <div className="claim-box">
           {step.name === 'code' ? (
             <div className="claim-state is-active">
@@ -100,10 +100,10 @@ export default function RecoveryCode() {
                 <div className="claim-encryption-note">
                   <p>Your old recovery code no longer works. This one replaces it.</p>
                 </div>
-                <div className="claim-encryption-note" style={{ alignItems: 'center', textAlign: 'center' }}>
-                  <p style={{ fontFamily: 'var(--mono)', fontSize: '1.05rem', letterSpacing: '0.06em', wordBreak: 'break-all' }}>{step.recoveryCode}</p>
+                <div className="claim-encryption-note recovery-code-note">
+                  <p className="recovery-code">{step.recoveryCode}</p>
                   <p>
-                    <button type="button" className="claim-show-pw" style={{ position: 'static' }} onClick={() => copy(step.recoveryCode)}>
+                    <button type="button" className="claim-show-pw is-static" onClick={() => copy(step.recoveryCode)}>
                       {copied ? 'Copied' : 'Copy'}
                     </button>
                   </p>

@@ -30,7 +30,7 @@ export default function AttachmentRetry({
         <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={onRetry}>
           {busy ? 'Uploading…' : 'Retry the attachment'}
         </button>
-        <button type="button" className="btn btn-sm" disabled={busy} onClick={onSkip}>
+        <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={onSkip}>
           Continue without it
         </button>
       </div>

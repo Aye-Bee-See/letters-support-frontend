@@ -43,7 +43,7 @@ export default function Security() {
   return (
     <div className="claim-page">
       <title>Security · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '460px' }}>
+      <div className="claim-column is-wide">
         <div className="claim-box">
           <div className="claim-state is-active">
             <div className="claim-header">
@@ -115,7 +115,7 @@ export default function Security() {
         {!twoFactorSetupRequired && <AccountKeys />}
         {/* A writer's letters: how long they are kept, and groups not mailing them. */}
         {!twoFactorSetupRequired && user?.role === 'user' && (
-          <div className="claim-box" style={{ marginTop: '1.5rem' }}>
+          <div className="claim-box security-box">
             <div className="claim-state is-active">
               <div className="claim-header">
                 <h2 className="claim-title">Your letters</h2>
@@ -146,7 +146,7 @@ export default function Security() {
 function AccountKeys() {
   const { keys } = useAuth()
   return (
-    <div className="claim-box" style={{ marginTop: '1.5rem' }}>
+    <div className="claim-box security-box">
       <div className="claim-state is-active">
         <div className="claim-header">
           <h2 className="claim-title">Password and recovery code</h2>
@@ -210,7 +210,7 @@ function SignOutEverywhere() {
   }
 
   return (
-    <div className="claim-box" style={{ marginTop: '1.5rem' }}>
+    <div className="claim-box security-box">
       <div className="claim-state is-active">
         <div className="claim-header">
           <h2 className="claim-title">Sign out everywhere</h2>
@@ -236,7 +236,7 @@ function SignOutEverywhere() {
               <button type="button" className="claim-submit" disabled={busy} onClick={signOutEverywhere}>
                 {busy ? 'Signing out…' : 'Yes, sign out everywhere'}
               </button>
-              <p className="claim-org-note" style={{ textAlign: 'center' }}>
+              <p className="claim-org-note security-centred">
                 <button
                   type="button"
                   className="claim-show-pw security-link"
@@ -365,7 +365,7 @@ function Scan({ secret, otpauthUri, onConfirmed, onCancel }: { secret: string; o
       <button type="submit" className="claim-submit" disabled={busy}>
         {busy ? 'Checking…' : 'Switch it on'}
       </button>
-      <p className="claim-org-note" style={{ textAlign: 'center' }}>
+      <p className="claim-org-note security-centred">
         <button type="button" className="claim-show-pw security-link" onClick={onCancel} disabled={busy}>
           Cancel
         </button>
@@ -415,7 +415,7 @@ function RecoveryCodes({ codes, title, onDone }: { codes: string[]; title: strin
           </li>
         ))}
       </ol>
-      <p style={{ textAlign: 'center' }}>
+      <p className="security-centred">
         <button
           type="button"
           className="claim-show-pw security-link"
@@ -502,7 +502,7 @@ function Enabled(props: { enabledAt: string | null; codesLeft: number; required:
             Make new recovery codes
           </button>
           {!required && (
-            <p className="claim-org-note" style={{ textAlign: 'center' }}>
+            <p className="claim-org-note security-centred">
               <button type="button" className="claim-show-pw security-link" onClick={() => setAction('off')}>
                 Switch two-factor sign-in off
               </button>
@@ -537,7 +537,7 @@ function Enabled(props: { enabledAt: string | null; codesLeft: number; required:
           <button type="submit" className="claim-submit" disabled={busy}>
             {busy ? 'Checking…' : action === 'codes' ? 'Make new codes' : 'Switch it off'}
           </button>
-          <p className="claim-org-note" style={{ textAlign: 'center' }}>
+          <p className="claim-org-note security-centred">
             {action === 'off' && (
               <>
                 <button

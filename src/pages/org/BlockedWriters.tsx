@@ -6,8 +6,9 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, BanRecommendation, BanRecommendationStatus, GroupBlock } from '../../types'
-import { blockRefusal, letterCount, personLabel } from '../../utils/blocks'
+import { blockRefusal, letterCount, NO_LONGER_HERE } from '../../utils/blocks'
 import { longDate } from '../../utils/dates'
+import { actorName } from '../../utils/history'
 import { writerLabel } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 
@@ -47,7 +48,7 @@ export default function BlockedWriters() {
         <section className="settings-section">
           <h2 className="settings-section-heading">Blocked from your group</h2>
           {notice && (
-            <p className="block-notice" role="status" style={{ marginBottom: '1rem' }}>
+            <p className="block-notice block-notice-lead" role="status">
               {notice}
             </p>
           )}
@@ -142,7 +143,7 @@ function BlockRow({ block, onUnblocked }: { block: GroupBlock; onUnblocked: (mes
           {block.writer?.penName && block.writer.name && <small>{block.writer.name}</small>}
         </span>
         <span className="block-item-meta">
-          Blocked by {personLabel(block.blockedBy, user?.id)} on {longDate(block.blockedAt)}
+          Blocked by {actorName(block.blockedBy, user?.id, NO_LONGER_HERE)} on {longDate(block.blockedAt)}
         </span>
       </div>
       <div className="block-item-meta">The reason the writer was told:</div>
@@ -191,7 +192,7 @@ function RecommendationRow({ rec: r }: { rec: BanRecommendation }) {
         <span className={`block-state block-state-${r.status}`}>{STATE_LABEL[r.status] ?? r.status}</span>
       </div>
       <div className="block-item-meta">
-        Recommended by {personLabel(r.recommended_by, user?.id)} on {longDate(r.createdAt)}. Your group’s reason, which only site admins
+        Recommended by {actorName(r.recommended_by, user?.id, NO_LONGER_HERE)} on {longDate(r.createdAt)}. Your group’s reason, which only site admins
         read:
       </div>
       <div className="block-item-reason">{r.reason}</div>

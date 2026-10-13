@@ -8,8 +8,7 @@ import { useApi } from '../../hooks/useApi'
 import type { ApiError, RecordStatus } from '../../types'
 import { ROUTING_LABELS } from '../../utils/facilities'
 import { EMPTY_FACILITY, languageHint, MAX_PRINT_LINES, problems, RECORD_STATUSES, ROUTINGS, toRecord, type FacilityFormValues } from '../../utils/facilityForm'
-import { siteAdminRefusal } from '../../utils/users'
-import { refusalText } from '../../utils/refusals'
+import { refusalText, siteAdminRefusal } from '../../utils/refusals'
 
 // A facility made directly (POST /prison/prison, superadmins only), rather than
 // by approving a group's proposal. The same fields, checks and rule picker as

@@ -12,7 +12,7 @@ export default function BlocksNotice() {
   const list = blocks.data ?? []
   if (list.length === 0) return null
   return (
-    <p className="sidebar-info" style={{ marginBottom: '1.25rem' }}>
+    <p className="sidebar-info">
       <strong>
         {list.length === 1 ? `${list[0].chapter.name ?? 'A group'} isn’t mailing your letters.` : `${list.length} groups aren’t mailing your letters.`}
       </strong>{' '}

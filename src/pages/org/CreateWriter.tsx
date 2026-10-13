@@ -100,7 +100,7 @@ export default function CreateWriter() {
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="off"
               />
-              <span className="cw-hint" style={nameProblem ? { color: 'var(--alert)' } : undefined}>
+              <span className={nameProblem ? 'cw-hint is-error' : 'cw-hint'}>
                 {nameProblem ?? 'How your group knows them. Without a pen name, their letters are signed with this.'}
               </span>
             </div>
@@ -152,7 +152,7 @@ export default function CreateWriter() {
             </div>
 
             {error && (
-              <p className="cw-hint" role="alert" style={{ color: 'var(--alert)' }}>
+              <p className="cw-hint is-error" role="alert">
                 <strong>Not saved.</strong> {error}
               </p>
             )}

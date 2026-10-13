@@ -282,7 +282,7 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
               </Field>
               {role === 'chapter' && (
                 <Field label="Group" htmlFor="f-role-group" hint="A group admin acts for one group.">
-                  <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                  <div className="relay-add picked-row">
                     <span className="form-static">{toGroup !== null ? groupName(toGroup) : 'None chosen yet'}</span>
                   </div>
                   {groupPicker('f-role-group', 'Group', toGroup !== null ? 'Search groups to change it…' : 'Search groups…', toGroup, (g) => setRoleGroup(String(g.id)))}
