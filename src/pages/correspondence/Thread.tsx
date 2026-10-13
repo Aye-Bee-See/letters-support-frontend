@@ -568,6 +568,8 @@ export default function Thread() {
   const facilityState = useApi<Prison | null>(() => (prisonId !== null ? getFacility(prisonId, true) : Promise.resolve(null)), [prisonId])
   // A returned or declined letter being written again in the reply panel below.
   const [resend, setResend] = useState<Resend | null>(null)
+  // False once the reply panel finds no group taking this writer's letters: then "Write it again" has nowhere to go.
+  const [replyAvailable, setReplyAvailable] = useState(true)
   // A block or unblock from the sidebar holds or releases this writer's letters,
   // so the thread loads again; the sidebar's notice is kept across that reload.
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
@@ -696,7 +698,7 @@ export default function Thread() {
                 writerName={writerName}
                 blocks={blocks}
                 forGroup={isChapter ? { chapterId: user?.chapterId ?? null } : null}
-                onWriteAgain={!isChapter && prisoner?.prison ? writeAgain : undefined}
+                onWriteAgain={!isChapter && prisoner?.prison && replyAvailable ? writeAgain : undefined}
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
                 retention={retention}
                 chain={{
@@ -705,7 +707,7 @@ export default function Thread() {
                 }}
                 queued={
                   !isChapter && chat.user === user?.id
-                    ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
+                    ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison && replyAvailable ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
                     : undefined
                 }
               />
@@ -736,6 +738,7 @@ export default function Thread() {
               onCancelResend={() => setResend(null)}
               onDraftChange={onReplyDraftChange}
               onEarlierVersion={page.reload}
+              onAvailableChange={setReplyAvailable}
               onSent={() => {
                 setResend(null)
                 page.reload()
