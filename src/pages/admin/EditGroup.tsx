@@ -54,7 +54,7 @@ function adminChanges(g: Chapter, initial: FormValues, v: FormValues, services: 
 
 export default function EditGroup() {
   const id = Number(useParams().id)
-  const group = useApi(() => getGroup(id, true), [id])
+  const group = useApi(() => getGroup(id, true), [id], { keepPrevious: true })
   const [saved, setSaved] = useState(false)
   // How many facilities it relays for now: the panel below changes it without a reload.
   const [relayCount, setRelayCount] = useState<number | null>(null)

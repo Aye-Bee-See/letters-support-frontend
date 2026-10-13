@@ -32,7 +32,7 @@ const errorText = (err: unknown) => {
 export default function BanRecommendations() {
   const { params, update } = useListParams()
   const status = (STATUSES.find((s) => s.value === params.get('status'))?.value ?? 'pending') as BanRecommendationStatus
-  const list = useApi(() => getBanRecommendations(status), [status])
+  const list = useApi(() => getBanRecommendations(status), [status], { keepPrevious: true })
   // Kept here, not in a card: a reload after a decision unmounts the card it came from.
   const [notice, setNotice] = useState<Notice | null>(null)
 

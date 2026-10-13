@@ -148,7 +148,7 @@ function changes(f: Prison, initial: FormValues, v: FormValues, rules: Set<strin
 
 export default function EditFacility() {
   const id = Number(useParams().id)
-  const facility = useApi(() => getFacility(id, true), [id])
+  const facility = useApi(() => getFacility(id, true), [id], { keepPrevious: true })
   // Staff get retired rules too: a facility may still carry one.
   const rules = useApi(() => getMailRules(true), [])
   const [saved, setSaved] = useState(false)

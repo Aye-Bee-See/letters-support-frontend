@@ -91,7 +91,7 @@ export default function Queue() {
   const resource = isResource(resourceParam) ? resourceParam : undefined
   const page = Math.max(1, Number(params.get('page')) || 1)
 
-  const list = useApi(() => getSubmissions({ status, resource, page, page_size: PAGE_SIZE }), [status, resource, page])
+  const list = useApi(() => getSubmissions({ status, resource, page, page_size: PAGE_SIZE }), [status, resource, page], { keepPrevious: true })
 
   const setFilter = (key: string, value: string | undefined) => {
     const next = new URLSearchParams(params)

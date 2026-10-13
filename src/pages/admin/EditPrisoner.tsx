@@ -104,7 +104,7 @@ function changes(before: FormValues, after: FormValues): PrisonerFields {
 
 export default function EditPrisoner() {
   const id = Number(useParams().id)
-  const prisoner = useApi(() => getPrisoner(id, false), [id])
+  const prisoner = useApi(() => getPrisoner(id, false), [id], { keepPrevious: true })
   const [saved, setSaved] = useState<{ mail?: PrisonerMailChange } | null>(null)
   const [photoChanges, setPhotoChanges] = useState(0)
 
