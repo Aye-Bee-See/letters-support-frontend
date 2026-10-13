@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getEncryptionReadiness } from '../../api/admin'
 import { getGroups } from '../../api/groups'
-import { createStaffAccount } from '../../api/users'
+import { createStaffAccount } from '../../auth/staffAccount'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
@@ -14,7 +14,7 @@ import { createRefusal } from '../../utils/users'
 // A staff account made by a site admin (POST /auth/user, README "Creating
 // accounts with other roles"): a group admin or a site admin, with no pen name.
 // The password the site admin types is split on this device and never sent
-// (api/users.ts createStaffAccount). No keys are made here: a site admin must
+// (auth/staffAccount.ts). No keys are made here: a site admin must
 // never hold anyone's private key, so the account gets them at its first
 // sign-in on a phone app, and the web refuses it until then.
 //

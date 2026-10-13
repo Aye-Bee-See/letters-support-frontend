@@ -2,7 +2,6 @@
 // anyone else; the /admin routes are behind RequireAdmin. Letters are never
 // part of an account record, and nothing here can read one.
 import { del, getList, getOne, post, put } from './client'
-import { KDF_PARAMS, signInKeys, wipe } from '../crypto'
 import type { KdfParams, ListParams, User, UserRole } from '../types'
 
 export interface UserListParams extends ListParams {
@@ -45,49 +44,20 @@ export interface DeletedAccount {
  */
 export const deleteUser = (id: number) => del<DeletedAccount>('/auth/user', { id })
 
-/** 16 random bytes as standard base64 with padding, the encoding the API uses. */
-function randomSalt(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
-  return btoa(String.fromCharCode(...bytes))
-}
-
-export interface StaffAccountInput {
+/** What POST /auth/user takes for a staff account made split; src/auth/staffAccount.ts derives the keys in it. */
+export interface NewStaffAccount {
   username: string
   email: string
   name?: string
   role: 'chapter' | 'admin'
-  /** The group, for a group admin. */
   chapterId?: number
-  /** Typed by the site admin, given to the person once. Never sent. */
+  authScheme: 'split'
+  /** The auth key, sent in the password's place. */
   password: string
+  kdfSalt: string
+  kdfParams: KdfParams
 }
 
-/**
- * POST /auth/user for a staff account, which needs no pen name. The password
- * is split on this device, as at sign-in (README "Signing in without sending
- * the password"): a new salt, the auth key sent as the password, and the salt
- * and recipe with it so the person's devices derive the same key. No keys are
- * made here: a site admin must never hold anyone's private key, so the account
- * gets its keys at its first sign-in on a device of its own.
- *
- * Server mode only. In end-to-end mode the API takes a split account's salt
- * only together with its keys (keys.controller keyFields, `newAccount`), so a
- * staff account can't be made here; an invitation makes one with its keys.
- */
-export async function createStaffAccount(input: StaffAccountInput): Promise<User> {
-  const kdfSalt = randomSalt()
-  const kdfParams: KdfParams = { ...KDF_PARAMS }
-  const { wrapKey, authKey } = await signInKeys(input.password, { scheme: 'split', kdfSalt, kdfParams })
-  await wipe(wrapKey)
-  return post<User>('/auth/user', {
-    username: input.username,
-    email: input.email,
-    ...(input.name ? { name: input.name } : {}),
-    role: input.role,
-    ...(input.role === 'chapter' && input.chapterId ? { chapterId: input.chapterId } : {}),
-    authScheme: 'split',
-    password: authKey,
-    kdfSalt,
-    kdfParams,
-  })
-}
+/** POST /auth/user: an account made by a site admin. */
+export const createUser = (body: NewStaffAccount) => post<User>('/auth/user', body)
+

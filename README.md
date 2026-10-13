@@ -63,7 +63,8 @@ npm run dev               # http://localhost:3001
 | `npm run build`              | Type-checks the app, the Node config and the tests (`tsc -b`), then builds `dist/`.                                 |
 | `npm run preview`            | Serves `dist/` locally.                                                                                             |
 | `npm run lint`               | ESLint over everything.                                                                                             |
-| `npm test`                   | Vitest, once. Unit tests live beside the code as `*.test.ts`.                                                       |
+| `npm test`                   | Vitest, once: `*.test.ts` in Node and `*.test.tsx` component tests in happy-dom, beside the code. See "Tests" below. |
+| `npm run test:coverage`      | The same run with a coverage summary; the full report in `node_modules/.coverage/index.html`.                        |
 | `npm run dev:split-accounts` | Gives a fresh local database's seeded accounts their keys so they can sign in here. See the next section.           |
 
 Settings come from the environment at build time, the Vite way:
@@ -153,6 +154,10 @@ staff also get pending ones.
 | `/invitation?token=` | Accepting an invitation to join a group as a group admin, or to found a new group (which then waits for a site admin's approval).                        |
 | `/account/security` | Two-factor sign-in: set up with a QR code, confirm, recovery codes, switch off. When a site admin requires it, every other page sends you here until it is set up. |
 | `/account/pen-name` | A writer's pen name, the name letters are signed with. A writer without one is sent here at sign-in.                                                      |
+| `/account/password` | Change the password: the current one opens the private key, which is locked again under the new one. Every other session ends.                           |
+| `/account/recovery-code` | A new recovery code, for one lost or never saved: shown once and confirmed saved; the old one stops working.                                         |
+| `/account/retention` | How long a writer's letters and replies are kept: the site's default, a number of days, or for ever where the site has no cap.                          |
+| `/account/blocks`   | The groups not mailing a writer's letters, with the reason each gave and when; never who blocked them.                                                  |
 
 ### Writers
 
@@ -176,6 +181,7 @@ writer had keys.
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/inbox`                 | The group inbox: **To print** (the queue by state: queued, held, printed, mailed, returned, not sent; select several and mark them printed or mailed, or decline them), **Conversations**, **Writers** (the people the group writes for), and recent activity. `?tab=` picks the tab. |
 | `/letters/:id/print`     | One letter: its text, the note to the group, attachments, and a print layout with the agreed footer and reply reference. Mark printed or mailed, record that it came back, decline it ("Don't send") with a reason the writer is told, or share it with a partner group. |
+| `/letters/print-batch?ids=` | The letters chosen in the queue, opened together and printed one to a page with the same layout; held ones are asked about first; Mark all printed. Opened from Print selected. |
 | `/replies/new?reply=`    | Record a prisoner's reply: by the reference number on the envelope, or by the writer's pen name when there is none; typed, scanned, or both.                                                                                                                             |
 | `/threads/:id`           | The same conversation page writers see, with a record-reply panel instead of a reply panel, and block actions on the writer.                                                                                                                                              |
 | `/letters/new?writer=`   | Write as one of the group's managed writers, or anonymously under the group's shared writer.                                                                                                                                                                             |
@@ -198,9 +204,16 @@ A separate layout with its own stylesheet, loaded only under `/admin`.
 | `/admin/queue`               | Directory changes proposed by groups, each against the record's current values; approve or reject with a note.             |
 | `/admin/bans`                | Groups' recommendations to block a writer site-wide; ban or dismiss, with a note back to the group.                        |
 | `/admin/prisoners`, `/admin/facilities`, `/admin/groups` | The directory records, and `…/:id/edit` for each. Groups are approved, suspended and linked to facilities here. |
+| `/admin/prisoners/new`, `/admin/facilities/new`, `/admin/groups/new` | A record made directly rather than by approving a proposal; a draft unless chosen otherwise. Then its edit page. |
+| `/admin/mail-rules`          | The master list of mail rules every facility links into: add, reword, retire, restore, delete.                            |
+| `/admin/users`               | Every account, searched by username, email or name and narrowed by role.                                                  |
+| `/admin/users/:id`           | One account: change its role (or ban it), move a group admin to another group, end its sessions, reset two-factor, delete it. |
+| `/admin/users/new`           | Make a group admin or site admin account with a first password, split in the browser (server mode only).                   |
 | `/admin/invite`              | Invite a new group (vouched for by a group, or by nobody) or a member of a group.                                           |
 | `/admin/audit`               | The audit log.                                                                                                             |
 | `/admin/settings`            | Site-wide switches: who must use two-factor sign-in.                                                                       |
+
+`/admin/login` is a redirect to `/login`, kept for old links and bookmarks.
 
 ## How the code is laid out
 
@@ -208,13 +221,14 @@ A separate layout with its own stylesheet, loaded only under `/admin`.
 src/
   api/          one file per API area; plain functions over an axios client (client.ts),
                 each with a comment naming the README section it follows
-  auth/         sign-in, join, claim, recovery, accept-invitation flows (crypto + API, no React)
+  auth/         sign-in, join, claim, recovery, accept-invitation, account-key and staff-account flows (crypto + API, no React)
   crypto/       the end-to-end core: libsodium lives here and nowhere else (index.ts is the only import point)
   letters/      sending a letter (send.ts), recording a reply (record.ts), opening one (open.ts)
   groups/       group-admin logic with no React: housekeeping, key hand-out, rotation
   context/      AuthContext: the session, in memory only; GroupContext: the group admin's group record, fetched once
   hooks/        useApi (load + reload), useGroup (the admin's group and key state), drafts, list params, leave guard
   components/
+    admin/      parts of the admin record pages: the photo panel, a record's history
     layout/     header, footers, the admin shell, route guards, the group gate
     forms/      shared form parts: account fields, pen name, recovery-code step, upload zone, reply panels
     group/      the group inbox's pieces: queue, letter actions, writers, activity, key notices
@@ -329,10 +343,11 @@ sign-in are still checked by hand against a local API; see the walk-through
 above.
 
 `npm run test:coverage` adds a coverage summary, with the full report in
-`node_modules/.coverage/index.html`. On 8 October 2026: 25% of lines and 17% of
-branches overall; the crypto core 99%, the client 94%, the utilities 83%, the
-guards, `useApi` and the list hooks 100%, and the admin, group and account
-pages 0 to 4%. There is no threshold, and CI doesn't run it.
+`node_modules/.coverage/index.html`. On 12 October 2026: 22% of lines and 15% of
+branches overall; the crypto core 99% (the Argon2id worker's runner 30%), the
+client 94%, the utilities 86%, the guards, `useApi` and the list hooks 100%,
+and the admin, group, account and conversation pages 0 to 3%. There is no
+threshold, and CI doesn't run it.
 
 **Dependencies.** React, react-router, axios, `libsodium-wrappers-sumo` (the
 sumo build, for Argon2id) and `qrcode-generator`. Adding one is a decision,
