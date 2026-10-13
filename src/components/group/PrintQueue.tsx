@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toApiError } from '../../api/client'
 import { getMessages, setLetterStatusBatch } from '../../api/letters'
@@ -39,6 +39,16 @@ import { DeclineForm } from './DeclineLetter'
 // selected" opens the chosen queued or held letters on one batch sheet
 // (pages/inbox/PrintBatch.tsx), held ones after the same confirmation, and the
 // sheet marks them printed together.
+//
+// Keyboard (audit section 6): with focus on a row of the table, j/k or Down/Up
+// move between rows (one row is in the tab order at a time, the roving
+// tabIndex, and the global :focus-visible rule draws the ring), Space selects
+// the row, `a` selects every letter on the page (again: none, as the heading's
+// checkbox does), Enter opens the letter's print page, `p` runs Mark printed on
+// the selection, through the held-letter question where the list asks it, and
+// `?` says all of this in one line. Keys typed in a checkbox, a button or the
+// decline form (which sits outside the table) are left alone, and so is
+// anything with Ctrl, Alt or Cmd.
 //
 // Each filter chip carries its count: the API has no counts endpoint, so it is
 // one page_size=1 request per chip (its `total`), six small requests when the
@@ -101,6 +111,18 @@ function KeyHint({ keyState }: { keyState: GroupKeyState }) {
   )
 }
 
+/** The keys, in full: what `?` shows, naming only the ones this list answers to. */
+const keysHint = (selectable: boolean, printable: boolean) =>
+  [
+    'j or ↓ next, k or ↑ previous',
+    selectable && 'Space select, a select all',
+    'Enter open',
+    printable && 'p mark printed',
+    '? hide this.',
+  ]
+    .filter(Boolean)
+    .join(', ')
+
 function QueueRow({
   m,
   filter,
@@ -108,6 +130,9 @@ function QueueRow({
   selected,
   refused,
   onToggle,
+  inTabOrder,
+  rowRef,
+  onFocus,
 }: {
   m: Message
   filter: QueueFilter
@@ -115,12 +140,21 @@ function QueueRow({
   selected: boolean
   refused: boolean
   onToggle: () => void
+  /** The roving tabIndex: the one row Tab reaches. */
+  inTabOrder: boolean
+  rowRef: (el: HTMLTableRowElement | null) => void
+  onFocus: () => void
 }) {
   const prisoner = m.prisoner_details
   const prison = (prisoner?.prison_details ?? null) as Prison | null
   const held = heldReasonShort(m.heldReason)
   return (
-    <tr className={['queue-row', selected && 'is-selected', refused && 'is-refused'].filter(Boolean).join(' ')}>
+    <tr
+      className={['queue-row', selected && 'is-selected', refused && 'is-refused'].filter(Boolean).join(' ')}
+      ref={rowRef}
+      tabIndex={inTabOrder ? 0 : -1}
+      onFocus={onFocus}
+    >
       {selectable && (
         <td className="col-check">
           <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select letter ${m.id}`} />
@@ -192,6 +226,15 @@ function QueueList({
   const [notice, setNotice] = useState<Notice | null>(carried)
   // The letters the last refusal named, from its `ids` (README "PUT /messaging/status/batch"), marked in the list.
   const [refused, setRefused] = useState<Set<number>>(new Set())
+  // The keyboard: the row in the tab order, whether `?` is showing the keys, and a word about a key that did nothing.
+  const [focused, setFocused] = useState(0)
+  const [showKeys, setShowKeys] = useState(false)
+  const [keyNote, setKeyNote] = useState<string | null>(null)
+  const rowEls = useRef<(HTMLTableRowElement | null)[]>([])
+  const confirmButton = useRef<HTMLButtonElement>(null)
+  const noticeBox = useRef<HTMLDivElement>(null)
+  // Where focus goes once the page settles, after `p`: the held-letter question, or back to the rows.
+  const focusAfter = useRef<'confirm' | 'row' | null>(null)
 
   const move = BATCH_MOVE[filter]
   const rows = list.data?.items ?? []
@@ -213,6 +256,90 @@ function QueueList({
       return next
     })
   const allChosen = rows.length > 0 && chosen.length === rows.length
+  const selectAll = () => setSelected(allChosen ? new Set() : new Set(rows.map((m) => m.id)))
+  const rowAt = Math.min(focused, Math.max(0, rows.length - 1))
+
+  // Only after `p`: the question takes focus, and focus comes back to the rows
+  // once the question is answered or the list has reloaded. A mouse never sets it.
+  useEffect(() => {
+    if (focusAfter.current === 'confirm' && confirming) {
+      focusAfter.current = 'row'
+      confirmButton.current?.focus()
+    } else if (focusAfter.current === 'row' && !confirming && !busy && !list.loading) {
+      focusAfter.current = null
+      // Nothing left on the page: the notice saying what was done, rather than nowhere.
+      const row = rowEls.current[rowAt]
+      if (row?.isConnected) row.focus()
+      else noticeBox.current?.focus()
+    }
+  }, [confirming, busy, list.loading, rowAt])
+
+  const focusRow = (i: number) => {
+    const next = Math.max(0, Math.min(rows.length - 1, i))
+    setFocused(next)
+    rowEls.current[next]?.focus()
+  }
+
+  /** `p`: Mark printed on the selection, as the button does, held letters through the same question. */
+  function markByKeys() {
+    if (move?.target !== 'printed') return setKeyNote('p marks letters printed: it works in Queued and Held.')
+    if (chosen.length === 0) return setKeyNote('Nothing is selected: Space selects the letter in focus, a every letter on the page.')
+    if (!canMove) return setKeyNote('Letters can’t be marked printed until you hold the group key.')
+    if (busy || confirming) return
+    setKeyNote(null)
+    if (move.release) {
+      focusAfter.current = 'confirm'
+      setConfirming('mark')
+    } else {
+      focusAfter.current = 'row'
+      void run()
+    }
+  }
+
+  function onTableKey(e: KeyboardEvent<HTMLTableElement>) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return
+    const target = e.target as HTMLElement
+    // A checkbox, a button or any other field keeps its own keys.
+    if (target.closest('input, textarea, select, button, [contenteditable="true"]')) return
+    const row = target.closest('tr')
+    const i = row ? rowEls.current.indexOf(row as HTMLTableRowElement) : -1
+    if (i < 0) return
+    const m = rows[i]
+    // A word about the last key goes with the next one (`p` may say another).
+    setKeyNote(null)
+    switch (e.key) {
+      case 'j':
+      case 'ArrowDown':
+        focusRow(i + 1)
+        break
+      case 'k':
+      case 'ArrowUp':
+        focusRow(i - 1)
+        break
+      case ' ':
+        if (!move) return
+        toggle(m.id)
+        break
+      case 'a':
+        if (!move) return
+        selectAll()
+        break
+      case 'Enter':
+        // On the row's own link, Enter is the link's.
+        if (target.closest('a')) return
+        navigate(`/letters/${m.id}/print`)
+        break
+      case 'p':
+        markByKeys()
+        break
+      case '?':
+        setShowKeys((v) => !v)
+        break
+      default:
+        return
+    }
+    e.preventDefault()
+  }
 
   /** The batch sheet, in the queue's order; `release` names the held letters confirmed here. */
   const printSelected = (confirmedHeld: boolean) => {
@@ -275,7 +402,12 @@ function QueueList({
   return (
     <div className="inbox-card">
       {notice && (
-        <div className={notice.kind === 'error' ? 'group-message is-error' : 'group-message is-done'} role={notice.kind === 'error' ? 'alert' : 'status'}>
+        <div
+          className={notice.kind === 'error' ? 'group-message is-error' : 'group-message is-done'}
+          role={notice.kind === 'error' ? 'alert' : 'status'}
+          ref={noticeBox}
+          tabIndex={-1}
+        >
           {notice.text}
           {notice.kind === 'error' && (
             <div>
@@ -348,7 +480,13 @@ function QueueList({
             person, or its writer may still have to act on it; open {chosen.length === 1 ? 'it' : 'each one'} to see why.
           </p>
           <p>Print {chosen.length === 1 ? 'it' : 'them'} anyway?</p>
-          <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={() => (confirming === 'print' ? printSelected(true) : void run())}>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            ref={confirmButton}
+            disabled={busy}
+            onClick={() => (confirming === 'print' ? printSelected(true) : void run())}
+          >
             {busy ? 'Marking…' : 'Yes, print anyway'}
           </button>
           <button type="button" className="btn btn-sm" disabled={busy} onClick={() => setConfirming(false)}>
@@ -376,7 +514,7 @@ function QueueList({
         </p>
       )}
       {rows.length > 0 && (
-        <table className="convo-table queue-table">
+        <table className="convo-table queue-table" onKeyDown={onTableKey}>
           <thead>
             <tr>
               {move && (
@@ -384,7 +522,7 @@ function QueueList({
                   <input
                     type="checkbox"
                     checked={allChosen}
-                    onChange={() => setSelected(allChosen ? new Set() : new Set(rows.map((m) => m.id)))}
+                    onChange={selectAll}
                     aria-label="Select every letter on this page"
                   />
                 </th>
@@ -396,13 +534,37 @@ function QueueList({
             </tr>
           </thead>
           <tbody>
-            {rows.map((m) => (
-              <QueueRow key={m.id} m={m} filter={filter} selectable={!!move} selected={selected.has(m.id)}
+            {rows.map((m, i) => (
+              <QueueRow
+                key={m.id}
+                m={m}
+                filter={filter}
+                selectable={!!move}
+                selected={selected.has(m.id)}
                 refused={refused.has(m.id)}
-                onToggle={() => toggle(m.id)} />
+                onToggle={() => toggle(m.id)}
+                inTabOrder={i === rowAt}
+                rowRef={(el) => {
+                  rowEls.current[i] = el
+                }}
+                onFocus={() => {
+                  setFocused(i)
+                  setKeyNote(null)
+                }}
+              />
             ))}
           </tbody>
         </table>
+      )}
+      {rows.length > 0 && (
+        <div className="queue-keys">
+          <p className="queue-sub">
+            Keyboard: j/k move, Space select, Enter open{move?.target === 'printed' ? ', p print' : ''}; ? for all the keys.
+          </p>
+          <p className="queue-sub" role="status">
+            {keyNote ?? (showKeys ? keysHint(!!move, move?.target === 'printed') : '')}
+          </p>
+        </div>
       )}
       {pages > 1 && (
         <div className="card-pagination">

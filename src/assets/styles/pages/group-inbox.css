@@ -56,6 +56,9 @@
 .queue-batch-bar .btn:disabled { opacity: 0.45; cursor: default; }
 
 .col-check { width: 2.25rem; }
+
+/* The print queue's keyboard line, under the table. */
+.queue-keys { padding: 0.4rem 1.25rem 0.6rem; }
 .queue-row td.col-check, .queue-table th.col-check { padding-right: 0; }
 
 .queue-row { border-bottom: 1px solid #f0f0ee; color: var(--text); }
