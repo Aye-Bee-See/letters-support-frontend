@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createPrisoner } from '../../api/admin'
-import { getAllFacilities } from '../../api/facilities'
+import { getFacilities } from '../../api/facilities'
 import type { PrisonerFields } from '../../api/prisoners'
 import { Field, Section } from '../../components/forms/AdminFormParts'
-import { useApi } from '../../hooks/useApi'
-import type { ApiError, PrisonerStatus, RecordStatus } from '../../types'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
+import type { ApiError, Prison, PrisonerStatus, RecordStatus } from '../../types'
 import { STATUS_LABELS } from '../../utils/prisoners'
 import { siteAdminRefusal } from '../../utils/users'
 
@@ -54,6 +55,9 @@ const TEXT_FIELDS = [
   'statusNotice', 'bio', 'supportWebsite', 'donationInfo', 'verificationNotes',
 ] as const
 
+const facilityLabel = (f: Prison) =>
+  `${f.prisonName}${f.country ? ` (${f.country})` : ''}${f.recordStatus && f.recordStatus !== 'published' ? ` [${f.recordStatus}]` : ''}`
+
 const toList = (text: string) =>
   text
     .split('\n')
@@ -84,7 +88,8 @@ function body(v: Values): PrisonerFields {
 
 export default function NewPrisoner() {
   const navigate = useNavigate()
-  const facilities = useApi(() => getAllFacilities({ sort: 'name' }), [])
+  // The facility found with the picker; `values.prison` is its id.
+  const [facility, setFacility] = useState<Prison | null>(null)
   const [values, setValues] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -155,17 +160,31 @@ export default function NewPrisoner() {
                   ))}
                 </select>
               </Field>
-              <Field label="Facility" htmlFor="f-prison" hint={facilities.error ? `Couldn't load the facilities (${facilities.error.message}).` : undefined}>
-                <select className="form-select" {...field('prison')} disabled={busy || !facilities.data}>
-                  <option value="">{facilities.data ? 'Not listed' : 'Loading…'}</option>
-                  {(facilities.data ?? []).map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.prisonName}
-                      {f.country ? ` (${f.country})` : ''}
-                      {f.recordStatus && f.recordStatus !== 'published' ? ` [${f.recordStatus}]` : ''}
-                    </option>
-                  ))}
-                </select>
+              <Field label="Facility" htmlFor="f-prison">
+                <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                  <span className="form-static">{facility && values.prison ? facilityLabel(facility) : 'Not listed'}</span>
+                  {values.prison && (
+                    <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set('prison', '')}>
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <RecordPicker
+                  id="f-prison"
+                  label="Facility"
+                  classes={{ input: 'form-input' }}
+                  placeholder="Search facilities…"
+                  disabled={busy}
+                  fetch={(q) => getFacilities({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+                  exclude={values.prison ? [Number(values.prison)] : null}
+                  render={facilityLabel}
+                  onSelect={(f) => {
+                    setFacility(f)
+                    set('prison', String(f.id))
+                    // The facility's country, when none is typed yet.
+                    if (f.country) setValues((v) => (v.country.trim() ? v : { ...v, country: f.country ?? '' }))
+                  }}
+                />
               </Field>
             </div>
             <div className="form-row">
@@ -252,13 +271,13 @@ export default function NewPrisoner() {
           </Section>
 
           {issues.length > 0 && (
-            <div className="admin-alert admin-alert-warn form-error">
+            <div className="admin-alert admin-alert-warn form-error" role="status">
               {issues.map((text) => (
                 <div key={text}>{text}</div>
               ))}
             </div>
           )}
-          {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+          {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
           <div className="admin-form-footer">
             <span />

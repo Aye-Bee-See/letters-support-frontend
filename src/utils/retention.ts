@@ -8,7 +8,7 @@ import type { LetterStatus, Message } from '../types'
 // mirror them so a page can say when.
 
 /** What retention counts from, and may remove. */
-export const SETTLED: LetterStatus[] = ['mailed', 'received', 'returned', 'declined']
+const SETTLED: LetterStatus[] = ['mailed', 'received', 'returned', 'declined']
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -37,25 +37,21 @@ export function deletionDate(m: Pick<Message, 'status' | 'statusChangedAt' | 'cr
 const longDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
 /**
- * The retention line under a settled letter, for its writer (`days` known) or
- * for a group admin who can't see the writer's window (`days` undefined: the
- * site default is said as such). Null for a letter retention doesn't touch yet.
+ * The retention line under a settled letter, for its writer or a group that
+ * sets a managed writer's window (`days` known), or for a group admin who
+ * can't see the writer's window (`days` undefined): no date then, since the
+ * writer may have chosen another window than the site's default. Null for a
+ * letter retention doesn't touch yet.
  */
 export function retentionLine(
   m: Pick<Message, 'status' | 'statusChangedAt' | 'createdAt' | 'keep' | 'sender'>,
   days: number | null | undefined,
-  rules: Pick<RetentionRules, 'defaultDays' | 'maxDays'>,
   now: Date = new Date(),
 ): string | null {
   if (!SETTLED.includes(m.status)) return null
   const what = m.sender === 'prisoner' ? 'reply' : 'letter'
   if (m.keep) return `Kept: this ${what} won’t be deleted.`
-  if (days === undefined) {
-    const byDefault = deletionDate(m, windowFor(null, rules))
-    return byDefault
-      ? `Deleted when the writer’s retention window ends: on ${longDate(byDefault)} under the site’s default.`
-      : 'Deleted only if the writer chooses a retention window.'
-  }
+  if (days === undefined) return `Deleted after the writer’s retention window, unless they keep this ${what}.`
   const when = deletionDate(m, days)
   if (!when) return 'Kept for ever, as your retention window says.'
   if (when.getTime() <= now.getTime()) return `Due to be deleted: its ${days} days are up, and it goes at the next clean-up, within a few hours.`

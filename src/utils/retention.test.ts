@@ -39,26 +39,24 @@ describe('retentionLine', () => {
   const now = new Date('2026-10-08T00:00:00.000Z')
 
   it('gives the writer the date', () => {
-    expect(retentionLine(mailed, 30, site, now)).toBe('Deleted on October 31, 2026.')
+    expect(retentionLine(mailed, 30, now)).toBe('Deleted on October 31, 2026.')
   })
 
   it('says kept for a pinned letter or reply', () => {
-    expect(retentionLine({ ...mailed, keep: true }, 30, site, now)).toBe('Kept: this letter won’t be deleted.')
-    expect(retentionLine({ ...mailed, status: 'received', sender: 'prisoner', keep: true }, 30, site, now)).toBe('Kept: this reply won’t be deleted.')
+    expect(retentionLine({ ...mailed, keep: true }, 30, now)).toBe('Kept: this letter won’t be deleted.')
+    expect(retentionLine({ ...mailed, status: 'received', sender: 'prisoner', keep: true }, 30, now)).toBe('Kept: this reply won’t be deleted.')
   })
 
   it('says when a letter is already due', () => {
-    expect(retentionLine(mailed, 5, site, now)).toMatch(/^Due to be deleted: its 5 days are up/)
+    expect(retentionLine(mailed, 5, now)).toMatch(/^Due to be deleted: its 5 days are up/)
   })
 
   it('says nothing for a letter not yet counting', () => {
-    expect(retentionLine({ ...mailed, status: 'printed' }, 30, site, now)).toBeNull()
+    expect(retentionLine({ ...mailed, status: 'printed' }, 30, now)).toBeNull()
   })
 
-  it('gives a group admin the default, as the default', () => {
-    expect(retentionLine(mailed, undefined, site, now)).toBe(
-      'Deleted when the writer’s retention window ends: on December 30, 2026 under the site’s default.',
-    )
+  it('gives a group admin no date: the writer’s window is theirs to know', () => {
+    expect(retentionLine(mailed, undefined, now)).toBe('Deleted after the writer’s retention window, unless they keep this letter.')
   })
 })
 

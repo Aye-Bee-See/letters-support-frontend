@@ -10,7 +10,9 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
-import { displayName, shortDate, STATUS_LABELS } from '../../utils/prisoners'
+import { displayName, STATUS_LABELS } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
+import { refusalText } from '../../utils/refusals'
 
 // Edit one prisoner record (PUT /prisoner/prisoner, superadmins only). Only the
 // fields that changed are sent, so the audit log says what was edited. A new
@@ -104,7 +106,7 @@ function changes(before: FormValues, after: FormValues): PrisonerFields {
 
 export default function EditPrisoner() {
   const id = Number(useParams().id)
-  const prisoner = useApi(() => getPrisoner(id, false), [id])
+  const prisoner = useApi(() => getPrisoner(id, false), [id], { keepPrevious: true })
   const [saved, setSaved] = useState<{ mail?: PrisonerMailChange } | null>(null)
   const [photoChanges, setPhotoChanges] = useState(0)
 
@@ -126,8 +128,8 @@ export default function EditPrisoner() {
       <div className="admin-content">
         {prisoner.loading && <p className="dash-note">Loading the record…</p>}
         {prisoner.error && (
-          <div className="admin-alert admin-alert-err">
-            {prisoner.error.status === 404 ? `There is no prisoner #${id}.` : `Couldn't load prisoner #${id} (${prisoner.error.message}).`}
+          <div className="admin-alert admin-alert-err" role="alert">
+            {prisoner.error.status === 404 ? `There is no prisoner #${id}.` : `Couldn't load prisoner #${id} (${refusalText(prisoner.error)}).`}
             {prisoner.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={prisoner.reload}>
                 Try again
@@ -167,7 +169,7 @@ function SavedNotice({ mail }: { mail?: PrisonerMailChange }) {
   if (mail?.held) parts.push(`${mail.held} letter${mail.held === 1 ? '' : 's'} held`)
   if (mail?.released) parts.push(`${mail.released} held letter${mail.released === 1 ? '' : 's'} let go`)
   return (
-    <div className="admin-alert admin-alert-ok">
+    <div className="admin-alert admin-alert-ok" role="status">
       Saved.{parts.length > 0 && ` Their mail: ${parts.join(', ')}. Their writers have been told.`}
     </div>
   )
@@ -235,7 +237,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
       onSaved({ mail: result.mail })
     } catch (err) {
       const e = err as ApiError
-      setError(e.errors?.length ? e.errors.join(' ') : e.message)
+      setError(e.errors?.length ? e.errors.join(' ') : refusalText(e))
       setBusy(false)
     }
   }
@@ -254,7 +256,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
       setError(
         e.name === 'SequelizeForeignKeyConstraintError'
           ? 'This prisoner has letter threads, so the record can’t be deleted. Set it to draft to take it out of the directory instead.'
-          : e.message,
+          : refusalText(e),
       )
       setBusy(false)
     }
@@ -324,7 +326,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
           </Field>
         </div>
         {warnings.map((text) => (
-          <div key={text} className="admin-alert admin-alert-warn">
+          <div key={text} className="admin-alert admin-alert-warn" role="status">
             {text}
           </div>
         ))}
@@ -399,7 +401,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
         <div className="form-group">
           <span className="form-label">Last verified</span>
           <p className={`form-static${isStale(prisoner.verifiedAt) ? ' list-stale' : ''}`}>
-            {prisoner.verifiedAt ? shortDate(prisoner.verifiedAt) : 'Never'}
+            {prisoner.verifiedAt ? date(prisoner.verifiedAt) : 'Never'}
             {isStale(prisoner.verifiedAt) && ' — needs re-verifying'}
           </p>
           <label className="queue-check">
@@ -412,7 +414,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
         </Field>
       </Section>
 
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>

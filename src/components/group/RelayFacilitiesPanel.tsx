@@ -102,7 +102,7 @@ export default function RelayFacilitiesPanel({ group: g, classes: c, linkTo, onC
             Link facility
           </button>
         </div>
-        {error && <div className={c.alertErr}>{error}</div>}
+        {error && <div className={c.alertErr} role="alert">{error}</div>}
       </Section>
     </div>
   )

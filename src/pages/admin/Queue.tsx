@@ -6,7 +6,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { usePageClamp } from '../../hooks/useListParams'
 import type { AccountBrief, ApiError, Submission, SubmissionResource, SubmissionStatus } from '../../types'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
 // The moderation queue: directory proposals from group admins (and superadmins),
 // oldest first. A superadmin reads each one against the record's current values,
@@ -20,6 +20,7 @@ const PAGE_SIZE = 20
 const STATUSES: (SubmissionStatus | 'all')[] = ['pending', 'approved', 'rejected', 'withdrawn', 'all']
 const RESOURCES: SubmissionResource[] = ['prisoner', 'prison', 'chapter']
 const RESOURCE_LABELS: Record<SubmissionResource, string> = { prisoner: 'prisoner', prison: 'facility', chapter: 'group' }
+const RESOURCE_PLURALS: Record<SubmissionResource, string> = { prisoner: 'Prisoners', prison: 'Facilities', chapter: 'Groups' }
 const ADMIN_PATHS: Record<SubmissionResource, string> = { prisoner: '/admin/prisoners', prison: '/admin/facilities', chapter: '/admin/groups' }
 /** The record's own admin edit page. */
 const editPath = (resource: SubmissionResource, id: number) => `${ADMIN_PATHS[resource]}/${id}/edit`
@@ -91,7 +92,7 @@ export default function Queue() {
   const resource = isResource(resourceParam) ? resourceParam : undefined
   const page = Math.max(1, Number(params.get('page')) || 1)
 
-  const list = useApi(() => getSubmissions({ status, resource, page, page_size: PAGE_SIZE }), [status, resource, page])
+  const list = useApi(() => getSubmissions({ status, resource, page, page_size: PAGE_SIZE }), [status, resource, page], { keepPrevious: true })
 
   const setFilter = (key: string, value: string | undefined) => {
     const next = new URLSearchParams(params)
@@ -192,7 +193,7 @@ export default function Queue() {
               <option value="">All</option>
               {RESOURCES.map((r) => (
                 <option key={r} value={r}>
-                  {RESOURCE_LABELS[r].charAt(0).toUpperCase() + RESOURCE_LABELS[r].slice(1)}s
+                  {RESOURCE_PLURALS[r]}
                 </option>
               ))}
             </select>
@@ -201,8 +202,8 @@ export default function Queue() {
 
         {list.loading && <p className="dash-note">Loading the queue…</p>}
         {list.error && (
-          <div className="admin-alert admin-alert-err">
-            Couldn't load the queue ({list.error.message}).
+          <div className="admin-alert admin-alert-err" role="alert">
+            Couldn't load the queue ({refusalText(list.error)}).
             <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
               Try again
             </button>
@@ -211,7 +212,7 @@ export default function Queue() {
         {list.data && list.data.items.length === 0 && (
           <p className="dash-note">{status === 'pending' ? 'Nothing is waiting for review.' : 'No proposals match these filters.'}</p>
         )}
-        {bulkResult && <div className={`admin-alert ${bulkResult.ok ? 'admin-alert-ok' : 'admin-alert-err'}`}>{bulkResult.text}</div>}
+        {bulkResult && <div className={`admin-alert ${bulkResult.ok ? 'admin-alert-ok' : 'admin-alert-err'}`} role={bulkResult.ok ? 'status' : 'alert'}>{bulkResult.text}</div>}
         {selectable.length > 1 && (
           <div className="queue-item-actions">
             <label className="queue-check">
@@ -346,8 +347,8 @@ function Review({ submission: s, onClose, onDecided }: { submission: Submission;
     <div className="queue-review">
       {detail.loading && <p className="dash-note">Loading the current values…</p>}
       {detail.error && (
-        <div className="admin-alert admin-alert-err">
-          Couldn't load this proposal ({detail.error.message}).
+        <div className="admin-alert admin-alert-err" role="alert">
+          Couldn't load this proposal ({refusalText(detail.error)}).
           <button type="button" className="a-btn a-btn-sm" onClick={detail.reload}>
             Try again
           </button>
@@ -380,7 +381,7 @@ function Changes({ submission: s }: { submission: Submission }) {
   if (fields.length === 0) return <p className="dash-note">This proposal changes no fields.</p>
   if (isUpdate && current === null && s.status === 'pending')
     return (
-      <div className="admin-alert admin-alert-warn">
+      <div className="admin-alert admin-alert-warn" role="status">
         The record this proposal changes no longer exists. Approving it will fail; reject it instead.
       </div>
     )
@@ -616,7 +617,7 @@ function DecisionForm({ submission: s, onCancel, onDecided }: { submission: Subm
           Mark the record verified on approval
         </label>
       )}
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       <div className="queue-item-actions">
         <button type="button" className="a-btn a-btn-primary a-btn-sm" disabled={busy} onClick={() => decide('approve')}>
           {edited.length > 0 ? `Approve with ${edited.length} change${edited.length === 1 ? '' : 's'}` : 'Approve'}

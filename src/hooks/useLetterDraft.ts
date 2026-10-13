@@ -16,6 +16,7 @@ import {
 } from '../letters/send'
 import { toApiError } from '../api/client'
 import type { Chapter, Message, Prison, WriterBlock } from '../types'
+import { refusalText } from '../utils/refusals'
 
 /**
  * For a group admin: whom the letter is written as (README "Message fields",
@@ -32,7 +33,7 @@ const CHARS_PER_PAGE = 2800
 /** What to tell the writer about a failed request. */
 function describe(err: unknown): string {
   const e = toApiError(err)
-  return e.errors.length ? e.errors.join(' ') : e.status ? e.message : err instanceof Error ? err.message : 'Something went wrong.'
+  return e.errors.length ? e.errors.join(' ') : e.status ? refusalText(e) : err instanceof Error ? err.message : 'Something went wrong.'
 }
 
 /** What a send carried, kept when it failed without a clear answer: it may have gone through. */

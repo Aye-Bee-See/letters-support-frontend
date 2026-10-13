@@ -8,7 +8,7 @@ import { heldAt } from '../../utils/prisoners'
 import LoadState from '../ui/LoadState'
 import LastLetter from './LastLetter'
 
-// The group's conversations (group-admin-plan.md, WP1 "Conversations"): the
+// The group's conversations (the inbox's Conversations tab): the
 // threads of its managed writers and the threads holding a letter it relays,
 // newest activity first, as GET /chat/chats lists them for a group (README
 // "GET /chat/chats"). full=true adds the writer. The newest letter is worded

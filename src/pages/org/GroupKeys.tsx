@@ -11,6 +11,7 @@ import { checkResealed, reseal } from '../../groups/rotation'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useAuth } from '../../hooks/useAuth'
 import { useGatedGroup, type GroupState } from '../../hooks/useGroup'
+import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import type { ApiError, GroupMemberKeyState, MemberKeyRoster, NotificationEvent } from '../../types'
 
 // The group key (README "End-to-end mode" → "Group keys", "Rotating a group
@@ -96,7 +97,8 @@ export default function GroupKeys() {
       const keyOk = keyEntries.length === 0 || (await refreshKey().then(() => true, () => false))
       await reloadAll()
       const ids = (keyOk ? entries : entries.filter((n) => n.event !== 'group.key')).map((n) => n.id)
-      if (ids.length > 0) await markNotificationsRead(ids).catch(() => null)
+      const result = ids.length > 0 ? await markNotificationsRead(ids).catch(() => null) : null
+      if (result) announceUnreadCount(result.unread)
     })()
     // Once, on opening the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -714,7 +716,8 @@ function Rotate({
         </p>
         <p className="settings-hint">
           <strong>What it does:</strong> whoever is left out can open nothing the group stores from then on, earlier letters included. It
-          is how a group admin is really removed; stopping the hand-out above isn’t enough once they have opened the key.
+          is how a group admin is really removed;{' '}
+          {roster.members.length > 1 ? 'stopping the hand-out above isn’t enough' : 'taking the key back isn’t enough'} once they have opened the key.
         </p>
         <p className="settings-hint">
           <strong>What it can’t do:</strong> someone who copied the key or letters while they held it keeps the letters they already had.

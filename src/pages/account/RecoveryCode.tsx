@@ -6,6 +6,7 @@ import CurrentPasswordField from './CurrentPasswordField'
 import { useAuth } from '../../hooks/useAuth'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useSignInAgain } from './useSignInAgain'
+import { refusalText } from '../../utils/refusals'
 
 // A new recovery code for the signed-in account (README "Account keys",
 // PUT /auth/keys): the remedy for a code that was lost or never saved. The
@@ -53,7 +54,7 @@ export default function RecoveryCode() {
         setError('The server couldn’t be reached, so we can’t tell whether your new code was saved. Your old code works until it is.')
         return setStep({ name: 'unsent', prepared })
       }
-      setError(e.errors.length ? e.errors.join(' ') : e.message)
+      setError(e.errors.length ? e.errors.join(' ') : refusalText(e))
       setStep({ name: 'password' })
     }
   }

@@ -18,7 +18,7 @@ import { declineText, heldPrintQuestion, heldReasonText, returnReasonText, write
 import { inboxDate, oldKeyText } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 
-// One letter, for the group that mails it (group-admin-plan.md, WP1), at
+// One letter, for the group that mails it, at
 // /letters/:id/print. The letter is read with full=true (README "GET
 // /messaging/message"): the prisoner and facility with its mail rules, the
 // writer, the status history, and `footer` (README "Reply reference"). It is

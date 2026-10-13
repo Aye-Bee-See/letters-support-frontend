@@ -1,4 +1,4 @@
-import client, { del, getAllPages, getList, getOne, put } from './client'
+import client, { del, getList, getOne, put } from './client'
 import type { ApiEnvelope, FilterValues, HistoryEntry, ListParams, Prisoner, PrisonerPhoto, PrisonerStatus, RecordStatus } from '../types'
 
 export interface PrisonerListParams extends ListParams {
@@ -17,10 +17,6 @@ export interface PrisonerListParams extends ListParams {
 
 export const getPrisoners = (params?: PrisonerListParams) =>
   getList<Prisoner>('/prisoner/prisoners', params)
-
-/** Every prisoner matching the filters (every page). */
-export const getAllPrisoners = (params?: Omit<PrisonerListParams, 'page' | 'page_size'>) =>
-  getAllPages<Prisoner>('/prisoner/prisoners', params)
 
 /** The countries and statuses present, with counts, for the index's chips. */
 export const getPrisonerFilters = () => getOne<FilterValues<'country' | 'status'>>('/prisoner/filters')

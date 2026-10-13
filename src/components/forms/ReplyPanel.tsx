@@ -6,6 +6,7 @@ import type { Message, Prison } from '../../types'
 import { mailRuleLines } from '../../utils/facilities'
 import AttachmentRetry from './AttachmentRetry'
 import UploadZone from './UploadZone'
+import { refusalText } from '../../utils/refusals'
 
 // The inline reply panel from solidarity-site/thread.html (pages/thread.css):
 // the same draft and send as New Letter (useLetterDraft, src/letters/send.ts),
@@ -18,6 +19,8 @@ export default function ReplyPanel({
   onCancelResend,
   onDraftChange,
   onSent,
+  onEarlierVersion,
+  onAvailableChange,
 }: {
   prisonerId: number
   /** The prisoner's facility with its relay groups (full=true), loaded once by the thread and shared with its group picker. */
@@ -33,6 +36,10 @@ export default function ReplyPanel({
   /** Whether the reply has anything typed or attached, so the thread can ask before replacing it. */
   onDraftChange?: (hasContent: boolean) => void
   onSent: (message: Message) => void
+  /** A send came back as an earlier version of the letter: show the thread with it, where Edit is. */
+  onEarlierVersion?: () => void
+  /** Whether a reply can be sent from here at all: false when no group mails there, or every one has blocked this writer. */
+  onAvailableChange?: (available: boolean) => void
 }) {
   const draft = useLetterDraft(prisonerId, facility.data ?? null, preferredGroup, resend ? { text: resend.text, resendOf: resend.kind === 'resend' ? resend.id : null } : undefined)
   const [notesOpen, setNotesOpen] = useState(false)
@@ -42,13 +49,20 @@ export default function ReplyPanel({
   useEffect(() => {
     onDraftChange?.(draft.hasContent)
   }, [draft.hasContent, onDraftChange])
+  useEffect(() => {
+    if (draft.earlierVersion) onEarlierVersion?.()
+  }, [draft.earlierVersion, onEarlierVersion])
+  const unavailable = Boolean(facility.data) && (draft.groups.length === 0 || draft.allBlocked)
+  useEffect(() => {
+    onAvailableChange?.(!unavailable)
+  }, [unavailable, onAvailableChange])
 
   async function onSend() {
     const message = await draft.send()
     if (message) onSent(message)
   }
 
-  if (facility.data && (draft.groups.length === 0 || draft.allBlocked)) {
+  if (facility.data && unavailable) {
     return (
       <div className="reply-panel">
         <div className="reply-panel-body">
@@ -70,7 +84,7 @@ export default function ReplyPanel({
           {/* The facility comes from the thread (one fetch for this and the held letters' group picker). */}
           {facility.error ? (
             <p className="reply-notes-hint" role="alert">
-              Couldn’t load the facility’s mail rules and the groups that mail there ({facility.error.message}), so the reply
+              Couldn’t load the facility’s mail rules and the groups that mail there ({refusalText(facility.error)}), so the reply
               can’t be sent yet.{' '}
               <button type="button" className="reply-notes-toggle" onClick={facility.reload}>
                 Try again

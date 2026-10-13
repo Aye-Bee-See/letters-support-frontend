@@ -8,6 +8,7 @@ import AccountFields from '../../components/forms/AccountFields'
 import { accountValuesReady, emptyAccountValues } from '../../components/forms/accountValues'
 import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import type { ApiError, ChapterService, NetworkRole } from '../../types'
+import { refusalText } from '../../utils/refusals'
 import { SERVICE_LABELS } from '../../utils/groups'
 
 // Accepting an invitation (README "Invitations"): a new group joining the
@@ -49,7 +50,7 @@ function codeProblem(error: ApiError): { title: string; body: string } {
     case 'inactive':
       return { title: 'The group behind this invitation can’t invite right now', body: 'Its membership in the network is paused. Ask whoever invited you.' }
     default:
-      return { title: 'This invitation could not be checked', body: error.message }
+      return { title: 'This invitation could not be checked', body: refusalText(error) }
   }
 }
 
@@ -259,7 +260,7 @@ function AcceptForm({
       const apiError = toApiError(err)
       // Expired, used or withdrawn in the meantime.
       if (apiError.status === 404 || apiError.status === 410) return onCodeRefused(apiError)
-      setErrors(apiError.errors.length ? apiError.errors : [apiError.message])
+      setErrors(apiError.errors.length ? apiError.errors : [refusalText(apiError)])
       setBusy(false)
     }
   }

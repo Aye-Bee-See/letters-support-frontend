@@ -6,7 +6,7 @@ import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import type { ApiError, Prisoner, PrisonerPhoto as Photo } from '../../types'
 import { displayName } from '../../utils/prisoners'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
 // A supported prisoner's photo, from the group's settings page (README
 // "Photos"; API #166: any group admin of an active group may add one). It is
@@ -106,7 +106,7 @@ export function PrisonerPhoto({ prisoner, onClose }: { prisoner: Prisoner; onClo
   return (
     <div className="settings-form" style={{ marginTop: '0.5rem' }}>
       {record.loading && !record.data && <p className="settings-static">Loading the record…</p>}
-      {record.error && <p className="settings-alert settings-alert-err">Couldn’t load {name}’s record ({record.error.message}).</p>}
+      {record.error && <p className="settings-alert settings-alert-err">Couldn’t load {name}’s record ({refusalText(record.error)}).</p>}
       {record.data && (
         <div className="settings-field">
           <span className="settings-label">Photo now</span>

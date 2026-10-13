@@ -360,7 +360,7 @@ export interface Message extends Timestamps {
   user: number
   prisoner: number
   status: LetterStatus
-  // TODO: encrypt before sending. Plaintext exists only in server mode; e2e uses ciphertext + nonce + envelopes.
+  /** Plaintext, from a server-mode API only; this client sends and reads ciphertext, nonce and envelopes. */
   messageText?: string
   ciphertext?: string | null
   nonce?: string | null

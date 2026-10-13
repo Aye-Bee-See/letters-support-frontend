@@ -14,6 +14,7 @@ import { useApi } from '../../hooks/useApi'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
 import { capitalise, changes, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
+import { refusalText } from '../../utils/refusals'
 
 // Edit one group (PUT /chapter/chapter, superadmins only). Only changed fields
 // are sent; `location` and `socialLinks` are JSON values, so they go whole. The
@@ -54,7 +55,7 @@ function adminChanges(g: Chapter, initial: FormValues, v: FormValues, services: 
 
 export default function EditGroup() {
   const id = Number(useParams().id)
-  const group = useApi(() => getGroup(id, true), [id])
+  const group = useApi(() => getGroup(id, true), [id], { keepPrevious: true })
   const [saved, setSaved] = useState(false)
   // How many facilities it relays for now: the panel below changes it without a reload.
   const [relayCount, setRelayCount] = useState<number | null>(null)
@@ -75,8 +76,8 @@ export default function EditGroup() {
       <div className="admin-content">
         {group.loading && <p className="dash-note">Loading the group…</p>}
         {group.error && (
-          <div className="admin-alert admin-alert-err">
-            {group.error.status === 404 ? `There is no group #${id}.` : `Couldn't load group #${id} (${group.error.message}).`}
+          <div className="admin-alert admin-alert-err" role="alert">
+            {group.error.status === 404 ? `There is no group #${id}.` : `Couldn't load group #${id} (${refusalText(group.error)}).`}
             {group.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={group.reload}>
                 Try again
@@ -84,7 +85,7 @@ export default function EditGroup() {
             )}
           </div>
         )}
-        {saved && <div className="admin-alert admin-alert-ok">Saved.</div>}
+        {saved && <div className="admin-alert admin-alert-ok" role="status">Saved.</div>}
         {group.data && (
           <>
             <GroupForm
@@ -190,14 +191,14 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
       onSaved()
     } catch (err) {
       const e = err as ApiError
-      setError(e.errors?.length ? e.errors.join(' ') : e.message)
+      setError(e.errors?.length ? e.errors.join(' ') : refusalText(e))
       setBusy(false)
     }
   }
 
   async function remove() {
     const typed = window.prompt(
-      `Deleting ${g.name} can't be undone. Its members and the writers it manages lose their group, its letters lose their relay group, and its invite codes, invitations and member keys are deleted.\n\nSuspending the group is usually what's wanted.\n\nTo delete it anyway, type its name:`,
+      `Deleting ${g.name} can't be undone. Its group admins and the writers it manages lose their group, its letters lose their relay group, and its invite codes, invitations and member keys are deleted.\n\nSuspending the group is usually what's wanted.\n\nTo delete it anyway, type its name:`,
     )
     if (typed === null) return
     if (typed.trim() !== g.name) {
@@ -211,7 +212,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
       await deleteGroup(g.id)
       navigate('/admin/groups', { replace: true })
     } catch (err) {
-      setError((err as ApiError).message)
+      setError(refusalText(err as ApiError))
       setBusy(false)
     }
   }
@@ -311,7 +312,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
               ))}
             </select>
           </Field>
-          <Field label="Account status" htmlFor="f-accountStatus" hint="Only an active group’s members can send or relay letters, create writers or propose directory changes.">
+          <Field label="Account status" htmlFor="f-accountStatus" hint="Only an active group’s group admins can send or relay letters, create writers or propose directory changes.">
             <select
               id="f-accountStatus"
               className="form-select"
@@ -340,7 +341,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
           </Field>
         </div>
         {droppingRelay && relayCount > 0 && (
-          <div className="admin-alert admin-alert-warn">
+          <div className="admin-alert admin-alert-warn" role="status">
             This group is linked as the relay group for {relayCount} {relayCount === 1 ? 'facility' : 'facilities'}. Changing it to collecting only keeps those
             links, and the API still treats a group attached to a facility as relaying; unlink them below if it should stop.
           </div>
@@ -409,19 +410,19 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
             <p className="form-static">
               {g.publicKey ? `Set (version ${g.keyVersion ?? 1})` : 'Not set up yet.'}
             </p>
-            <span className="form-hint">The group’s members set and rotate it themselves; it can’t be changed here.</span>
+            <span className="form-hint">The group’s own group admins set and rotate it; it can’t be changed here.</span>
           </div>
         </div>
       </Section>
 
       {issues.length > 0 && (
-        <div className="admin-alert admin-alert-warn form-error">
+        <div className="admin-alert admin-alert-warn form-error" role="status">
           {issues.map((text) => (
             <div key={text}>{text}</div>
           ))}
         </div>
       )}
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>
@@ -478,7 +479,7 @@ function GroupTwoFactor({ group: g }: { group: Chapter }) {
             It’s required of every group’s admins at the moment, so this group’s admins must use it whatever this says.
           </p>
         )}
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       </Section>
     </div>
   )

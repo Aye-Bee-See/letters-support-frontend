@@ -16,15 +16,20 @@ interface Session {
   twoFactorSetupRequired: TwoFactorReason[] | null
 }
 
+/** Said on the sign-in page when a session ends without the person signing out. */
+const SESSION_ENDED = 'You were signed out: this session ended elsewhere, or your access changed. Sign in again.'
+
 // The session, including unlocked private keys, lives in React state only:
 // never localStorage or sessionStorage. A page refresh signs the user out;
 // accepted for v1.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
+  const [endedNotice, setEndedNotice] = useState<string | null>(null)
 
   const startSession = useCallback((signedIn: SignedIn) => {
     const { result } = signedIn
     setAuthToken(result.token.token)
+    setEndedNotice(null)
     setSession({
       user: result.user,
       token: result.token.token,
@@ -61,16 +66,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession((s) => (s ? { ...s, token, expires } : s))
   }, [])
 
-  const endSession = useCallback(() => {
+  const endSession = useCallback((notice?: string) => {
     setAuthToken(null)
     // Keys are base64 strings, which JavaScript cannot overwrite; dropping every
     // reference is the most a browser allows.
     setSession(null)
+    setEndedNotice(notice ?? null)
   }, [])
 
-  // An expired or revoked token anywhere ends the session.
+  // An expired or revoked token anywhere ends the session, and the sign-in page
+  // says so. The API answers the same 401 for a ban, a revocation and an expiry.
   useEffect(() => {
-    setUnauthorizedHandler(endSession)
+    setUnauthorizedHandler(() => endSession(SESSION_ENDED))
     return () => setUnauthorizedHandler(null)
   }, [endSession])
 
@@ -99,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Already expired: the timer fires at once. setTimeout overflows above
     // ~24.8 days; a week is well under that.
     const remaining = Math.max(session.expires - Date.now(), 0)
-    const timer = window.setTimeout(endSession, remaining)
+    const timer = window.setTimeout(() => endSession(SESSION_ENDED), remaining)
     return () => window.clearTimeout(timer)
   }, [session, endSession])
 
@@ -124,8 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: role === 'user',
       startSession,
       endSession,
+      endedNotice,
     }
-  }, [session, startSession, endSession, twoFactorSetUp, penNameChosen, groupKeySet, keysChanged, tokenRefreshed])
+  }, [session, endedNotice, startSession, endSession, twoFactorSetUp, penNameChosen, groupKeySet, keysChanged, tokenRefreshed])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

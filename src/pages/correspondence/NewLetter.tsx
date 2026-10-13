@@ -17,6 +17,7 @@ import { useLetterDraft, type WriteAs } from '../../hooks/useLetterDraft'
 import type { Prison, PrisonSummary } from '../../types'
 import { addressLine, mailRuleLines } from '../../utils/facilities'
 import { displayName, heldAt } from '../../utils/prisoners'
+import { refusalText } from '../../utils/refusals'
 
 // Markup and classes from solidarity-site/new-letter.html (pages/new-letter.css).
 // A group admin writes as one of the group's managed writers (`?writer=<id>`,
@@ -77,6 +78,8 @@ export default function NewLetter() {
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility ? mailRuleLines(facility) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
+  // A group writing for one of its writers, through itself: the note is for its own queue.
+  const ownGroup = isGroup && group !== null && group.id === user?.chapterId
   useLeaveGuard(draft.hasContent, 'Leave without sending your letter?')
   // No group can take this letter: none mails to the facility, or every one has blocked this writer.
   const noGroup = Boolean(facility) && (draft.groups.length === 0 || draft.allBlocked)
@@ -136,7 +139,7 @@ export default function NewLetter() {
           <div className="facility-guidance" style={{ alignItems: 'stretch' }}>
             {prisoner && facilityState.error ? (
               <div className="facility-guidance-empty" role="alert">
-                Couldn’t load {displayName(prisoner)}’s facility and its mail rules ({facilityState.error.message}).{' '}
+                Couldn’t load {displayName(prisoner)}’s facility and its mail rules ({refusalText(facilityState.error)}).{' '}
                 <button type="button" className="addr-remove-btn" onClick={facilityState.reload}>
                   Try again
                 </button>
@@ -204,18 +207,20 @@ export default function NewLetter() {
 
           {!noGroup && (
             <button type="button" className="notes-toggle" onClick={() => setNotesOpen((o) => !o)}>
-              {notesOpen ? '− Hide the note' : `+ Add a note to ${group?.name ?? 'the group'}`}
+              {notesOpen ? '− Hide the note' : ownGroup ? '+ Add a note for the queue' : `+ Add a note to ${group?.name ?? 'the group'}`}
             </button>
           )}
           <div className={notesOpen && !noGroup ? 'notes-area is-open' : 'notes-area'}>
             <textarea
               className="notes-textarea"
-              aria-label={`Note to ${group?.name ?? 'the group'}, not sent to the prisoner`}
+              aria-label={ownGroup ? 'Note for the queue, not sent to the prisoner' : `Note to ${group?.name ?? 'the group'}, not sent to the prisoner`}
               placeholder='Optional. E.g. "poor scan quality" or "written at the Aug 3 letter night."'
               value={draft.relayNote}
               onChange={(e) => draft.setRelayNote(e.target.value)}
             />
-            <p className="notes-hint">Only the group that mails your letter sees this. It is not sent to the prisoner.</p>
+            <p className="notes-hint">
+              {ownGroup ? 'Only your group sees this, beside the letter in its queue.' : 'Only the group that mails your letter sees this.'} It is not sent to the prisoner.
+            </p>
           </div>
 
           {freed && prisoner && (
@@ -263,6 +268,12 @@ export default function NewLetter() {
               {draft.error && (
                 <p style={{ color: 'var(--alert)' }}>
                   <strong>Not sent.</strong> {draft.error}
+                  {draft.earlierVersion && (
+                    <>
+                      {' '}
+                      <Link to={`/threads/${draft.earlierVersion.chat}`}>Open the conversation</Link>
+                    </>
+                  )}
                 </p>
               )}
               {noFacility ? (
@@ -325,7 +336,7 @@ export default function NewLetter() {
               <div className="addr-tile-body">
                 {writers.error && (
                   <p className="relay-select-hint">
-                    Couldn't load your group's writers ({writers.error.message}).{' '}
+                    Couldn't load your group's writers ({refusalText(writers.error)}).{' '}
                     <button type="button" className="addr-remove-btn" onClick={writers.reload}>
                       Try again
                     </button>
@@ -379,7 +390,7 @@ export default function NewLetter() {
             <div className="addr-tile-body">
               {lookupError && (
                 <p className="relay-select-hint" role="alert">
-                  Couldn't load the prisoner in this link ({lookupError.message}).{' '}
+                  Couldn't load the prisoner in this link ({refusalText(lookupError)}).{' '}
                   <button type="button" className="addr-remove-btn" onClick={chosen.reload}>
                     Try again
                   </button>

@@ -67,7 +67,7 @@ export default function Header() {
                   aria-label={!isAdmin && unread ? `Inbox, ${unread} unread` : undefined}
                 >
                   {isAdmin ? 'Admin' : 'Inbox'}
-                  {/* Inline: style.css has no class for the count yet. */}
+                  {/* The unread count, a pill styled inline. */}
                   {!isAdmin && unread ? (
                     <span
                       aria-hidden="true"
@@ -77,7 +77,7 @@ export default function Header() {
                     </span>
                   ) : null}
                 </Link>
-                {/* A group admin's own pages; writers have only their inbox, superadmins /admin. */}
+                {/* A group admin's own pages; writers have only their inbox, site admins /admin. */}
                 {isChapter && (
                   <>
                     <Link to="/invite-codes" className="nav-auth-link">
@@ -91,7 +91,7 @@ export default function Header() {
                 <Link to="/account/security" className="nav-auth-link">
                   Security
                 </Link>
-                {/* Inline colours as in the prototype; style.css has no class for this button. */}
+                {/* The prototype's colours, inline. */}
                 <button type="button" className="btn btn-sm" style={{ borderColor: '#666', color: '#aaa' }} onClick={signOut}>
                   Sign out
                 </button>

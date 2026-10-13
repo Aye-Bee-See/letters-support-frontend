@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { apiUrl } from '../../api/client'
 import { PHOTO_MAX_BYTES, PHOTO_TYPES, removePrisonerPhoto, uploadPrisonerPhoto } from '../../api/prisoners'
 import type { ApiError, Prisoner, PrisonerPhoto } from '../../types'
-import { displayName, shortDate } from '../../utils/prisoners'
+import { displayName } from '../../utils/prisoners'
+import { date } from '../invitations/wording'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import { Field, Section } from '../forms/AdminFormParts'
 
@@ -138,10 +139,10 @@ export default function PhotoPanel({ prisoner, onChanged }: { prisoner: Prisoner
 
         {photo ? (
           <figure>
-            {/* Sized inline: admin.css has no photo class. */}
+            {/* Sized inline. */}
             <img src={apiUrl(photo.url)} alt={name} style={{ display: 'block', maxWidth: '220px', maxHeight: '280px', height: 'auto' }} />
             <figcaption className="form-hint">
-              {photo.credit ? `Photo: ${photo.credit}.` : 'No credit given.'} Added {shortDate(photo.updatedAt)}.
+              {photo.credit ? `Photo: ${photo.credit}.` : 'No credit given.'} Added {date(photo.updatedAt)}.
             </figcaption>
           </figure>
         ) : (
@@ -201,8 +202,8 @@ export default function PhotoPanel({ prisoner, onChanged }: { prisoner: Prisoner
           </>
         )}
 
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
-        {done && <div className="admin-alert admin-alert-ok">{done}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
+        {done && <div className="admin-alert admin-alert-ok" role="status">{done}</div>}
       </Section>
     </div>
   )

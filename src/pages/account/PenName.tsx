@@ -2,9 +2,11 @@ import { useState, type SubmitEvent } from 'react'
 import { Navigate, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { getMyPenName, setMyPenName } from '../../api/auth'
 import PenNameField from '../../components/forms/PenNameField'
+import { destination } from '../../components/layout/paths'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignOut } from '../../hooks/useSignOut'
 import type { ApiError } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Choosing a pen name, for a writer whose account was made before pen names
 // were required (30 September; README "Pen names"). PenNameLock sends them here
@@ -13,7 +15,7 @@ import type { ApiError } from '../../types'
 
 const errorText = (err: unknown) => {
   const e = err as ApiError
-  return e.errors?.length ? e.errors.join(' ') : e.message
+  return e.errors?.length ? e.errors.join(' ') : refusalText(e)
 }
 
 export default function PenName() {
@@ -28,7 +30,7 @@ export default function PenName() {
   const [error, setError] = useState<string | null>(null)
 
   // Only a writer without one is asked.
-  if (!user || !isWriter || user.penName) return <Navigate to={from ?? '/inbox'} replace />
+  if (!user || !isWriter || user.penName) return <Navigate to={destination(from, '/inbox')} replace />
 
   const ready = penName.trim().length >= 3 && !refused && !busy
 
@@ -42,7 +44,7 @@ export default function PenName() {
       // The name as the API stored it (it tidies spacing).
       const stored = await getMyPenName().catch(() => null)
       penNameChosen(stored?.penName ?? penName.trim())
-      navigate(from ?? '/inbox', { replace: true })
+      navigate(destination(from, '/inbox'), { replace: true })
     } catch (err) {
       setError(errorText(err))
       setBusy(false)
@@ -64,7 +66,8 @@ export default function PenName() {
             </div>
 
             <div className="claim-body">
-              {error && (
+              {/* A taken name is said once, under the field. */}
+              {error && !refused && (
                 <span className="claim-error is-visible" role="alert">
                   {error}
                 </span>

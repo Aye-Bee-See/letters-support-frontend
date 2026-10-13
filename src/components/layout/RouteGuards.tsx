@@ -1,11 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import type { UserRole } from '../../types'
-
-/** Where two-factor sign-in is set up; while it's required and not set up, the only page that works. */
-export const SECURITY_PATH = '/account/security'
-/** Where a writer without a pen name chooses one. */
-export const PEN_NAME_PATH = '/account/pen-name'
+import { homeFor, PEN_NAME_PATH, SECURITY_PATH } from './paths'
 
 /**
  * Signed-in routes. Without a session: to /login, remembering where the user
@@ -32,14 +28,6 @@ export function RequireAdmin() {
   if (!isAuthenticated || !user) return <Navigate to="/login" replace state={{ from: location }} />
   if (user.role !== 'admin') return <Navigate to={homeFor(user.role)} replace />
   return <Outlet />
-}
-
-function homeFor(role: UserRole): string {
-  if (role === 'admin') return '/admin'
-  // A banned account can't sign in (the API refuses it, and ends its sessions),
-  // so this shouldn't arise; but /inbox would refuse it in turn, so not there.
-  if (role === 'banned') return '/'
-  return '/inbox'
 }
 
 /**

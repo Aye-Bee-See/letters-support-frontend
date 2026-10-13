@@ -8,6 +8,8 @@ import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, User } from '../../types'
+import { ROLE_LABELS } from '../../utils/users'
+import { refusalText } from '../../utils/refusals'
 
 // Site settings. Today the API's one site-wide setting is who must use
 // two-factor sign-in (README "Two-factor sign-in"): every superadmin, every
@@ -20,7 +22,7 @@ import type { ApiError, Chapter, User } from '../../types'
 
 const errorText = (err: unknown) => {
   const e = err as ApiError
-  return e.errors?.length ? e.errors.join(' ') : e.message
+  return e.errors?.length ? e.errors.join(' ') : refusalText(e)
 }
 
 export default function SiteSettings() {
@@ -46,8 +48,8 @@ export default function SiteSettings() {
             </p>
             {policy.loading && <p className="dash-note">Loading…</p>}
             {policy.error && (
-              <div className="admin-alert admin-alert-err">
-                Couldn’t load who must use it ({policy.error.message}).
+              <div className="admin-alert admin-alert-err" role="alert">
+                Couldn’t load who must use it ({refusalText(policy.error)}).
                 <button type="button" className="a-btn a-btn-sm" onClick={policy.reload}>
                   Try again
                 </button>
@@ -129,25 +131,25 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
           onChange={(e) => {
             const on = e.target.checked
             const question = on
-              ? 'Require two-factor sign-in of every superadmin? Any who haven’t set it up will have to before they can do anything else.'
-              : 'Stop requiring two-factor sign-in of superadmins? Those who have it on keep it.'
+              ? 'Require two-factor sign-in of every site admin? Any who haven’t set it up will have to before they can do anything else.'
+              : 'Stop requiring two-factor sign-in of site admins? Those who have it on keep it.'
             if (window.confirm(question)) void run(() => setTwoFactorPolicy({ superadmins: on }))
           }}
         />
         <span>
-          <strong>Every superadmin</strong>
+          <strong>Every site admin</strong>
         </span>
       </label>
       {superadminsBlocked && ownOn === false && (
         <p className="form-hint">
-          Your own isn’t on yet. <Link to="/account/security">Switch it on for your account</Link> first; requiring it of superadmins before that
+          Your own isn’t on yet. <Link to="/account/security">Switch it on for your account</Link> first; requiring it of site admins before that
           would lock you out.
         </p>
       )}
       {superadminsBlocked && ownOn === null && !ownError && <p className="form-hint">Checking your own two-factor sign-in…</p>}
       {superadminsBlocked && ownError && (
         <p className="form-hint list-stale">
-          Couldn’t check whether your own two-factor sign-in is on ({ownError.message}), so this can’t be switched on yet.{' '}
+          Couldn’t check whether your own two-factor sign-in is on ({refusalText(ownError)}), so this can’t be switched on yet.{' '}
           <button type="button" className="link-button" onClick={onRetryOwn}>
             Try again
           </button>
@@ -233,7 +235,7 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
         </div>
       </div>
 
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
     </>
   )
 }
@@ -297,7 +299,7 @@ function ResetTwoFactor() {
                   <strong>{u.username}</strong>
                 </Link>
                 {u.name && <span className="list-sub"> {u.name}</span>}
-                <span className="list-sub"> · {u.role === 'admin' ? 'superadmin' : u.role === 'chapter' ? 'group admin' : u.role === 'user' ? 'writer' : u.role}</span>
+                <span className="list-sub"> · {ROLE_LABELS[u.role] ?? u.role}</span>
               </span>
               <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void reset(u)}>
                 Reset two-factor
@@ -312,7 +314,7 @@ function ResetTwoFactor() {
           <Link to={`/admin/users?q=${encodeURIComponent(results.q)}`}>See them all in Accounts</Link>, or search for more of the name.
         </p>
       )}
-      {message && <div className={`admin-alert ${message.ok ? 'admin-alert-ok' : 'admin-alert-err'}`}>{message.text}</div>}
+      {message && <div className={`admin-alert ${message.ok ? 'admin-alert-ok' : 'admin-alert-err'}`} role={message.ok ? 'status' : 'alert'}>{message.text}</div>}
     </>
   )
 }

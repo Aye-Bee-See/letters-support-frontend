@@ -48,7 +48,7 @@ function NewsTags({ tags }: { tags: string[] }) {
   return (
     <div style={{ marginTop: '0.25rem' }}>
       {tags.map((tag) => (
-        // Inline spacing: inbox.css has no class for these yet; the colours are thread.css's status pills.
+        // thread.css's status pills, spaced inline.
         <span key={tag} className={`letter-collapsed-status ${isWorryingTag(tag) ? 'status-pending' : 'status-mailed'}`} style={{ marginRight: '0.6rem' }}>
           {tag}
         </span>
@@ -158,7 +158,10 @@ function ConvoRow({ chat, news }: { chat: Chat; news: string[] }) {
         )}
       </td>
       <td>
-        <span className="convo-date">{inboxDate(chat.lastMessageAt)}</span>
+        {/* A real link to the conversation, beside the row's own click. */}
+        <Link to={`/threads/${chat.id}`} className="convo-thread-link" onClick={(e) => e.stopPropagation()} aria-label={`Open the conversation with ${threadPrisonerName(chat)}`}>
+          <span className="convo-date">{inboxDate(chat.lastMessageAt)}</span>
+        </Link>
       </td>
     </tr>
   )

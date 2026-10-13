@@ -86,7 +86,7 @@ export default function MailRules() {
 
         {list.loading && <p className="dash-note">Loading the mail rules…</p>}
         {list.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             Couldn’t load the mail rules ({commonRefusal(list.error) ?? `the server refused, ${list.error.status}`}).{' '}
             <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
               Try again
@@ -220,7 +220,7 @@ function AddRule({ list, onAdded, onEdit }: { list: MailRuleList; onAdded: (rule
           A rule is yes or no. A limit with a number or a list (pages, photos, languages) is a field on each facility, not a rule: see “Values set on each
           facility” below.
         </p>
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
         <div className="queue-item-actions">
           <button type="submit" className="a-btn a-btn-primary a-btn-sm" disabled={busy || !tag.trim() || !label.trim() || !category}>
             {busy ? 'Adding…' : 'Add rule'}
@@ -350,7 +350,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
           <div className="list-name">{rule.label}</div>
           {rule.description && <div className="list-sub">{rule.description}</div>}
         </td>
-        <td>{rule.retired ? <span className="badge badge-pending">Retired</span> : <span className="badge badge-published">In use</span>}</td>
+        <td>{rule.retired ? <span className="badge badge-pending">Retired</span> : <span className="badge badge-published">Offered</span>}</td>
         <td className="dash-nowrap">
           {!editing && (
             <span style={{ display: 'inline-flex', gap: '0.4rem' }}>
@@ -433,7 +433,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
                 </div>
               </form>
             )}
-            {error && <div className="admin-alert admin-alert-err">{error}</div>}
+            {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
           </td>
         </tr>
       )}

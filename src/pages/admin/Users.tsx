@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
-import { getAllGroups } from '../../api/groups'
+import { getGroupsByIds } from '../../api/groups'
 import { getUsers, type DeletedAccount, type UserListParams } from '../../api/users'
 import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Chapter, User } from '../../types'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 import { isRole, ROLE_LABELS, ROLES } from '../../utils/users'
+import { refusalText } from '../../utils/refusals'
 
 // Every account (GET /auth/users, superadmins only), oldest first, as the API
 // lists them. `q` searches username, email and name; `role` narrows to one
@@ -28,8 +29,10 @@ export default function Users() {
 
   const query: UserListParams = { q: q || undefined, role, page, page_size: PAGE_SIZE }
   const list = useApi(() => getUsers(query), [q, role, page], { keepPrevious: true })
-  // The few groups there are, once, to name each group admin's.
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // The groups this page of accounts names (each group admin's, and the one
+  // looking after each managed writer), fetched by id for their names.
+  const named = [...new Set((list.data?.items ?? []).flatMap((u) => [u.chapterId, u.managedBy]).filter((g): g is number => g !== null))].sort((a, b) => a - b)
+  const found = useApi(() => (named.length ? getGroupsByIds(named) : Promise.resolve(new Map<number, Chapter>())), [named.join(',')], { keepPrevious: true })
 
   const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
@@ -95,14 +98,14 @@ export default function Users() {
           {list.loading && !list.data && <p className="dash-note">Loading accounts…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load the accounts ({list.error.message}).{' '}
+              Couldn't load the accounts ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>
             </p>
           )}
           {list.data && list.data.total === 0 && <p className="dash-note">{filtered ? 'No accounts match.' : 'There are no accounts yet.'}</p>}
-          {list.data && list.data.items.length > 0 && <UserTable users={list.data.items} groups={groups.data} />}
+          {list.data && list.data.items.length > 0 && <UserTable users={list.data.items} groups={found.data} />}
         </div>
 
         {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
@@ -111,8 +114,8 @@ export default function Users() {
   )
 }
 
-function UserTable({ users, groups }: { users: User[]; groups: Chapter[] | null }) {
-  const groupName = (id: number) => groups?.find((g) => g.id === id)?.name ?? `Group #${id}`
+function UserTable({ users, groups }: { users: User[]; groups: Map<number, Chapter> | null }) {
+  const groupName = (id: number) => groups?.get(id)?.name ?? `Group #${id}`
   return (
     <table className="admin-table">
       <thead>
@@ -151,7 +154,7 @@ function UserTable({ users, groups }: { users: User[]; groups: Chapter[] | null 
                 <span className="list-sub">—</span>
               )}
             </td>
-            <td className="dash-nowrap">{shortDate(u.createdAt)}</td>
+            <td className="dash-nowrap">{date(u.createdAt)}</td>
           </tr>
         ))}
       </tbody>

@@ -12,6 +12,7 @@ import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import { useListParams } from '../../hooks/useListParams'
 import type { Chapter, Invitation, InvitationKind } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // A group's own invitations (README "Invitations"): a new group admin of this
 // group (kind `member`), or a new group this group vouches for (kind `group`).
@@ -89,7 +90,7 @@ export default function GroupInvitations() {
           {list.loading && <p className="settings-static">Loading invitations…</p>}
           {list.error && (
             <div className="settings-alert settings-alert-err">
-              Couldn’t load your group’s invitations ({list.error.message}).{' '}
+              Couldn’t load your group’s invitations ({refusalText(list.error)}).{' '}
               <button type="button" className="settings-link-button" onClick={list.reload}>
                 Try again
               </button>

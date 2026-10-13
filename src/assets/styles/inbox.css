@@ -224,6 +224,13 @@
 
 .convo-prisoner-link:hover { text-decoration: underline; }
 
+.convo-thread-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.convo-thread-link:hover { text-decoration: underline; }
+
 .convo-prisoner {
   font-family: var(--sans);
   font-size: 0.9rem;
@@ -237,19 +244,6 @@
   font-family: var(--sans);
   font-weight: 400;
   margin-top: 0.15rem;
-}
-
-.unread-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--alert);
-  margin-right: 0.5rem;
-  vertical-align: middle;
-  position: relative;
-  top: -1px;
-  flex-shrink: 0;
 }
 
 /* Direction cell */

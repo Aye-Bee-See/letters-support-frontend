@@ -1,9 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 
-// The public directory pages' search box, filter dropdowns and pager. The
-// prototype has none of them and style.css has no classes for them, so they
+// The public directory pages' search box, filter dropdowns and pager. They
 // borrow .filter-chip and .results-count and are otherwise styled inline here,
-// in one place, until a design is decided.
+// in one place.
 
 const FIELD_STYLE: CSSProperties = {
   fontFamily: 'var(--sans)',

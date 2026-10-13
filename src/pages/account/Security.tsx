@@ -6,6 +6,7 @@ import { confirmTwoFactor, disableTwoFactor, getTwoFactor, newRecoveryCodes, set
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, TwoFactorReason } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Sign-in security: two-factor sign-in for any signed-in account (README
 // "Two-factor sign-in"). Optional for everyone; a superadmin can require it of
@@ -16,7 +17,7 @@ import type { ApiError, TwoFactorReason } from '../../types'
 // steps use.
 
 const BECAUSE: Record<TwoFactorReason, string> = {
-  superadmins: 'it is required of every superadmin',
+  superadmins: 'it is required of every site admin',
   all_groups: 'it is required of every group’s admins',
   group: 'your group requires it of its admins',
 }
@@ -30,7 +31,7 @@ const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month:
 const groups = (s: string, n = 4) => s.match(new RegExp(`.{1,${n}}`, 'g'))?.join(' ') ?? s
 const errorText = (err: unknown) => {
   const e = err as ApiError
-  return e.errors?.length ? e.errors.join(' ') : e.message
+  return e.errors?.length ? e.errors.join(' ') : refusalText(e)
 }
 
 export default function Security() {
@@ -67,7 +68,7 @@ export default function Security() {
               {status.loading && <p className="claim-org-note">Loading…</p>}
               {status.error && (
                 <div className="claim-error is-visible" role="alert">
-                  Couldn’t load your two-factor settings ({status.error.message}).{' '}
+                  Couldn’t load your two-factor settings ({refusalText(status.error)}).{' '}
                   <button type="button" className="claim-show-pw security-link" onClick={status.reload}>
                     Try again
                   </button>

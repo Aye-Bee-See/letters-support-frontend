@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getEncryptionReadiness } from '../../api/admin'
-import { getAllGroups } from '../../api/groups'
-import { createStaffAccount } from '../../api/users'
+import { getGroups } from '../../api/groups'
+import { createStaffAccount } from '../../auth/staffAccount'
 import { Field, Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError } from '../../types'
+import type { ApiError, Chapter } from '../../types'
 import { MIN_PASSWORD_LENGTH, passwordStrength } from '../../utils/password'
 import { createRefusal } from '../../utils/users'
 
 // A staff account made by a site admin (POST /auth/user, README "Creating
 // accounts with other roles"): a group admin or a site admin, with no pen name.
 // The password the site admin types is split on this device and never sent
-// (api/users.ts createStaffAccount). No keys are made here: a site admin must
+// (auth/staffAccount.ts). No keys are made here: a site admin must
 // never hold anyone's private key, so the account gets them at its first
 // sign-in on a phone app, and the web refuses it until then.
 //
@@ -50,6 +52,8 @@ function problems(v: Values): string[] {
   return out
 }
 
+const groupLabel = (g: Chapter) => `${g.name}${g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}`
+
 const ready = (v: Values) =>
   v.username.trim() !== '' && v.email.trim() !== '' && v.password !== '' && v.confirm === v.password && (v.role === 'admin' || v.group !== '')
 
@@ -72,7 +76,7 @@ export default function NewAccount() {
         </p>
         {readiness.loading && <p className="dash-note">Checking how the site encrypts letters…</p>}
         {readiness.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             Couldn’t check how the site encrypts letters ({createRefusal(readiness.error)}), and a staff account can only be made here in server mode.{' '}
             <button type="button" className="a-btn a-btn-sm" onClick={readiness.reload}>
               Try again
@@ -80,10 +84,10 @@ export default function NewAccount() {
           </div>
         )}
         {mode === 'e2e' && (
-          <div className="admin-alert admin-alert-warn">
+          <div className="admin-alert admin-alert-warn" role="status">
             This site encrypts letters end to end, and then the API makes an account only together with its keys. Those must be made on the person’s own device
-            (a site admin never holds anyone’s private key), so a staff account can’t be made here. <Link to="/admin/invite">Invite them</Link> as a member
-            of their group instead. To make someone a site admin, change the role of their account once it exists.
+            (a site admin never holds anyone’s private key), so a staff account can’t be made here. <Link to="/admin/invite">Invite them</Link> as a group
+            admin of their group instead. To make someone a site admin, change the role of their account once it exists.
           </div>
         )}
         {mode === 'server' && <AccountForm />}
@@ -94,7 +98,8 @@ export default function NewAccount() {
 
 function AccountForm() {
   const navigate = useNavigate()
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // The group found with the picker; `values.group` is its id.
+  const [group, setGroup] = useState<Chapter | null>(null)
   const [values, setValues] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -162,20 +167,28 @@ function AccountForm() {
           </Field>
           {values.role === 'chapter' && (
             <Field label="Group" htmlFor="f-group" hint="They read its letters once its group-owner admin hands them the group key.">
-              <select className="form-select" required {...field('group')} disabled={busy || !groups.data}>
-                <option value="">{groups.data ? 'Choose a group…' : groups.error ? 'Couldn’t load the groups' : 'Loading groups…'}</option>
-                {(groups.data ?? []).map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                    {g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}
-                  </option>
-                ))}
-              </select>
+              <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                <span className="form-static">{group && values.group ? groupLabel(group) : 'None chosen yet'}</span>
+              </div>
+              <RecordPicker
+                id="f-group"
+                label="Group"
+                classes={{ input: 'form-input' }}
+                placeholder={values.group ? 'Search groups to change it…' : 'Search groups…'}
+                disabled={busy}
+                fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+                exclude={values.group ? [Number(values.group)] : null}
+                render={groupLabel}
+                onSelect={(g) => {
+                  setGroup(g)
+                  set({ group: String(g.id) })
+                }}
+              />
             </Field>
           )}
         </div>
         {values.role === 'admin' && (
-          <div className="admin-alert admin-alert-warn">A site admin runs the whole site: the directory, every group, every account. They hold no group key and can read no letter.</div>
+          <div className="admin-alert admin-alert-warn" role="status">A site admin runs the whole site: the directory, every group, every account. They hold no group key and can read no letter.</div>
         )}
       </Section>
 
@@ -192,7 +205,7 @@ function AccountForm() {
             <input type="password" className="form-input" autoComplete="new-password" required {...field('confirm')} />
           </Field>
         </div>
-        <div className="admin-alert admin-alert-warn">
+        <div className="admin-alert admin-alert-warn" role="status">
           The account has no keys until its first sign-in on the Android or iOS app, which makes them. Until then the web refuses it (every account here needs
           keys), so they sign in on a phone first. An <Link to="/admin/invite">invitation</Link> avoids this: the person makes the account with its keys
           wherever they accept it.
@@ -200,13 +213,13 @@ function AccountForm() {
       </Section>
 
       {issues.length > 0 && (
-        <div className="admin-alert admin-alert-warn form-error">
+        <div className="admin-alert admin-alert-warn form-error" role="status">
           {issues.map((text) => (
             <div key={text}>{text}</div>
           ))}
         </div>
       )}
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <span />

@@ -7,7 +7,7 @@ import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import type { ApiError, InviteCodeBatch, InviteCodeSummary, IssuedInviteCodes } from '../../types'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
 // Invite codes (README "Invite codes"): the group issues a batch, prints the
 // codes as slips and hands them out; a newcomer joins with one at /join
@@ -64,7 +64,7 @@ export default function InviteCodes() {
               preview={preview}
               onPreview={setPreview}
               onDone={() => {
-                if (!window.confirm('Clear these codes from the screen? They can’t be shown again: only the printed or copied ones will work.')) return
+                // The button's own words are the confirmation; no second question.
                 setIssued(null)
                 setPreview(false)
               }}
@@ -97,7 +97,7 @@ export default function InviteCodes() {
             {summary.loading && <p className="settings-static">Loading your group’s batches…</p>}
             {summary.error && (
               <div className="settings-alert settings-alert-err">
-                Couldn’t load your group’s invite codes ({summary.error.message}).{' '}
+                Couldn’t load your group’s invite codes ({refusalText(summary.error)}).{' '}
                 <button type="button" className="settings-link-button" onClick={summary.reload}>
                   Try again
                 </button>
@@ -191,7 +191,7 @@ function IssueForm({
               How many
             </label>
             <input id="ic-count" className="settings-input" inputMode="numeric" value={count} disabled={busy} onChange={(e) => setCount(e.target.value)} />
-            <span className="settings-hint">1 to {MAX_COUNT}.</span>
+            <span className="settings-hint">{room === null || room >= MAX_COUNT ? `1 to ${MAX_COUNT}.` : room === 0 ? 'None for now.' : `1 to ${room}.`}</span>
           </div>
           <div className="settings-field">
             <label className="settings-label" htmlFor="ic-days">

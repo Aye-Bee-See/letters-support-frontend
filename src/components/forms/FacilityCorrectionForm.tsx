@@ -4,6 +4,7 @@ import { getMailRules } from '../../api/facilities'
 import { toApiError } from '../../api/client'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, MailRuleCategory, Prison, PrisonAddress, RoutingMethod } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 const ROUTING_OPTIONS: [RoutingMethod, string][] = [
   ['direct', 'Direct mail (physical letter)'],
@@ -236,7 +237,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
             <span className="corr-label-opt">— tick every rule the facility enforces</span>
           </span>
           {rules.loading && <p className="corr-hint">Loading the list of rules…</p>}
-          {rules.error && <p className="corr-hint">Couldn't load the list of rules ({rules.error.message}).</p>}
+          {rules.error && <p className="corr-hint">Couldn't load the list of rules ({refusalText(rules.error)}).</p>}
           {rules.data?.categories.map((category) => {
             const inCategory = rules.data!.rules.filter((r) => r.category === category)
             if (!inCategory.length) return null
@@ -284,7 +285,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
         {nothingChanged && <p className="corr-hint">Nothing has been changed yet.</p>}
         {error && (
           <p className="corr-hint" style={{ color: 'var(--alert)' }}>
-            {error.errors.length ? error.errors.join(' ') : error.message}
+            {error.errors.length ? error.errors.join(' ') : refusalText(error)}
           </p>
         )}
       </div>

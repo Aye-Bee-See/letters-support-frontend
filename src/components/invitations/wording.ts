@@ -13,7 +13,7 @@ export const dateTime = (iso: string) => new Date(iso).toLocaleString('en-US', {
 export const REPLACE_CODE_QUESTION = 'The code on screen is shown only now. Replace it?'
 
 /** The site admin's page (/admin/invite). */
-export const ADMIN_KIND_LABELS: Record<InvitationKind, string> = { group: 'New group', member: 'Group member' }
+export const ADMIN_KIND_LABELS: Record<InvitationKind, string> = { group: 'New group', member: 'Group admin' }
 /** A group admin's page (/settings/invitations): screens say "group admin", never "member". */
 export const GROUP_KIND_LABELS: Record<InvitationKind, string> = { group: 'New group (vouched)', member: 'Group admin' }
 

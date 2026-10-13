@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { ApiError, Notification } from '../types'
+import type { ApiError } from '../types'
 import { blockRefusal, canActOn, type BlockableWriter } from './blocks'
-import { wordEvent } from './notifications'
 
 const writer: BlockableWriter = { id: 12, name: 'Sam', role: 'user', managedBy: null, anonymousForChapter: null, claimedAt: null }
 const refusal = (status: number, name: string | null = null, condition: string | null = null): ApiError => ({
@@ -38,28 +37,5 @@ describe('blockRefusal', () => {
   })
   it('says an unblock found nothing to lift', () => {
     expect(blockRefusal(refusal(404, 'NotFoundError'), 'unblock')).toMatch(/isn’t blocked by your group any more/)
-  })
-})
-
-describe('wordEvent', () => {
-  const entry = (event: Notification['event'], detail: Record<string, unknown>): Notification => ({
-    id: 1,
-    userId: 2,
-    event,
-    chat: null,
-    message: null,
-    submission: null,
-    detail,
-    readAt: null,
-    createdAt: '',
-    updatedAt: '',
-  })
-  it('words group.block both ways, with the counts', () => {
-    expect(wordEvent(entry('group.block', { action: 'blocked', writer: 12, held: 1 }))).toMatch(/1 letter of theirs .* is held/)
-    expect(wordEvent(entry('group.block', { action: 'lifted', writer: 12, released: 3 }))).toMatch(/3 letters went back/)
-  })
-  it('words ban.decided by decision', () => {
-    expect(wordEvent(entry('ban.decided', { recommendation: 4, user: 12, decision: 'banned' }))).toMatch(/blocked a writer/)
-    expect(wordEvent(entry('ban.decided', { recommendation: 4, user: 12, decision: 'dismissed' }))).toMatch(/dismissed/)
   })
 })

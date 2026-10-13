@@ -2,8 +2,8 @@ import type { ApiError, Chat, DeclineReason, HeldReason, LetterFooter, LetterSta
 import { directionLabel } from './letters'
 import { commonRefusal, otherRefusal } from './refusals'
 
-// Wording for the group inbox and the one-letter print page (group-admin-plan.md,
-// WP1). The API sends codes; these are the group admin's words for them. Nothing
+// Wording for the group inbox and the print pages. The API sends codes; these
+// are the group admin's words for them. Nothing
 // here is worded from an error's sentence (plan section 3); the letter ids a
 // refusal names come from its `ids`, read from the sentence only for an older API.
 

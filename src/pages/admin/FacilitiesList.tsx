@@ -5,7 +5,8 @@ import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prison, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
+import { refusalText } from '../../utils/refusals'
 
 // Every facility record, drafts and pending included (superadmins are staff).
 // Rows come without `full`, which would embed every prisoner held at each
@@ -154,7 +155,7 @@ export default function FacilitiesList() {
           {list.loading && <p className="dash-note">Loading facilities…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load facilities ({list.error.message}).{' '}
+              Couldn't load facilities ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>
@@ -214,7 +215,7 @@ function FacilityTable({ facilities, hasRelay }: { facilities: Prison[]; hasRela
               </td>
               <td>{f.recordStatus && <span className={`badge ${RECORD_BADGES[f.recordStatus]}`}>{f.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
-                {shortDate(f.verifiedAt) ?? 'Never'}
+                {f.verifiedAt ? date(f.verifiedAt) : 'Never'}
                 {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">

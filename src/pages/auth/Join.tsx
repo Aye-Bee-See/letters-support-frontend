@@ -8,6 +8,7 @@ import AccountFields from '../../components/forms/AccountFields'
 import { accountValuesReady, emptyAccountValues } from '../../components/forms/accountValues'
 import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import type { ApiError } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // No prototype for Join: markup and classes are claim.html's (pages/claim.css),
 // the same journey (code, form, working, then done), with a recovery-code step.
@@ -33,7 +34,7 @@ function codeProblem(error: ApiError): { title: string; body: string } {
     case 'inactive':
       return { title: 'This group cannot invite people right now', body: 'Its membership in the network is paused. Ask another group near you.' }
     default:
-      return { title: 'This invite code could not be checked', body: error.message }
+      return { title: 'This invite code could not be checked', body: refusalText(error) }
   }
 }
 
@@ -201,7 +202,7 @@ function JoinForm({
       const apiError = toApiError(err)
       // The code was used or cancelled in the meantime.
       if (apiError.status === 404 || apiError.status === 410) return onCodeRefused(apiError)
-      setErrors(apiError.errors.length ? apiError.errors : [apiError.message])
+      setErrors(apiError.errors.length ? apiError.errors : [refusalText(apiError)])
       setBusy(false)
     }
   }

@@ -20,7 +20,7 @@ import { writerInSentence } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 
 // A group admin's two ways to deal with a writer who is misusing the system
-// (web issue #9; group-admin-plan.md WP4b):
+// (web issue #9):
 // - Block from our group: README "Blocking a writer" (POST/DELETE /chapter/block,
 //   GET /chapter/blocks). It reaches this group only. The reason is shown to the
 //   writer and to every group admin of the group. Their letters waiting in the

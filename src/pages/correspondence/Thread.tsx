@@ -14,7 +14,7 @@ import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import { forgetReplacedKeys, openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
-import type { ApiError, Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
+import type { ApiError, Attachment, Chat, LetterStatus, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { declineReasonForWriter, heldReasonText, isGroupAnonymous, returnReasonText, writerInSentence, writerLabel } from '../../utils/groupLetters'
 import { oldKeyText, threadPrisonerName } from '../../utils/letters'
@@ -24,8 +24,8 @@ import { retentionLine, windowFor } from '../../utils/retention'
 
 // Markup and classes from solidarity-site/thread.html (pages/thread.css). At
 // the bottom, a writer's reply panel, or for a group admin the panel that
-// records the prisoner's reply (WP5); the sidebar holds the group's block
-// actions (WP4b). Every letter is opened
+// records the prisoner's reply; the sidebar holds the group's block
+// actions. Every letter is opened
 // when the page loads (collapsed rows show a preview); attachments are fetched
 // and decrypted only when a letter is expanded.
 
@@ -78,6 +78,8 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
 
 const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const NO_BLOCKS: WriterBlock[] = []
+/** Statuses of a letter that was mailed: mailed, a reply received to it, or returned after mailing. */
+const MAILED: LetterStatus[] = ['mailed', 'received', 'returned']
 
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -284,7 +286,7 @@ function LetterItem({
   const outbound = m.sender === 'user'
   const status = statusOf(m)
   const held = forGroup ? groupHeldText(m, forGroup.chapterId) : heldText(m, prisonerName, blocks, queued?.prisonId != null)
-  const kept = retention ? retentionLine(m, retention.days, retention.rules) : null
+  const kept = retention ? retentionLine(m, retention.days) : null
   const onKept = retention?.onChanged
   async function toggleKeep() {
     if (!onKept) return
@@ -324,7 +326,10 @@ function LetterItem({
       {open && (
         <div className="letter-expanded">
           <div className="letter-expanded-header">
-            <span className="letter-expanded-direction">{outbound ? '→ Sent to prisoner' : '← Received from prisoner'}</span>
+            {/* The status pill above says where an outgoing letter stands; "mailed" only once it was. */}
+            <span className="letter-expanded-direction">
+              {!outbound ? '← Received from prisoner' : MAILED.includes(m.status) ? '→ Mailed to prisoner' : '→ To prisoner'}
+            </span>
             <span className="letter-expanded-date">{longDate(m.createdAt)}</span>
             <span className="letter-expanded-writer">
               {outbound ? writerName : m.relay_group ? `Recorded by ${m.relay_group.name}` : ''}
@@ -466,7 +471,9 @@ function Sidebar({
   const prison = prisoner?.prison_details as Prison | null | undefined
   const address = prison ? addressLine(prison.address) : null
   const lastRelay = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group
-  const sent = letters.filter((l) => l.message.sender === 'user').length
+  // Sent: mailed, or later (a returned letter was mailed first); not one still queued, held or declined.
+  const sent = letters.filter((l) => l.message.sender === 'user' && MAILED.includes(l.message.status)).length
+  const received = letters.filter((l) => l.message.sender !== 'user').length
 
   return (
     <aside className="thread-sidebar">
@@ -499,7 +506,7 @@ function Sidebar({
                 </>
               )}
             </div>
-            {/* Block from our group, recommend a site-wide block (WP4b); nothing for a writer the group looks after. */}
+            {/* Block from our group, recommend a site-wide block; nothing for a writer the group looks after. */}
             <WriterBlockActions writer={chat.user_details} initialNotice={blockNotice} onChanged={onBlockChanged} />
           </div>
         </>
@@ -539,7 +546,7 @@ function Sidebar({
       <div className="thread-sidebar-section">
         <div className="thread-sidebar-heading">Letters</div>
         <div className="thread-sidebar-info">
-          {letters.length} total &nbsp;·&nbsp; {sent} sent &nbsp;·&nbsp; {letters.length - sent} received
+          {letters.length} total &nbsp;·&nbsp; {sent} sent &nbsp;·&nbsp; {received} received
         </div>
       </div>
     </aside>
@@ -568,6 +575,8 @@ export default function Thread() {
   const facilityState = useApi<Prison | null>(() => (prisonId !== null ? getFacility(prisonId, true) : Promise.resolve(null)), [prisonId])
   // A returned or declined letter being written again in the reply panel below.
   const [resend, setResend] = useState<Resend | null>(null)
+  // False once the reply panel finds no group taking this writer's letters: then "Write it again" has nowhere to go.
+  const [replyAvailable, setReplyAvailable] = useState(true)
   // A block or unblock from the sidebar holds or releases this writer's letters,
   // so the thread loads again; the sidebar's notice is kept across that reload.
   const [blockNotice, setBlockNotice] = useState<string | null>(null)
@@ -677,7 +686,7 @@ export default function Thread() {
             {/* A reload that failed: what was on screen stays (useApi keepPrevious), with the reason. */}
             {page.error && (
               <p className="thread-updating" role="alert">
-                Couldn’t update the conversation ({page.error.message}).{' '}
+                Couldn’t update the conversation ({refusalText(page.error)}).{' '}
                 <button type="button" className="btn btn-sm" onClick={page.reload}>
                   Try again
                 </button>
@@ -696,7 +705,7 @@ export default function Thread() {
                 writerName={writerName}
                 blocks={blocks}
                 forGroup={isChapter ? { chapterId: user?.chapterId ?? null } : null}
-                onWriteAgain={!isChapter && prisoner?.prison ? writeAgain : undefined}
+                onWriteAgain={!isChapter && prisoner?.prison && replyAvailable ? writeAgain : undefined}
                 onCorrected={canCorrect(item.message) ? page.reload : undefined}
                 retention={retention}
                 chain={{
@@ -705,7 +714,7 @@ export default function Thread() {
                 }}
                 queued={
                   !isChapter && chat.user === user?.id
-                    ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
+                    ? { prisonId: prisoner?.prison ?? null, facility: facilityState, onRewrite: prisoner?.prison && replyAvailable ? startFrom : undefined, mayReplaceReply, onChanged: page.reload }
                     : undefined
                 }
               />
@@ -735,6 +744,8 @@ export default function Thread() {
               resend={resend ?? undefined}
               onCancelResend={() => setResend(null)}
               onDraftChange={onReplyDraftChange}
+              onEarlierVersion={page.reload}
+              onAvailableChange={setReplyAvailable}
               onSent={() => {
                 setResend(null)
                 page.reload()

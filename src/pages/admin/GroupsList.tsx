@@ -5,6 +5,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { AccountStatus, ApiError, Chapter, NetworkRole, RecordStatus } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Every group, pending and suspended included, with the superadmin's one job
 // here: approving groups that joined by invitation, and suspending or
@@ -125,7 +126,7 @@ export default function GroupsList() {
           {list.loading && <p className="dash-note">Loading groups…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load groups ({list.error.message}).{' '}
+              Couldn't load groups ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>
@@ -160,7 +161,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
       onChanged()
     } catch (err) {
       const e = err as ApiError
-      setError(`${g.name}: ${e.errors?.length ? e.errors.join(' ') : e.message}`)
+      setError(`${g.name}: ${e.errors?.length ? e.errors.join(' ') : refusalText(e)}`)
     } finally {
       setBusy(null)
     }
@@ -168,7 +169,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
 
   return (
     <>
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
       <table className="admin-table">
         <thead>
           <tr>
@@ -208,7 +209,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                           void change(
                             g,
                             { accountStatus: 'active', recordStatus: 'published' },
-                            `Approve ${g.name}? It becomes active (its members can relay and send letters, create writers and propose directory changes) and appears in the public directory.`,
+                            `Approve ${g.name}? It becomes active (its group admins can relay and send letters, create writers and propose directory changes) and appears in the public directory.`,
                           )
                         }
                       >
@@ -224,7 +225,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                           void change(
                             g,
                             { accountStatus: 'suspended' },
-                            `Suspend ${g.name}? Its members will be able to read what the public reads, and nothing else: no sending or relaying letters, no new writers, no directory proposals, until it is reactivated.`,
+                            `Suspend ${g.name}? Its group admins will be able to read what the public reads, and nothing else: no sending or relaying letters, no new writers, no directory proposals, until it is reactivated.`,
                           )
                         }
                       >
@@ -236,7 +237,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                         type="button"
                         className="a-btn a-btn-sm"
                         disabled={busy !== null}
-                        onClick={() => void change(g, { accountStatus: 'active' }, `Reactivate ${g.name}? Its members can act again straight away.`)}
+                        onClick={() => void change(g, { accountStatus: 'active' }, `Reactivate ${g.name}? Its group admins can act again straight away.`)}
                       >
                         Reactivate
                       </button>

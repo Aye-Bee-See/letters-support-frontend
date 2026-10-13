@@ -7,6 +7,7 @@ import { useApi } from '../../hooks/useApi'
 import type { ApiError, MailRuleCategory, MailRuleList, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
 import { ROUTING_LABELS } from '../../utils/facilities'
 import { siteAdminRefusal } from '../../utils/users'
+import { refusalText } from '../../utils/refusals'
 
 // A facility made directly (POST /prison/prison, superadmins only), rather than
 // by approving a group's proposal. The same fields as the edit page,
@@ -231,7 +232,7 @@ export default function NewFacility() {
             <div className="form-group">
               <span className="form-label">Mail rules</span>
               {rules.loading && <p className="form-hint">Loading the list of rules…</p>}
-              {rules.error && <p className="form-hint">Couldn't load the list of rules ({rules.error.message}).</p>}
+              {rules.error && <p className="form-hint">Couldn't load the list of rules ({refusalText(rules.error)}).</p>}
               {list && <RulePicker list={list} selected={ruleTags} disabled={busy} onToggle={toggleRule} />}
             </div>
             <p className="form-hint">Relay groups are linked on the facility’s edit page, once it exists.</p>
@@ -263,13 +264,13 @@ export default function NewFacility() {
           </Section>
 
           {issues.length > 0 && (
-            <div className="admin-alert admin-alert-warn form-error">
+            <div className="admin-alert admin-alert-warn form-error" role="status">
               {issues.map((text) => (
                 <div key={text}>{text}</div>
               ))}
             </div>
           )}
-          {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+          {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
           <div className="admin-form-footer">
             <span />

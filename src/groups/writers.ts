@@ -19,7 +19,7 @@ export interface GroupPublicKey {
 }
 
 /** A writer's keypair as the API stores it: the public key, and the private key sealed to the group. */
-export async function writerKeyFields(keypair: Keypair, group: GroupPublicKey) {
+async function writerKeyFields(keypair: Keypair, group: GroupPublicKey) {
   return {
     publicKey: keypair.publicKey,
     orgWrappedPrivateKey: await sealPrivateKeyTo(keypair.privateKey, group.publicKey),
@@ -32,7 +32,7 @@ export async function writerKeyFields(keypair: Keypair, group: GroupPublicKey) {
  * key meanwhile (409 KeyVersionError, README "Group keys"), fetch the current
  * public key and run it once more, sealed afresh.
  */
-export async function withCurrentGroupKey<T>(groupId: number, known: GroupPublicKey, write: (key: GroupPublicKey) => Promise<T>): Promise<T> {
+async function withCurrentGroupKey<T>(groupId: number, known: GroupPublicKey, write: (key: GroupPublicKey) => Promise<T>): Promise<T> {
   try {
     return await write(known)
   } catch (err) {

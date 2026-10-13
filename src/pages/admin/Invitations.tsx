@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { getAllGroups } from '../../api/groups'
+import { useState } from 'react'
+import { getGroupsByIds } from '../../api/groups'
 import { getInvitations } from '../../api/invitations'
 import { ADMIN_UI } from '../../components/forms/uiClasses'
 import InvitationTable from '../../components/invitations/InvitationTable'
@@ -10,7 +10,8 @@ import { ADMIN_KIND_LABELS } from '../../components/invitations/wording'
 import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
-import type { Invitation, InvitationStatus } from '../../types'
+import type { Chapter, Invitation, InvitationStatus } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Inviting groups (and members of groups) into the network: POST, GET, PUT
 // (renew) and DELETE (withdraw) /invitation. Groups aren't registered; a group
@@ -26,6 +27,8 @@ import type { Invitation, InvitationStatus } from '../../types'
 const PAGE_SIZE = 25
 const STATUSES: InvitationStatus[] = ['pending', 'accepted', 'revoked']
 
+const EMPTY = new Map<number, Chapter>()
+
 const oneOf = <T extends string>(values: readonly T[], v: string | null): T | undefined =>
   values.includes(v as T) ? (v as T) : undefined
 
@@ -35,10 +38,14 @@ export default function Invitations() {
   const kind = oneOf(['group', 'member'] as const, params.get('kind'))
 
   const list = useApi(() => getInvitations({ status, kind, page, page_size: PAGE_SIZE }), [status, kind, page])
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
-  const groupById = useMemo(() => new Map((groups.data ?? []).map((g) => [g.id, g])), [groups.data])
   // The token to hand over, after a create or renew: shown until dismissed.
   const [issued, setIssued] = useState<{ invitation: Invitation; renewed: boolean } | null>(null)
+  // The groups this page of invitations and the code on screen name, fetched by id for their names.
+  const named = [...new Set([...(list.data?.items ?? []).flatMap((i) => [i.createdChapter, i.chapterId]), issued?.invitation.chapterId])]
+    .filter((n): n is number => typeof n === 'number')
+    .sort((a, b) => a - b)
+  const groups = useApi(() => (named.length ? getGroupsByIds(named) : Promise.resolve(new Map<number, Chapter>())), [named.join(',')], { keepPrevious: true })
+  const groupById = groups.data ?? EMPTY
   // Leaving loses the code on screen for good: ask first, for an in-app link as for closing the tab.
   useLeaveGuard(issued !== null, 'The invitation code on this page is shown only now. Leave without copying it?')
 
@@ -57,9 +64,6 @@ export default function Invitations() {
 
         <InviteForm
           classes={ADMIN_UI}
-          groups={groups.data}
-          groupsError={groups.error}
-          onRetryGroups={groups.reload}
           onCreated={(invitation) => {
             setIssued({ invitation, renewed: false })
             list.reload()
@@ -78,16 +82,16 @@ export default function Invitations() {
             ))}
           </select>
           <select className="form-select" aria-label="Kind" value={kind ?? ''} onChange={(e) => update({ kind: e.target.value || undefined })}>
-            <option value="">Groups and members</option>
+            <option value="">Groups and group admins</option>
             <option value="group">New groups</option>
-            <option value="member">Group members</option>
+            <option value="member">Group admins</option>
           </select>
         </div>
         <div className="admin-table-wrap">
           {list.loading && <p className="dash-note">Loading invitations…</p>}
           {list.error && (
             <p className="dash-note">
-              Couldn't load invitations ({list.error.message}).{' '}
+              Couldn't load invitations ({refusalText(list.error)}).{' '}
               <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
                 Try again
               </button>

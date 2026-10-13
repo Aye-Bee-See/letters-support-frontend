@@ -10,7 +10,7 @@ import { useApi } from '../../hooks/useApi'
 import { listSearch, useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { RoutingMethod } from '../../types'
 import { addressLine, restrictionPhrases, ROUTING_LABELS, routingLines } from '../../utils/facilities'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 
 const PAGE_SIZE = 25
 const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
@@ -194,7 +194,7 @@ export default function Facilities() {
                       {restrictions.length ? restrictions.join(' · ') : 'None on record'}
                     </td>
                     <td>
-                      {f.verifiedAt && <div className="verified-date">{shortDate(f.verifiedAt)}</div>}
+                      {f.verifiedAt && <div className="verified-date">{date(f.verifiedAt)}</div>}
                       <StaleWarning verifiedAt={f.verifiedAt} />
                       {verifier && <div style={{ fontSize: '0.68rem', color: 'var(--mid)' }}>{verifier}</div>}
                     </td>

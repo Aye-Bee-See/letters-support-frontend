@@ -1,4 +1,5 @@
 import type { ApiState } from '../../hooks/useApi'
+import { refusalText } from '../../utils/refusals'
 
 // Loading and error lines for a useApi request. The prototype has no design for
 // either, so these stay plain until one is decided.
@@ -9,7 +10,7 @@ export default function LoadState({ state, what }: { state: Omit<ApiState<unknow
   if (state.error)
     return (
       <p>
-        Couldn't load {what} ({state.error.message}).{' '}
+        Couldn't load {what} ({refusalText(state.error)}).{' '}
         <button type="button" className="btn btn-sm" onClick={state.reload}>
           Try again
         </button>

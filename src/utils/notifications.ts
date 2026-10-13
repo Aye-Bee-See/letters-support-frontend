@@ -2,10 +2,8 @@ import type { Notification, NotificationEvent } from '../types'
 
 // Feed entries in words (README "The feed"). Entries carry ids and states,
 // never letter content, so each line is worded from `event` and `detail`.
-// A plain map, one entry per event, so other pages can add theirs. Written by
-// two packages at once (WP1 inbox, WP4b blocks) and merged into this one map;
-// the block and ban lines are WP4b's, which say who did what and what happened
-// to the letters.
+// A plain map, one entry per event. The block and ban lines say who did what
+// and what happened to the letters.
 
 type Detail = Record<string, unknown>
 
@@ -23,7 +21,7 @@ const STATUS_WORDS: Record<string, string> = {
   declined: 'marked as not sent',
 }
 
-export const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n: Notification) => string>> = {
+const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n: Notification, context: WordingContext) => string>> = {
   'letter.reply': () => 'A reply from a prisoner was recorded',
   // README "Paper letters": a paper letter arrives printed, to be mailed.
   'letter.queued': (d) => (d.paper === true ? 'A paper letter was handed to your group to mail' : 'A new letter is waiting to be printed'),
@@ -56,8 +54,14 @@ export const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n
         return 'The group key changed'
     }
   },
-  'group.owner': (d) =>
-    d.by === 'superadmin'
+  'group.owner': (d, _n, { me }) =>
+    me != null && d.owner === me
+      ? d.by === 'superadmin'
+        ? 'A site admin made you the group-owner admin'
+        : d.by === 'first key'
+          ? 'You set up the group key, so you are the group-owner admin'
+          : 'You are now the group-owner admin: ownership was passed to you'
+      : d.by === 'superadmin'
       ? 'A site admin named a new group-owner admin'
       : d.by === 'first key'
         ? 'The group admin who set up the group key is now the group-owner admin'
@@ -90,6 +94,8 @@ export const EVENT_WORDING: Partial<Record<NotificationEvent, (detail: Detail, n
  */
 export interface WordingContext {
   forWriter?: boolean
+  /** The reader's account id, for an entry about them ("You are now…"). */
+  me?: number | null
   prisonerName?: string | null
 }
 
@@ -139,7 +145,7 @@ export function wordEvent(n: Notification, context: WordingContext = {}): string
   const forWriter = context.forWriter ? WRITER_WORDING[n.event] : undefined
   if (forWriter) return forWriter(detail, context.prisonerName ?? null)
   const word = EVENT_WORDING[n.event]
-  return word ? word(detail, n) : 'Something changed'
+  return word ? word(detail, n, context) : 'Something changed'
 }
 
 /**

@@ -4,6 +4,7 @@ import { decideBanRecommendation, getBanRecommendations } from '../../api/admin'
 import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { ApiError, BanRecommendation, BanRecommendationStatus } from '../../types'
+import { refusalText } from '../../utils/refusals'
 
 // Site-wide block recommendations (API #172, README "Recommending a site-wide
 // block"). A group can block a writer from its own letters; to go further, a
@@ -26,13 +27,13 @@ const person = (p: { username: string; name: string | null } | null) => (p ? p.n
 const errorText = (err: unknown) => {
   const e = err as ApiError
   if (e.condition === 'decided') return 'Someone has already decided this one. The list has been refreshed.'
-  return e.errors?.length ? e.errors.join(' ') : e.message
+  return e.errors?.length ? e.errors.join(' ') : refusalText(e)
 }
 
 export default function BanRecommendations() {
   const { params, update } = useListParams()
   const status = (STATUSES.find((s) => s.value === params.get('status'))?.value ?? 'pending') as BanRecommendationStatus
-  const list = useApi(() => getBanRecommendations(status), [status])
+  const list = useApi(() => getBanRecommendations(status), [status], { keepPrevious: true })
   // Kept here, not in a card: a reload after a decision unmounts the card it came from.
   const [notice, setNotice] = useState<Notice | null>(null)
 
@@ -80,8 +81,8 @@ export default function BanRecommendations() {
         )}
         {list.loading && <p className="dash-note">Loading…</p>}
         {list.error && (
-          <div className="admin-alert admin-alert-err">
-            Couldn't load the recommendations ({list.error.message}).
+          <div className="admin-alert admin-alert-err" role="alert">
+            Couldn't load the recommendations ({refusalText(list.error)}).
             <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
               Try again
             </button>
@@ -184,7 +185,7 @@ function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided:
         </div>
       ))}
 
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       <div className="ban-rec-actions ban-decision">
         <input
           className="form-input"

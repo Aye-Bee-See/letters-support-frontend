@@ -17,7 +17,8 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, MailRuleCategory, MailRuleList, Prison, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
+import { refusalText } from '../../utils/refusals'
 
 // Edit one facility record (PUT /prison/prison, superadmins only). Only changed
 // fields are sent, so the audit log says what was edited; `address` is one JSON
@@ -148,7 +149,7 @@ function changes(f: Prison, initial: FormValues, v: FormValues, rules: Set<strin
 
 export default function EditFacility() {
   const id = Number(useParams().id)
-  const facility = useApi(() => getFacility(id, true), [id])
+  const facility = useApi(() => getFacility(id, true), [id], { keepPrevious: true })
   // Staff get retired rules too: a facility may still carry one.
   const rules = useApi(() => getMailRules(true), [])
   const [saved, setSaved] = useState(false)
@@ -169,8 +170,8 @@ export default function EditFacility() {
       <div className="admin-content">
         {facility.loading && <p className="dash-note">Loading the record…</p>}
         {facility.error && (
-          <div className="admin-alert admin-alert-err">
-            {facility.error.status === 404 ? `There is no facility #${id}.` : `Couldn't load facility #${id} (${facility.error.message}).`}
+          <div className="admin-alert admin-alert-err" role="alert">
+            {facility.error.status === 404 ? `There is no facility #${id}.` : `Couldn't load facility #${id} (${refusalText(facility.error)}).`}
             {facility.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={facility.reload}>
                 Try again
@@ -178,7 +179,7 @@ export default function EditFacility() {
             )}
           </div>
         )}
-        {saved && <div className="admin-alert admin-alert-ok">Saved.</div>}
+        {saved && <div className="admin-alert admin-alert-ok" role="status">Saved.</div>}
         {facility.data && (
           <>
             <FacilityForm
@@ -268,7 +269,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
       onSaved()
     } catch (err) {
       const e = err as ApiError
-      setError(e.errors?.length ? e.errors.join(' ') : e.message)
+      setError(e.errors?.length ? e.errors.join(' ') : refusalText(e))
       setBusy(false)
     }
   }
@@ -286,7 +287,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
       setError(
         e.name === 'SequelizeForeignKeyConstraintError'
           ? 'Prisoners are listed at this facility, so it can’t be deleted. Move them first, or set it to draft to take it out of the directory.'
-          : e.message,
+          : refusalText(e),
       )
       setBusy(false)
     }
@@ -367,7 +368,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
         <div className="form-group">
           <span className="form-label">Mail rules</span>
           {!list && !rulesError && <p className="form-hint">Loading the list of rules…</p>}
-          {rulesError && <p className="form-hint">Couldn't load the list of rules ({rulesError.message}).</p>}
+          {rulesError && <p className="form-hint">Couldn't load the list of rules ({refusalText(rulesError)}).</p>}
           {list && <RulePicker list={list} held={new Set(f.mailRules ?? [])} selected={ruleTags} disabled={busy} onToggle={toggleRule} />}
         </div>
       </Section>
@@ -385,7 +386,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
         <div className="form-group">
           <span className="form-label">Last verified</span>
           <p className={`form-static${isStale(f.verifiedAt) ? ' list-stale' : ''}`}>
-            {f.verifiedAt ? shortDate(f.verifiedAt) : 'Never'}
+            {f.verifiedAt ? date(f.verifiedAt) : 'Never'}
             {isStale(f.verifiedAt) && ' — needs re-verifying'}
           </p>
           <label className="queue-check">
@@ -399,13 +400,13 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
       </Section>
 
       {issues.length > 0 && (
-        <div className="admin-alert admin-alert-warn form-error">
+        <div className="admin-alert admin-alert-warn form-error" role="status">
           {issues.map((text) => (
             <div key={text}>{text}</div>
           ))}
         </div>
       )}
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>
@@ -477,7 +478,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
       setLinked(await action())
       setChoice(null)
     } catch (err) {
-      setError((err as ApiError).message)
+      setError(refusalText(err as ApiError))
     } finally {
       setBusy(false)
     }
@@ -517,7 +518,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
           </ul>
         )}
         {f.routing === 'relay_only' && active.length === 0 && (
-          <div className="admin-alert admin-alert-warn">This facility takes mail through a relay group only, and has no active one: nobody can write to it.</div>
+          <div className="admin-alert admin-alert-warn" role="status">This facility takes mail through a relay group only, and has no active one: nobody can write to it.</div>
         )}
         <div className="relay-add">
           <RecordPicker
@@ -543,7 +544,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
             Link group
           </button>
         </div>
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       </Section>
     </div>
   )
