@@ -5,7 +5,8 @@ import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
-import { displayName, heldAt, shortDate, STATUS_LABELS } from '../../utils/prisoners'
+import { displayName, heldAt, STATUS_LABELS } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 import { refusalText } from '../../utils/refusals'
 
 // Every prisoner record, drafts and pending included (superadmins are staff, so
@@ -182,7 +183,7 @@ function PrisonerTable({ prisoners }: { prisoners: Prisoner[] }) {
               <td>{p.status ? STATUS_LABELS[p.status] : '—'}</td>
               <td>{p.recordStatus && <span className={`badge ${RECORD_BADGES[p.recordStatus]}`}>{p.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
-                {shortDate(p.verifiedAt) ?? 'Never'}
+                {p.verifiedAt ? date(p.verifiedAt) : 'Never'}
                 {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">

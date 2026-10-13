@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { apiUrl } from '../../api/client'
 import { PHOTO_MAX_BYTES, PHOTO_TYPES, removePrisonerPhoto, uploadPrisonerPhoto } from '../../api/prisoners'
 import type { ApiError, Prisoner, PrisonerPhoto } from '../../types'
-import { displayName, shortDate } from '../../utils/prisoners'
+import { displayName } from '../../utils/prisoners'
+import { date } from '../invitations/wording'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import { Field, Section } from '../forms/AdminFormParts'
 
@@ -141,7 +142,7 @@ export default function PhotoPanel({ prisoner, onChanged }: { prisoner: Prisoner
             {/* Sized inline. */}
             <img src={apiUrl(photo.url)} alt={name} style={{ display: 'block', maxWidth: '220px', maxHeight: '280px', height: 'auto' }} />
             <figcaption className="form-hint">
-              {photo.credit ? `Photo: ${photo.credit}.` : 'No credit given.'} Added {shortDate(photo.updatedAt)}.
+              {photo.credit ? `Photo: ${photo.credit}.` : 'No credit given.'} Added {date(photo.updatedAt)}.
             </figcaption>
           </figure>
         ) : (

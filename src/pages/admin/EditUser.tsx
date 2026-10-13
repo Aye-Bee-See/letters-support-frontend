@@ -10,7 +10,7 @@ import { useLinkAction } from '../../components/group/useLinkAction'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, Chapter, User, UserRole } from '../../types'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 import { accountName, accountRefusal, deleteRefusal, managedNote, ROLE_LABELS, ROLES } from '../../utils/users'
 
 // One account, for a site admin (README "Users"): its record, and what a site
@@ -142,14 +142,14 @@ function AccountRecord({ u, groups }: { u: User; groups: Chapter[] | null }) {
               <div className="list-sub">The web refuses an account without keys; its first sign-in on a phone app makes them.</div>
             )}
           </Row>
-          <Row label="Made">{shortDate(u.createdAt)}</Row>
+          <Row label="Made">{date(u.createdAt)}</Row>
         </div>
         {(u.managedBy !== null || u.claimedFrom !== null) && (
           <div className="form-row">
             {u.managedBy !== null && <Row label="Looked after by">{groupLink(u.managedBy, groups)}</Row>}
             {u.claimedFrom !== null && (
               <Row label="Claimed">
-                {shortDate(u.claimedAt)}, from {groupLink(u.claimedFrom, groups)}
+                {u.claimedAt ? date(u.claimedAt) : '—'}, from {groupLink(u.claimedFrom, groups)}
               </Row>
             )}
           </div>

@@ -32,6 +32,10 @@ describe('dates', () => {
   })
 
   it('returns null for a missing or unreadable date', () => {
+    expect(shortDate('2010-01-01')).toBe('2010')
+    expect(longDate('2010-01-01T00:00:00.000Z')).toBe('2010')
+    expect(shortDate('2010')).toBe('2010')
+    expect(shortDate('2010-01-02')).toBe('2 Jan 2010')
     expect(longDate(null)).toBeNull()
     expect(shortDate('not a date')).toBeNull()
     expect(yearOf(undefined)).toBeNull()

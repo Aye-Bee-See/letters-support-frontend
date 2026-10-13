@@ -17,7 +17,7 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, MailRuleCategory, MailRuleList, Prison, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one facility record (PUT /prison/prison, superadmins only). Only changed
@@ -386,7 +386,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
         <div className="form-group">
           <span className="form-label">Last verified</span>
           <p className={`form-static${isStale(f.verifiedAt) ? ' list-stale' : ''}`}>
-            {f.verifiedAt ? shortDate(f.verifiedAt) : 'Never'}
+            {f.verifiedAt ? date(f.verifiedAt) : 'Never'}
             {isStale(f.verifiedAt) && ' — needs re-verifying'}
           </p>
           <label className="queue-check">

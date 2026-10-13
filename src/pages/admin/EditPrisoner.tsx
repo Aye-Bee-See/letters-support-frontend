@@ -10,7 +10,8 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
-import { displayName, shortDate, STATUS_LABELS } from '../../utils/prisoners'
+import { displayName, STATUS_LABELS } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one prisoner record (PUT /prisoner/prisoner, superadmins only). Only the
@@ -400,7 +401,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
         <div className="form-group">
           <span className="form-label">Last verified</span>
           <p className={`form-static${isStale(prisoner.verifiedAt) ? ' list-stale' : ''}`}>
-            {prisoner.verifiedAt ? shortDate(prisoner.verifiedAt) : 'Never'}
+            {prisoner.verifiedAt ? date(prisoner.verifiedAt) : 'Never'}
             {isStale(prisoner.verifiedAt) && ' — needs re-verifying'}
           </p>
           <label className="queue-check">

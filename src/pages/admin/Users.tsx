@@ -5,7 +5,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Chapter, User } from '../../types'
-import { shortDate } from '../../utils/prisoners'
+import { date } from '../../components/invitations/wording'
 import { isRole, ROLE_LABELS, ROLES } from '../../utils/users'
 import { refusalText } from '../../utils/refusals'
 
@@ -154,7 +154,7 @@ function UserTable({ users, groups }: { users: User[]; groups: Map<number, Chapt
                 <span className="list-sub">—</span>
               )}
             </td>
-            <td className="dash-nowrap">{shortDate(u.createdAt)}</td>
+            <td className="dash-nowrap">{date(u.createdAt)}</td>
           </tr>
         ))}
       </tbody>

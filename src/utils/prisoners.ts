@@ -7,19 +7,28 @@ export const STATUS_LABELS: Record<PrisonerStatus, string> = {
   free: 'Released',
 }
 
-/** "14 July 2021", or null. */
+// longDate and shortDate are for calendar fields (detained since, release
+// date), stored as a day with no time of day, so read in UTC. Timestamps
+// (made, added, verified) are local dates: components/invitations/wording.ts `date`.
+
+/** A bare year ("2010"), or 1 January of one: a value whose day nobody knows. */
+const yearOnly = (iso: string) => /^\d{4}(-01-01(T00:00(:00(\.0+)?)?(Z|[+-]00:?00)?)?)?$/.test(iso)
+
+/** "14 July 2021", "2010" for a year alone, or null. */
 export function longDate(iso: string | null | undefined): string | null {
   if (!iso) return null
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
+  if (yearOnly(iso)) return String(d.getUTCFullYear())
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 
-/** "14 Jul 2021", or null. */
+/** "14 Jul 2021", "2010" for a year alone, or null. */
 export function shortDate(iso: string | null | undefined): string | null {
   if (!iso) return null
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
+  if (yearOnly(iso)) return String(d.getUTCFullYear())
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
