@@ -26,13 +26,15 @@ function failureMessage(err: unknown): string {
 // Markup and classes from solidarity-site/login.html (pages/login.css).
 // The sign-in itself is src/auth/signIn.ts: the password never leaves the device.
 export default function Login() {
-  const { startSession, user, twoFactorSetupRequired } = useAuth()
+  const { startSession, user, twoFactorSetupRequired, endedNotice } = useAuth()
   const navigate = useNavigate()
   const state = useLocation().state as { from?: Location; notice?: string } | null
   const from = state?.from
   // A line from the page that sent the person here: an account was made (or a
   // password changed) but signing in straight after it didn't work.
-  const notice = typeof state?.notice === 'string' ? state.notice : null
+  // Else why the last session ended, when the person didn't sign out (a ban, a
+  // revocation elsewhere, an expired token).
+  const notice = typeof state?.notice === 'string' ? state.notice : endedNotice
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

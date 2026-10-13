@@ -52,8 +52,10 @@ export interface AuthState {
   isWriter: boolean
   /** Start a session from a completed sign-in (src/auth/signIn.ts). */
   startSession: (signedIn: SignedIn) => void
-  /** Forget the token and everything unlocked with it. */
-  endSession: () => void
+  /** Forget the token and everything unlocked with it; `notice` is said on the sign-in page, for a session that ended without the person signing out. */
+  endSession: (notice?: string) => void
+  /** Why the last session ended, when the person didn't end it themselves; cleared by the next sign-in. */
+  endedNotice: string | null
 }
 
 export const AuthContext = createContext<AuthState | null>(null)
