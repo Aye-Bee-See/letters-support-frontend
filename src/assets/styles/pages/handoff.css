@@ -226,6 +226,9 @@
   min-width: 0;
 }
 
+/* The token and the link, each under its label (outside the page's live region). */
+.token-field { display: flex; flex-direction: column; gap: 0.35rem; }
+
 .token-link-row .token-copy-btn { color: var(--mid); border-color: var(--border); }
 .token-link-row .token-copy-btn:hover { color: var(--text); border-color: var(--text); }
 

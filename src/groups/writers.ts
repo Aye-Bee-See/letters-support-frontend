@@ -2,7 +2,7 @@ import { isApiError, toApiError } from '../api/client'
 import { getGroupPublicKey } from '../api/letters'
 import type { CaughtUp } from '../api/groups'
 import { createWriter, updateWriter, type NewWriter } from '../api/writers'
-import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../crypto'
+import { generateKeypair, sealPrivateKeyTo, unlockManagedWriterKey, type Keypair } from '../crypto'
 import type { Writer } from '../types'
 import { commonRefusal, otherRefusal } from '../utils/refusals'
 
@@ -66,6 +66,44 @@ export async function giveWriterKeys(writerId: number, groupId: number, known: G
   const keypair = await generateKeypair()
   const answer = await withCurrentGroupKey(groupId, known, async (key) => updateWriter(writerId, await writerKeyFields(keypair, key)))
   return { keypair, caughtUp: answer?.caughtUp ?? null }
+}
+
+/** A managed writer's keypair, opened from the group's sealed copy of it. */
+async function openWriterKey(w: Writer, group: Keypair): Promise<Keypair> {
+  if (!w.publicKey || !w.orgWrappedPrivateKey) throw new Error('Your group doesn’t hold a copy of this writer’s key, so it can’t be handed on.')
+  try {
+    return await unlockManagedWriterKey({ orgWrappedPrivateKey: w.orgWrappedPrivateKey, publicKey: w.publicKey }, group)
+  } catch {
+    throw new Error('This writer’s key is locked with a newer group key than the one open here. Sign in again, then hand off.')
+  }
+}
+
+/**
+ * The writer's keypair for a hand-off (README "Managed writers and claiming"):
+ * opened from the group's sealed copy, or made now for a writer who has none,
+ * with what the server then sealed to them (`caughtUp`). The housekeeping
+ * (housekeeping.ts) may key a keyless writer after the page read them: giving
+ * keys is then a 409 KeyChangeError, so `reread` fetches the writer again and,
+ * once they have a key, opens that one instead (once). A writer still without
+ * one gets the refusal.
+ */
+export async function handoffKeypair(
+  w: Writer,
+  group: Keypair,
+  groupId: number,
+  keyVersion: number,
+  reread: () => Promise<Writer | null>,
+): Promise<{ keypair: Keypair; caughtUp: CaughtUp }> {
+  if (w.publicKey) return { keypair: await openWriterKey(w, group), caughtUp: null }
+  try {
+    return await giveWriterKeys(w.id, groupId, { publicKey: group.publicKey, keyVersion })
+  } catch (err) {
+    const e = toApiError(err)
+    if (e.status !== 409 || e.name !== 'KeyChangeError') throw err
+    const now = await reread().catch(() => null)
+    if (!now?.publicKey) throw err
+    return { keypair: await openWriterKey(now, group), caughtUp: null }
+  }
 }
 
 /**
