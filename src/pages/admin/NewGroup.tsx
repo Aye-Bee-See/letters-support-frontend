@@ -8,7 +8,7 @@ import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus, SocialLinkKey } from '../../types'
 import { buildLocation, buildSocial, capitalise, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, type GroupFormValues } from '../../utils/groupForm'
 import { SERVICE_LABELS } from '../../utils/groups'
-import { siteAdminRefusal } from '../../utils/users'
+import { siteAdminRefusal } from '../../utils/refusals'
 
 // A group made directly (POST /chapter/chapter, superadmins only), rather than
 // by an invitation or approving a proposal. The shared half of the form and its
@@ -96,6 +96,7 @@ export default function NewGroup() {
 
   return (
     <>
+      <title>New group · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">
           <Link to="/admin/groups">Groups</Link> / New group

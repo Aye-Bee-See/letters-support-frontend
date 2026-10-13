@@ -42,6 +42,7 @@ export default function Security() {
 
   return (
     <div className="claim-page">
+      <title>Security · letters.support</title>
       <div style={{ width: '100%', maxWidth: '460px' }}>
         <div className="claim-box">
           <div className="claim-state is-active">

@@ -88,6 +88,7 @@ export default function AuditLog() {
 
   return (
     <>
+      <title>Audit log · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Audit log</span>
         <span className="topbar-right">{list.data && `${total.toLocaleString()} ${filtered ? 'matching' : 'entries'}`}</span>

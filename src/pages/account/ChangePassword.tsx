@@ -67,6 +67,7 @@ export default function ChangePassword() {
 
   return (
     <div className="claim-page">
+      <title>Change your password · letters.support</title>
       <div style={{ width: '100%', maxWidth: '460px' }}>
         <div className="claim-box">
           {step.name === 'working' ? (

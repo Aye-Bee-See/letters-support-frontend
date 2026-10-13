@@ -27,6 +27,7 @@ export default function EditWriter() {
   if (deleted) {
     return (
       <Page>
+        <title>Writer deleted · letters.support</title>
         <h1 className="create-writer-title">Writer deleted</h1>
         <p className="create-writer-subtitle">
           {deleted.name}'s account is gone, with {count(deleted.letters, 'letter')}, {count(deleted.replies, 'reply', 'replies')} and{' '}
@@ -39,6 +40,7 @@ export default function EditWriter() {
   if (!writer) {
     return (
       <Page>
+        <title>Edit writer · letters.support</title>
         <h1 className="create-writer-title">Edit writer</h1>
         {missing ? (
           <p className="create-writer-subtitle">
@@ -54,6 +56,7 @@ export default function EditWriter() {
   if (isAnonymousWriter(writer)) {
     return (
       <Page>
+        <title>Anonymous writer · letters.support</title>
         <h1 className="create-writer-title">Anonymous writer</h1>
         <div className="cw-anon-note">
           <strong>This is your group's anonymous writer,</strong> shared by everyone your group writes for anonymously. It
@@ -69,6 +72,7 @@ export default function EditWriter() {
 function Page({ children }: { children: ReactNode }) {
   return (
     <div className="create-writer-wrap">
+      <title>Edit writer · letters.support</title>
       <div className="create-writer-inner">
         <Link to="/inbox?tab=writers" className="create-writer-back">
           ← Your writers

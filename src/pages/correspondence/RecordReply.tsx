@@ -332,6 +332,7 @@ export default function RecordReply() {
 
   return (
     <div className="app-wrap">
+      <title>Record a reply · letters.support</title>
       <div className="app-layout">
         <main className="thread-main">
           <div className="thread-header">

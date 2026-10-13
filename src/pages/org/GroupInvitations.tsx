@@ -56,6 +56,7 @@ export default function GroupInvitations() {
 
   return (
     <div className="settings-wrap">
+      <title>Invitations · letters.support</title>
       <div className="settings-inner settings-inner-wide">
         <Link to="/settings" className="settings-back">
           ← Group settings

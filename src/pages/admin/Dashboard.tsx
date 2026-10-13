@@ -31,6 +31,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <title>Dashboard · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Dashboard</span>
         <span className="topbar-right">

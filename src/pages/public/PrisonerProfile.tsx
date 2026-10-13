@@ -33,9 +33,10 @@ export default function PrisonerProfile() {
   if (!profile.data) {
     return (
       <>
+        <title>Prisoner · letters.support</title>
         <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Prisoners', to: '/prisoners' }, { label: '…' }]} />
         <div className="wrap">
-          <LoadState state={profile} what="prisoner" />
+          <LoadState state={profile} what="prisoner" notFound="This prisoner is not in the directory." />
         </div>
       </>
     )
@@ -52,6 +53,7 @@ export default function PrisonerProfile() {
 
   return (
     <>
+      <title>{`${name} · letters.support`}</title>
       <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Prisoners', to: '/prisoners' }, { label: name }]} />
 
       <div className="wrap">

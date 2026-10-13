@@ -84,6 +84,7 @@ export default function InboxOrg() {
 
   return (
     <AppShell sidebar={sidebar}>
+      <title>Group inbox · letters.support</title>
       <div className="inbox-hero">
         <p className="inbox-hero-sub">Group inbox</p>
         <h1 className="inbox-hero-title">{group.group.name}</h1>

@@ -47,6 +47,7 @@ export default function InviteCodes() {
 
   return (
     <div className="settings-wrap">
+      <title>Invite codes · letters.support</title>
       <div className="settings-inner settings-inner-wide">
         <div className="invite-screen">
           <Link to="/settings" className="settings-back">

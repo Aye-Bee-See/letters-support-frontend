@@ -93,6 +93,7 @@ export default function Facilities() {
 
   return (
     <>
+      <title>Facilities &amp; Mail Rules · letters.support</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Directory</p>

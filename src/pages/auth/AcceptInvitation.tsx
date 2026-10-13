@@ -83,6 +83,7 @@ export default function AcceptInvitation() {
 
   return (
     <div className="claim-page">
+      <title>Accept an invitation · letters.support</title>
       <div style={{ width: '100%', maxWidth: '460px' }}>
         <div className="claim-box">
           {step.name === 'enter-code' && (

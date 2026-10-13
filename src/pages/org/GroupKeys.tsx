@@ -111,6 +111,7 @@ export default function GroupKeys() {
 
   return (
     <div className="settings-wrap">
+      <title>Group key · letters.support</title>
       <div className="settings-inner">
         <Link to="/settings" className="settings-back">
           ← Group settings
@@ -124,7 +125,7 @@ export default function GroupKeys() {
         <section className="settings-section">
           <h2 className="settings-section-heading">Your group's key</h2>
           {!data && (
-            <LoadState state={{ data: null, error: roster.error, loading: roster.loading, reload: () => void reloadAll() }} what="group key" />
+            <LoadState state={{ data: null, error: roster.error, loading: roster.loading, reload: () => void reloadAll() }} what="group key" notFound="Your group’s key couldn’t be found." />
           )}
           {data && <KeySummary roster={data} group={group} ownerName={owner ? adminName(owner) : null} />}
           {data && data.publicKey && <NoteLine note={noteFor('setup')} />}

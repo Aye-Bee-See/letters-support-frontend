@@ -258,7 +258,7 @@ export default function PrintLetter() {
       <div className="app-wrap">
         <PrintPageStyle />
         <div className="wrap">
-          <LoadState state={page} what="letter" />
+          <LoadState state={page} what="letter" notFound="This letter couldn’t be found." />
         </div>
       </div>
     )

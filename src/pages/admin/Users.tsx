@@ -43,6 +43,7 @@ export default function Users() {
 
   return (
     <>
+      <title>Accounts · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Accounts</span>
         <span className="topbar-right">

@@ -608,7 +608,7 @@ export default function Thread() {
       <div className="app-wrap">
         <title>Conversation · letters.support</title>
         <div className="wrap">
-          <LoadState state={page} what="conversation" />
+          <LoadState state={page} what="conversation" notFound="This conversation couldn’t be found." />
         </div>
       </div>
     )
