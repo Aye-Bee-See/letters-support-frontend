@@ -124,7 +124,7 @@ export default function InviteForm(props: Props) {
               hint={
                 kind === 'group'
                   ? 'The group bringing them in. “Nobody” when you invite them directly. Only active groups can vouch.'
-                  : 'Required. Only an active group can take new members.'
+                  : 'Required. Only an active group can take new group admins.'
               }
             >
               <div className={c.addRow} style={{ marginBottom: '0.4rem' }}>
@@ -135,7 +135,7 @@ export default function InviteForm(props: Props) {
                   </button>
                 )}
               </div>
-              {/* Only an active group can vouch or take members (the API answers 409 otherwise). */}
+              {/* Only an active group can vouch or take new group admins (the API answers 409 otherwise). */}
               <RecordPicker
                 id="i-chapter"
                 label={kind === 'group' ? 'Vouched for by' : 'Group to join'}
@@ -162,7 +162,7 @@ export default function InviteForm(props: Props) {
         </div>
         {kind === 'group' && !ownGroup && (
           <p className={c.hint}>
-            A new group starts pending: its first account can sign in, but the group can’t act and isn’t listed until a superadmin approves it on the
+            A new group starts pending: its first account can sign in, but the group can’t act and isn’t listed until a site admin approves it on the
             Groups page.
           </p>
         )}

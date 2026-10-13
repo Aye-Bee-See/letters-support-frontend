@@ -197,7 +197,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
 
   async function remove() {
     const typed = window.prompt(
-      `Deleting ${g.name} can't be undone. Its members and the writers it manages lose their group, its letters lose their relay group, and its invite codes, invitations and member keys are deleted.\n\nSuspending the group is usually what's wanted.\n\nTo delete it anyway, type its name:`,
+      `Deleting ${g.name} can't be undone. Its group admins and the writers it manages lose their group, its letters lose their relay group, and its invite codes, invitations and member keys are deleted.\n\nSuspending the group is usually what's wanted.\n\nTo delete it anyway, type its name:`,
     )
     if (typed === null) return
     if (typed.trim() !== g.name) {
@@ -311,7 +311,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
               ))}
             </select>
           </Field>
-          <Field label="Account status" htmlFor="f-accountStatus" hint="Only an active group’s members can send or relay letters, create writers or propose directory changes.">
+          <Field label="Account status" htmlFor="f-accountStatus" hint="Only an active group’s group admins can send or relay letters, create writers or propose directory changes.">
             <select
               id="f-accountStatus"
               className="form-select"
@@ -409,7 +409,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
             <p className="form-static">
               {g.publicKey ? `Set (version ${g.keyVersion ?? 1})` : 'Not set up yet.'}
             </p>
-            <span className="form-hint">The group’s members set and rotate it themselves; it can’t be changed here.</span>
+            <span className="form-hint">The group’s own group admins set and rotate it; it can’t be changed here.</span>
           </div>
         </div>
       </Section>

@@ -8,6 +8,7 @@ import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, Chapter, User } from '../../types'
+import { ROLE_LABELS } from '../../utils/users'
 
 // Site settings. Today the API's one site-wide setting is who must use
 // two-factor sign-in (README "Two-factor sign-in"): every superadmin, every
@@ -129,18 +130,18 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
           onChange={(e) => {
             const on = e.target.checked
             const question = on
-              ? 'Require two-factor sign-in of every superadmin? Any who haven’t set it up will have to before they can do anything else.'
-              : 'Stop requiring two-factor sign-in of superadmins? Those who have it on keep it.'
+              ? 'Require two-factor sign-in of every site admin? Any who haven’t set it up will have to before they can do anything else.'
+              : 'Stop requiring two-factor sign-in of site admins? Those who have it on keep it.'
             if (window.confirm(question)) void run(() => setTwoFactorPolicy({ superadmins: on }))
           }}
         />
         <span>
-          <strong>Every superadmin</strong>
+          <strong>Every site admin</strong>
         </span>
       </label>
       {superadminsBlocked && ownOn === false && (
         <p className="form-hint">
-          Your own isn’t on yet. <Link to="/account/security">Switch it on for your account</Link> first; requiring it of superadmins before that
+          Your own isn’t on yet. <Link to="/account/security">Switch it on for your account</Link> first; requiring it of site admins before that
           would lock you out.
         </p>
       )}
@@ -297,7 +298,7 @@ function ResetTwoFactor() {
                   <strong>{u.username}</strong>
                 </Link>
                 {u.name && <span className="list-sub"> {u.name}</span>}
-                <span className="list-sub"> · {u.role === 'admin' ? 'superadmin' : u.role === 'chapter' ? 'group admin' : u.role === 'user' ? 'writer' : u.role}</span>
+                <span className="list-sub"> · {ROLE_LABELS[u.role] ?? u.role}</span>
               </span>
               <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void reset(u)}>
                 Reset two-factor

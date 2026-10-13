@@ -86,8 +86,8 @@ export default function NewAccount() {
         {mode === 'e2e' && (
           <div className="admin-alert admin-alert-warn">
             This site encrypts letters end to end, and then the API makes an account only together with its keys. Those must be made on the person’s own device
-            (a site admin never holds anyone’s private key), so a staff account can’t be made here. <Link to="/admin/invite">Invite them</Link> as a member
-            of their group instead. To make someone a site admin, change the role of their account once it exists.
+            (a site admin never holds anyone’s private key), so a staff account can’t be made here. <Link to="/admin/invite">Invite them</Link> as a group
+            admin of their group instead. To make someone a site admin, change the role of their account once it exists.
           </div>
         )}
         {mode === 'server' && <AccountForm />}

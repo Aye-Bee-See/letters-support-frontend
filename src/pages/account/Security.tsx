@@ -16,7 +16,7 @@ import type { ApiError, TwoFactorReason } from '../../types'
 // steps use.
 
 const BECAUSE: Record<TwoFactorReason, string> = {
-  superadmins: 'it is required of every superadmin',
+  superadmins: 'it is required of every site admin',
   all_groups: 'it is required of every group’s admins',
   group: 'your group requires it of its admins',
 }

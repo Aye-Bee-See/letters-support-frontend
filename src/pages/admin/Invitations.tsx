@@ -81,9 +81,9 @@ export default function Invitations() {
             ))}
           </select>
           <select className="form-select" aria-label="Kind" value={kind ?? ''} onChange={(e) => update({ kind: e.target.value || undefined })}>
-            <option value="">Groups and members</option>
+            <option value="">Groups and group admins</option>
             <option value="group">New groups</option>
-            <option value="member">Group members</option>
+            <option value="member">Group admins</option>
           </select>
         </div>
         <div className="admin-table-wrap">

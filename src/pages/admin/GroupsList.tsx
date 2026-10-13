@@ -208,7 +208,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                           void change(
                             g,
                             { accountStatus: 'active', recordStatus: 'published' },
-                            `Approve ${g.name}? It becomes active (its members can relay and send letters, create writers and propose directory changes) and appears in the public directory.`,
+                            `Approve ${g.name}? It becomes active (its group admins can relay and send letters, create writers and propose directory changes) and appears in the public directory.`,
                           )
                         }
                       >
@@ -224,7 +224,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                           void change(
                             g,
                             { accountStatus: 'suspended' },
-                            `Suspend ${g.name}? Its members will be able to read what the public reads, and nothing else: no sending or relaying letters, no new writers, no directory proposals, until it is reactivated.`,
+                            `Suspend ${g.name}? Its group admins will be able to read what the public reads, and nothing else: no sending or relaying letters, no new writers, no directory proposals, until it is reactivated.`,
                           )
                         }
                       >
@@ -236,7 +236,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
                         type="button"
                         className="a-btn a-btn-sm"
                         disabled={busy !== null}
-                        onClick={() => void change(g, { accountStatus: 'active' }, `Reactivate ${g.name}? Its members can act again straight away.`)}
+                        onClick={() => void change(g, { accountStatus: 'active' }, `Reactivate ${g.name}? Its group admins can act again straight away.`)}
                       >
                         Reactivate
                       </button>

@@ -4,6 +4,7 @@ import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { AccountBrief, AuditEntry } from '../../types'
+import { ROLE_LABELS } from '../../utils/users'
 
 // The audit log (GET /moderation/audit, superadmins only), newest first. The
 // API filters on exact values (actor, action, resource, target), and records
@@ -177,7 +178,7 @@ function AuditRow({ entry: e, onFilter }: { entry: AuditEntry; onFilter: (change
         ) : (
           <span className="list-sub">{e.action.startsWith('writer.claim') ? 'The writer (claiming)' : 'The system'}</span>
         )}
-        {e.actor_details?.role && <div className="list-sub">{e.actor_details.role === 'admin' ? 'superadmin' : e.actor_details.role === 'chapter' ? 'group admin' : 'writer'}</div>}
+        {e.actor_details?.role && <div className="list-sub">{ROLE_LABELS[e.actor_details.role] ?? e.actor_details.role}</div>}
       </td>
       <td>
         <button type="button" className="link-button dash-code" title="Only this action" onClick={() => onFilter({ action: e.action })}>

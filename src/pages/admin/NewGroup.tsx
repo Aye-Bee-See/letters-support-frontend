@@ -104,7 +104,7 @@ export default function NewGroup() {
 
       <div className="admin-content">
         <p className="dash-note">
-          Most groups join by <Link to="/admin/invite">invitation</Link>, which brings their first group admin with them. A group made here has no members and
+          Most groups join by <Link to="/admin/invite">invitation</Link>, which brings their first group admin with them. A group made here has no group admins and
           no key yet: invite its first group admin, or put an existing account in it from the account’s page; they set the group key up.
         </p>
         <form
@@ -195,7 +195,7 @@ export default function NewGroup() {
                   ))}
                 </select>
               </Field>
-              <Field label="Account status" htmlFor="f-accountStatus" hint="Only an active group’s members can send or relay letters, create writers or propose directory changes.">
+              <Field label="Account status" htmlFor="f-accountStatus" hint="Only an active group’s group admins can send or relay letters, create writers or propose directory changes.">
                 <select id="f-accountStatus" className="form-select" value={values.accountStatus} disabled={busy} onChange={(e) => set({ accountStatus: e.target.value as AccountStatus })}>
                   {ACCOUNT_STATUSES.map((s) => (
                     <option key={s} value={s}>
