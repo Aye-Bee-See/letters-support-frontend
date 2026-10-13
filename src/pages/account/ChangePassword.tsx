@@ -68,7 +68,7 @@ export default function ChangePassword() {
   return (
     <div className="claim-page">
       <title>Change your password · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '460px' }}>
+      <div className="claim-column is-wide">
         <div className="claim-box">
           {step.name === 'working' ? (
             <div className="claim-state is-active">
@@ -88,7 +88,7 @@ export default function ChangePassword() {
                   <p>Every other device signed in to your account, the apps included, is now signed out. Sign in there with your new password.</p>
                   <p>Your recovery code is unchanged and still works.</p>
                 </div>
-                <Link to={SECURITY} className="claim-submit" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                <Link to={SECURITY} className="claim-submit">
                   Done
                 </Link>
               </div>

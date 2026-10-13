@@ -94,7 +94,7 @@ export default function ForgotPassword() {
                   <div className="fp-option-title">If you made your own account</div>
                   <div className="fp-option-body">
                     Recover it with the recovery code you were shown when you made it.
-                    <form onSubmit={onStart} style={{ marginTop: '0.9rem' }} noValidate>
+                    <form className="fp-form" onSubmit={onStart} noValidate>
                       {error && <span className="claim-error is-visible">{error}</span>}
                       <div className="claim-field">
                         <label className="claim-label" htmlFor="recUsername">
@@ -148,7 +148,7 @@ export default function ForgotPassword() {
                     not your group, not us.
                   </strong>
                 </p>
-                <p style={{ fontFamily: 'var(--sans)', fontSize: '0.72rem', color: 'var(--mid)', lineHeight: 1.55 }}>
+                <p className="fp-fine-print">
                   This is on purpose: a site that could reset your password could read your letters.{' '}
                   <Link to="/about">How is this protected?</Link>
                 </p>

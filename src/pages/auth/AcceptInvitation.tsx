@@ -84,7 +84,7 @@ export default function AcceptInvitation() {
   return (
     <div className="claim-page">
       <title>Accept an invitation · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '460px' }}>
+      <div className="claim-column is-wide">
         <div className="claim-box">
           {step.name === 'enter-code' && (
             <form
@@ -136,7 +136,7 @@ export default function AcceptInvitation() {
                 <div className="token-error-title">{codeProblem(step.error).title}</div>
                 <div className="token-error-body">
                   <p>{codeProblem(step.error).body}</p>
-                  <p style={{ marginTop: '0.75rem' }}>
+                  <p className="token-error-action">
                     <a
                       href="/invitation"
                       onClick={(e) => {

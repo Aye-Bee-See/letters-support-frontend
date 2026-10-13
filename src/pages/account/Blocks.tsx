@@ -15,7 +15,7 @@ export default function Blocks() {
   return (
     <div className="claim-page">
       <title>Groups not mailing your letters · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '520px' }}>
+      <div className="claim-column is-wider">
         <div className="claim-box">
           <div className="claim-state is-active">
             <div className="claim-header">
@@ -30,7 +30,7 @@ export default function Blocks() {
               <LoadState state={blocks} what="the groups not mailing your letters" />
               {blocks.data && blocks.data.length === 0 && <p className="block-empty">Every group is mailing your letters.</p>}
               {blocks.data && blocks.data.length > 0 && (
-                <ul className="block-list" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <ul className="block-list claim-block-list">
                   {blocks.data.map((b) => (
                     <li key={b.chapter.id} className="block-item">
                       <div className="block-item-head">

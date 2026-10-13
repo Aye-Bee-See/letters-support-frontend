@@ -54,7 +54,7 @@ export default function PenName() {
   return (
     <div className="claim-page">
       <title>Choose a pen name · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
+      <div className="claim-column">
         <div className="claim-box">
           <form className="claim-state is-active" onSubmit={onSubmit} noValidate>
             <div className="claim-header">
@@ -86,7 +86,7 @@ export default function PenName() {
               <button type="submit" className="claim-submit" disabled={!ready}>
                 {busy ? 'Saving…' : 'Use this pen name'}
               </button>
-              <p className="claim-org-note" style={{ marginTop: '1rem' }}>
+              <p className="claim-org-note claim-org-note-below">
                 <a
                   href="/"
                   onClick={(e) => {

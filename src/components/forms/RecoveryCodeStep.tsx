@@ -62,12 +62,12 @@ export default function RecoveryCodeStep({
       <div className="claim-body">
         {children}
 
-        <div className="claim-encryption-note" style={{ alignItems: 'center', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: '1.05rem', letterSpacing: '0.06em', wordBreak: 'break-all' }}>
+        <div className="claim-encryption-note recovery-code-note">
+          <p className="recovery-code">
             {joined.recoveryCode}
           </p>
           <p>
-            <button type="button" className="claim-show-pw" style={{ position: 'static' }} onClick={copy}>
+            <button type="button" className="claim-show-pw is-static" onClick={copy}>
               {copied ? 'Copied' : 'Copy'}
             </button>
           </p>

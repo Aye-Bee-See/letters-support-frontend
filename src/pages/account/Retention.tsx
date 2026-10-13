@@ -28,7 +28,7 @@ export default function Retention() {
   return (
     <div className="claim-page">
       <title>How long letters are kept · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '460px' }}>
+      <div className="claim-column is-wide">
         <div className="claim-box">
           <div className="claim-state is-active">
             <div className="claim-header">
@@ -139,21 +139,26 @@ function RetentionForm({ rules, saved, onChange, onSaved }: { rules: RetentionRu
         be printed are never deleted. A deleted letter is gone for good: it can’t be brought back, by you or by anyone.
       </p>
 
-      <fieldset className="claim-field" style={{ border: 0, padding: 0, margin: '1rem 0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <fieldset className="claim-field claim-choices">
         <legend className="claim-label">Keep my letters and replies</legend>
         {radio('ret-default', 'default', `The site’s default (${windowText(rules.defaultDays)})`)}
         {windowChoices(rules).map((d) => radio(`ret-${d}`, d, windowText(d)))}
         {radio('ret-other', 'other', 'Another number of days')}
         {choice === 'other' && (
-          <input
-            className="claim-input"
-            aria-label="Number of days"
-            inputMode="numeric"
-            value={other}
-            disabled={busy}
-            onChange={(e) => setOther(e.target.value)}
-            placeholder={capped ? `1 to ${rules.maxDays}` : 'e.g. 60'}
-          />
+          <>
+            <label className="visually-hidden" htmlFor="ret-days">
+              Number of days
+            </label>
+            <input
+              className="claim-input"
+              id="ret-days"
+              inputMode="numeric"
+              value={other}
+              disabled={busy}
+              onChange={(e) => setOther(e.target.value)}
+              placeholder={capped ? `1 to ${rules.maxDays}` : 'e.g. 60'}
+            />
+          </>
         )}
         {/* With a cap, for ever isn't on offer: the API caps it (README "Retention"). */}
         {!capped && radio('ret-forever', 'forever', 'For ever')}

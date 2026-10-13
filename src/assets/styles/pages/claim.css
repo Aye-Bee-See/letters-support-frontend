@@ -23,6 +23,11 @@
   max-width: 420px;
 }
 
+/* The column a page's boxes stand in: the claim box's width, or wider. */
+.claim-column { width: 100%; max-width: 420px; }
+.claim-column.is-wide { max-width: 460px; }
+.claim-column.is-wider { max-width: 520px; }
+
 /* ── STATES (only one visible at a time) ── */
 .claim-state { display: none; }
 .claim-state.is-active { display: block; }
@@ -58,6 +63,8 @@
   color: var(--mid);
   line-height: 1.45;
 }
+
+.claim-org-note-below { margin-top: 1rem; }
 
 .claim-body {
   padding: 1.5rem 2rem 2rem;
@@ -118,6 +125,8 @@
 }
 
 .claim-show-pw:hover { color: var(--text); }
+/* Copy, beside a recovery code rather than inside a field. */
+.claim-show-pw.is-static { position: static; }
 
 /* Password strength bar */
 .pw-strength-bar {
@@ -213,6 +222,8 @@
 }
 
 .claim-submit:hover { background: #333; }
+/* A link that looks like the button (Change password's way back). */
+a.claim-submit { display: block; text-align: center; text-decoration: none; }
 
 .claim-submit:disabled {
   background: var(--border);
@@ -302,3 +313,18 @@
 /* Accepting an invitation (pages/auth/AcceptInvitation.tsx). */
 .invitation-section { margin-top: 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border); }
 .invitation-services { border: none; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+
+/* A recovery code shown once (components/forms/RecoveryCodeStep, account/RecoveryCode). */
+.recovery-code-note { align-items: center; text-align: center; }
+.recovery-code { font-family: var(--mono); font-size: 1.05rem; letter-spacing: 0.06em; word-break: break-all; }
+
+/* A bad code's way back (Join, Claim, AcceptInvitation). */
+.token-error-action { margin-top: 0.75rem; }
+
+/* The retention page's choices; the blocks page's list. */
+.claim-choices { border: 0; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.claim-block-list { list-style: none; padding: 0; margin: 0; }
+
+/* The security page's later boxes, and its centred lines. */
+.security-box { margin-top: 1.5rem; }
+.security-centred { text-align: center; }

@@ -80,7 +80,7 @@ export default function Claim() {
   return (
     <div className="claim-page">
       <title>Claim your account · letters.support</title>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
+      <div className="claim-column">
         <div className="claim-box">
           {step.name === 'enter-code' && (
             <form
@@ -132,7 +132,7 @@ export default function Claim() {
                 <div className="token-error-title">{step.title}</div>
                 <div className="token-error-body">
                   <p>{step.body}</p>
-                  <p style={{ marginTop: '0.75rem' }}>
+                  <p className="token-error-action">
                     <a
                       href="/claim"
                       onClick={(e) => {
