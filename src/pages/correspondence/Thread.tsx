@@ -14,7 +14,7 @@ import { useApi, type ApiState } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import { forgetReplacedKeys, openAttachment, openLetter, type LetterReader, type OpenedLetter } from '../../letters/open'
-import type { ApiError, Attachment, Chat, Message, Prison, Prisoner, WriterBlock } from '../../types'
+import type { ApiError, Attachment, Chat, LetterStatus, Message, Prison, Prisoner, WriterBlock } from '../../types'
 import { addressLine } from '../../utils/facilities'
 import { declineReasonForWriter, heldReasonText, isGroupAnonymous, returnReasonText, writerInSentence, writerLabel } from '../../utils/groupLetters'
 import { oldKeyText, threadPrisonerName } from '../../utils/letters'
@@ -78,6 +78,8 @@ async function loadThread(id: number, reader: LetterReader, previous: OpenedMess
 
 const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const NO_BLOCKS: WriterBlock[] = []
+/** Statuses of a letter that was mailed: mailed, a reply received to it, or returned after mailing. */
+const MAILED: LetterStatus[] = ['mailed', 'received', 'returned']
 
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -324,7 +326,10 @@ function LetterItem({
       {open && (
         <div className="letter-expanded">
           <div className="letter-expanded-header">
-            <span className="letter-expanded-direction">{outbound ? '→ Sent to prisoner' : '← Received from prisoner'}</span>
+            {/* The status pill above says where an outgoing letter stands; "mailed" only once it was. */}
+            <span className="letter-expanded-direction">
+              {!outbound ? '← Received from prisoner' : MAILED.includes(m.status) ? '→ Mailed to prisoner' : '→ To prisoner'}
+            </span>
             <span className="letter-expanded-date">{longDate(m.createdAt)}</span>
             <span className="letter-expanded-writer">
               {outbound ? writerName : m.relay_group ? `Recorded by ${m.relay_group.name}` : ''}
@@ -466,7 +471,9 @@ function Sidebar({
   const prison = prisoner?.prison_details as Prison | null | undefined
   const address = prison ? addressLine(prison.address) : null
   const lastRelay = [...letters].reverse().find((l) => l.message.sender === 'user' && l.message.relay_group)?.message.relay_group
-  const sent = letters.filter((l) => l.message.sender === 'user').length
+  // Sent: mailed, or later (a returned letter was mailed first); not one still queued, held or declined.
+  const sent = letters.filter((l) => l.message.sender === 'user' && MAILED.includes(l.message.status)).length
+  const received = letters.filter((l) => l.message.sender !== 'user').length
 
   return (
     <aside className="thread-sidebar">
@@ -539,7 +546,7 @@ function Sidebar({
       <div className="thread-sidebar-section">
         <div className="thread-sidebar-heading">Letters</div>
         <div className="thread-sidebar-info">
-          {letters.length} total &nbsp;·&nbsp; {sent} sent &nbsp;·&nbsp; {letters.length - sent} received
+          {letters.length} total &nbsp;·&nbsp; {sent} sent &nbsp;·&nbsp; {received} received
         </div>
       </div>
     </aside>
