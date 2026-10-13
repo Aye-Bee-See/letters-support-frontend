@@ -34,7 +34,7 @@ const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? on
 function NoteLine({ note }: { note: Note }) {
   if (!note) return null
   return (
-    <div className={note.ok ? 'settings-hint' : 'danger-zone danger-zone-body'} role={note.ok ? 'status' : 'alert'} style={note.ok ? { color: '#2a6e2a' } : undefined}>
+    <div className={note.ok ? 'settings-hint is-done' : 'danger-zone danger-zone-body'} role={note.ok ? 'status' : 'alert'}>
       {note.text}
     </div>
   )
@@ -443,13 +443,17 @@ function Roster({
           </p>
         )
       )}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="settings-table-wrap">
         <table className="prisons-table">
           <thead>
             <tr>
               <th>Group admin</th>
               <th>Group key</th>
-              {manages && <th aria-label="Actions" />}
+              {manages && (
+                <th>
+                  <span className="visually-hidden">Actions</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -464,7 +468,7 @@ function Roster({
                 {manages && (
                   <td>
                     {m.id !== user?.id && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      <div className="settings-key-actions">
                         {!m.holdsGroupKey && m.publicKey && (
                           <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => hand(m)}>
                             Hand the key
@@ -556,7 +560,7 @@ function Fingerprints({ roster }: { roster: MemberKeyRoster }) {
           Don’t hand out the group key or rotate it until a site admin has looked into this.
         </div>
       )}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="settings-table-wrap">
         <table className="prisons-table">
           <thead>
             <tr>

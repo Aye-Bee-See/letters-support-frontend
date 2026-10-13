@@ -674,3 +674,11 @@
 .reply-meta-bar .is-error { color: var(--alert); }
 .reply-paper-row { margin-top: 0.5rem; }
 .reply-notes-hint.is-error { color: var(--alert); }
+
+/* Recording a reply (RecordReply.tsx, RecordReplyPanel). */
+.reply-found-next { margin-top: 0.75rem; }
+.convo-table.reply-matches { margin-top: 0.75rem; }
+.reply-threads { margin-top: 1rem; }
+.reply-panel.is-first { margin-top: 0; }
+.reply-submit-note.is-aside { flex: none; align-self: center; }
+.reply-notes-hint.reply-who { margin-top: 0; margin-bottom: 0.5rem; }

@@ -137,7 +137,7 @@ export const GROUP_UI: UiClasses = {
   nowrap: 'settings-nowrap',
   actions: 'settings-actions',
   stale: 'settings-stale',
-  srOnly: 'settings-sr-only',
+  srOnly: 'visually-hidden',
   badge: 'settings-badge',
   badgeGood: 'settings-badge-good',
   badgeWait: 'settings-badge-wait',

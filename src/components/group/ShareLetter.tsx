@@ -80,7 +80,7 @@ export default function ShareLetter({ messageId, partners, contentKey }: { messa
             and mails it.
           </p>
           {outcome && (
-            <p className="letter-action-hint" role={outcome.kind === 'error' ? 'alert' : 'status'} style={{ color: outcome.kind === 'error' ? 'var(--alert)' : '#234d23' }}>
+            <p className={`letter-action-hint ${outcome.kind === 'error' ? 'is-error' : 'is-done'}`} role={outcome.kind === 'error' ? 'alert' : 'status'}>
               {outcome.text}
             </p>
           )}

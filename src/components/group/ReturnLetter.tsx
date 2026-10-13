@@ -93,7 +93,7 @@ export default function ReturnLetter({ message, onDone }: { message: Message; on
           </fieldset>
           <NoteField id="return-note" value={note} onChange={setNote} hint="say what the envelope said, nothing about what the letter said." />
           {error && (
-            <p className="letter-action-hint" role="alert" style={{ color: 'var(--alert)' }}>
+            <p className="letter-action-hint is-error" role="alert">
               {error}
             </p>
           )}
@@ -292,7 +292,7 @@ function ProposeCorrection({
         Anything else wrong with the record? A prisoner’s record has no correction form of its own yet: say it in the box above.
       </p>
       {error && (
-        <p className="letter-action-hint" role="alert" style={{ color: 'var(--alert)' }}>
+        <p className="letter-action-hint is-error" role="alert">
           {error}
         </p>
       )}

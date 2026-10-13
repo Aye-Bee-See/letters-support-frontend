@@ -48,7 +48,7 @@ export default function BlockedWriters() {
         <section className="settings-section">
           <h2 className="settings-section-heading">Blocked from your group</h2>
           {notice && (
-            <p className="block-notice" role="status" style={{ marginBottom: '1rem' }}>
+            <p className="block-notice block-notice-lead" role="status">
               {notice}
             </p>
           )}

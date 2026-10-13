@@ -99,7 +99,7 @@ export function DeclineForm({
         This can’t be undone.
       </p>
       {error && (
-        <p className="letter-action-hint" role="alert" style={{ color: 'var(--alert)' }}>
+        <p className="letter-action-hint is-error" role="alert">
           {error}
         </p>
       )}

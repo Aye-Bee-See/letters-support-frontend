@@ -1206,6 +1206,9 @@ tr:focus-visible { outline-offset: -2px; }
 .record-picker [role="option"][aria-selected="true"] { background: var(--off-white); }
 .record-picker .record-picker-status { cursor: default; color: var(--mid); }
 
+/* The record chosen, above its picker (components/invitations/InviteForm and the admin edit pages). */
+.picked-row { margin-bottom: 0.4rem; }
+
 /* A file input behind its drop zone (components/forms/UploadZone). */
 .upload-file-input { display: none; }
 

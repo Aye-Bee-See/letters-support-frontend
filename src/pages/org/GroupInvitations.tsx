@@ -82,8 +82,11 @@ export default function GroupInvitations() {
 
         <section className="settings-section">
           <h2 className="settings-section-heading">Invitations sent</h2>
-          <div className="settings-add-row" style={{ marginBottom: '1rem' }}>
-            <select className="settings-input" aria-label="Kind" value={kind ?? ''} onChange={(e) => update({ kind: e.target.value || undefined })}>
+          <div className="settings-add-row settings-filters">
+            <label className="visually-hidden" htmlFor="invitation-kind">
+              Kind
+            </label>
+            <select className="settings-input" id="invitation-kind" value={kind ?? ''} onChange={(e) => update({ kind: e.target.value || undefined })}>
               <option value="">Group admins and new groups</option>
               <option value="member">New group admins</option>
               <option value="group">New groups we vouched for</option>
@@ -117,7 +120,7 @@ export default function GroupInvitations() {
             </div>
           )}
           {list.data && <Pager classes={GROUP_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
-          <p className="settings-hint" style={{ marginTop: '1rem' }}>
+          <p className="settings-hint settings-footnote">
             A code works until the date shown. Renew gives a new code and stops the old one; Withdraw stops it for good. Your email and note are for your
             group only: the person invited never sees them.
           </p>
