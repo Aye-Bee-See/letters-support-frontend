@@ -10,6 +10,9 @@ export default defineConfig({
     // Matches the backend's default CORS_ORIGIN (http://localhost:3001)
     port: 3001,
     strictPort: true,
+    // Agent worktrees live under .claude/: a change there must not reload every
+    // open page (a reload signs out, as sessions are memory-only).
+    watch: { ignored: ['**/.claude/**'] },
   },
   build: {
     // libsodium (the sumo build, 534 kB) is the one chunk over Vite's 500 kB
