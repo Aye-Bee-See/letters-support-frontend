@@ -1,5 +1,5 @@
 /* ============================================================
-   Blocking writers (group-admin-plan.md, WP4b): the actions in a
+   Blocking writers: the actions in a
    thread's sidebar (components/group/WriterBlockActions) and the
    Blocked writers page. No prototype; built on the tokens in
    style.css and the settings-* classes in org-settings.css.

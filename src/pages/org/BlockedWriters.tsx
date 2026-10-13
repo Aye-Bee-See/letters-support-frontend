@@ -11,7 +11,7 @@ import { writerLabel } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 
 // The group's blocked writers and its site-wide block recommendations (web
-// issue #9; group-admin-plan.md WP4b).
+// issue #9).
 // - README "Blocking a writer": GET /chapter/blocks lists the group's blocks
 //   (writer, reason, blockedBy, blockedAt); DELETE /chapter/block lifts one and
 //   answers how many held letters were `released` back into the queue.

@@ -10,12 +10,12 @@ import { heldAt, shortDate } from '../../utils/prisoners'
 import LoadState from '../ui/LoadState'
 import LastLetter from './LastLetter'
 
-// The group's managed writers (group-admin-plan.md, WP1 "Writers"), as the
+// The group's managed writers (the inbox's Writers tab), as the
 // prototype's org inbox shows them: one block per writer with their threads,
 // and New letter, Hand off and Edit beside the name. GET /auth/writers lists the
 // group's unclaimed writers, its anonymous writer among them (README "Managed
-// writers"); that one is "Write anonymously" at the end instead. The pages the
-// buttons open are other packages' (WP2): this only links to them.
+// writers"); that one is "Write anonymously" at the end instead. The buttons
+// only link to the pages that do these (New Letter, Handoff, EditWriter).
 //
 // The writers come in one request; a writer's threads only when their block
 // is opened (Show letters), one request for that writer's most recent ones

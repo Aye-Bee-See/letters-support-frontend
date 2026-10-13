@@ -2,10 +2,8 @@ import type { Notification, NotificationEvent } from '../types'
 
 // Feed entries in words (README "The feed"). Entries carry ids and states,
 // never letter content, so each line is worded from `event` and `detail`.
-// A plain map, one entry per event, so other pages can add theirs. Written by
-// two packages at once (WP1 inbox, WP4b blocks) and merged into this one map;
-// the block and ban lines are WP4b's, which say who did what and what happened
-// to the letters.
+// A plain map, one entry per event. The block and ban lines say who did what
+// and what happened to the letters.
 
 type Detail = Record<string, unknown>
 

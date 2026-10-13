@@ -27,7 +27,7 @@ import LoadState from '../ui/LoadState'
 import StatusNotice from '../ui/StatusNotice'
 import { DeclineForm } from './DeclineLetter'
 
-// The group's print queue (group-admin-plan.md, WP1 "To print"). Rows come from
+// The group's print queue (the inbox's To print tab). Rows come from
 // GET /messaging/messages?relayChapter=&status=&held=&full=true (README "GET
 // /messaging/messages"): full=true adds the prisoner, their facility and the
 // writer, so a page of the queue needs no request per letter and nothing here is

@@ -24,8 +24,8 @@ import { retentionLine, windowFor } from '../../utils/retention'
 
 // Markup and classes from solidarity-site/thread.html (pages/thread.css). At
 // the bottom, a writer's reply panel, or for a group admin the panel that
-// records the prisoner's reply (WP5); the sidebar holds the group's block
-// actions (WP4b). Every letter is opened
+// records the prisoner's reply; the sidebar holds the group's block
+// actions. Every letter is opened
 // when the page loads (collapsed rows show a preview); attachments are fetched
 // and decrypted only when a letter is expanded.
 
@@ -499,7 +499,7 @@ function Sidebar({
                 </>
               )}
             </div>
-            {/* Block from our group, recommend a site-wide block (WP4b); nothing for a writer the group looks after. */}
+            {/* Block from our group, recommend a site-wide block; nothing for a writer the group looks after. */}
             <WriterBlockActions writer={chat.user_details} initialNotice={blockNotice} onChanged={onBlockChanged} />
           </div>
         </>

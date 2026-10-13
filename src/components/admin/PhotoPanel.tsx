@@ -138,7 +138,7 @@ export default function PhotoPanel({ prisoner, onChanged }: { prisoner: Prisoner
 
         {photo ? (
           <figure>
-            {/* Sized inline: admin.css has no photo class. */}
+            {/* Sized inline. */}
             <img src={apiUrl(photo.url)} alt={name} style={{ display: 'block', maxWidth: '220px', maxHeight: '280px', height: 'auto' }} />
             <figcaption className="form-hint">
               {photo.credit ? `Photo: ${photo.credit}.` : 'No credit given.'} Added {shortDate(photo.updatedAt)}.

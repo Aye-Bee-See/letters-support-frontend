@@ -9,7 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useGatedGroup } from '../../hooks/useGroup'
 import { useSignOut } from '../../hooks/useSignOut'
 
-// The group admin's inbox (group-admin-plan.md, WP1), from the prototype's
+// The group admin's inbox, from the prototype's
 // inbox-org.html (inbox.css): three tabs as the apps have them, To print,
 // Conversations and Writers, with the group's recent activity in the sidebar.
 // GroupGate, around this page, has already turned away a group that isn't
@@ -89,7 +89,7 @@ export default function InboxOrg() {
         <h1 className="inbox-hero-title">{group.group.name}</h1>
       </div>
 
-      {/* The group-owner admin hands the key to admins waiting for it (WP3); renders nothing for anyone else. */}
+      {/* The group-owner admin hands the key to admins waiting for it; renders nothing for anyone else. */}
       <MembersWaitingNotice />
 
       <div className="group-tabs" role="tablist">

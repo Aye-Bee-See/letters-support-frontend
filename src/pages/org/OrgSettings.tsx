@@ -12,7 +12,7 @@ import { SERVICE_LABELS } from '../../utils/groups'
 import { capitalise, changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { refusalText } from '../../utils/refusals'
 
-// A group admin's own group (group-admin-plan.md WP4a). The record through
+// A group admin's own group. The record through
 // PUT /chapter/chapter, which a group admin may send for their own active group
 // (README "Chapters" > "Chapter fields": every field but accountStatus,
 // vouchedBy and recordStatus, which only a site admin sets (API #192), and the

@@ -48,7 +48,7 @@ function NewsTags({ tags }: { tags: string[] }) {
   return (
     <div style={{ marginTop: '0.25rem' }}>
       {tags.map((tag) => (
-        // Inline spacing: inbox.css has no class for these yet; the colours are thread.css's status pills.
+        // thread.css's status pills, spaced inline.
         <span key={tag} className={`letter-collapsed-status ${isWorryingTag(tag) ? 'status-pending' : 'status-mailed'}`} style={{ marginRight: '0.6rem' }}>
           {tag}
         </span>
