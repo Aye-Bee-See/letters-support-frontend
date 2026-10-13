@@ -1,151 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import {
-  deleteFacility,
-  getFacility,
-  getMailRules,
-  linkRelayGroup,
-  unlinkRelayGroup,
-  updateFacility,
-  type FacilityFields,
-} from '../../api/facilities'
+import { deleteFacility, getFacility, getMailRules, linkRelayGroup, unlinkRelayGroup, updateFacility } from '../../api/facilities'
 import { getGroups } from '../../api/groups'
 import RecordHistory from '../../components/admin/RecordHistory'
+import RulePicker from '../../components/admin/RulePicker'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, Chapter, MailRuleCategory, MailRuleList, Prison, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
+import type { ApiError, Chapter, MailRuleList, Prison, RecordStatus } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
+import { changes, languageHint, MAX_PRINT_LINES, problems, RECORD_STATUSES, ROUTINGS, toForm, type FacilityFormValues } from '../../utils/facilityForm'
 import { date } from '../../components/invitations/wording'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one facility record (PUT /prison/prison, superadmins only). Only changed
 // fields are sent, so the audit log says what was edited; `address` is one JSON
-// value, so it goes whole. Relay groups are links of their own (PUT and DELETE
-// /prison/relay) and change at once, apart from Save. Unlike a prisoner's, a
-// facility's edits don't touch queued letters.
-
-const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
-const RECORD_STATUSES: RecordStatus[] = ['published', 'pending', 'draft']
-/** address keys the form edits; any others the record has are kept as they are. */
-const ADDRESS_KEYS = ['street', 'city', 'postalCode', 'lines']
-const MAX_PRINT_LINES = 8
-const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
-
-interface FormValues {
-  prisonName: string
-  street: string
-  city: string
-  postalCode: string
-  /** One print line per line of text. */
-  lines: string
-  country: string
-  routing: string
-  scanService: string
-  pageLimit: string
-  photoLimit: string
-  /** Two-letter codes, separated by commas or spaces. */
-  mailLanguages: string
-  notes: string
-  recordStatus: string
-  verificationNotes: string
-}
-
-const toLines = (text: string) =>
-  text
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-const toCodes = (text: string) =>
-  text
-    .toLowerCase()
-    .split(/[\s,]+/)
-    .filter(Boolean)
-
-function toForm(f: Prison): FormValues {
-  const a = f.address ?? {}
-  return {
-    prisonName: f.prisonName,
-    street: a.street ?? '',
-    city: a.city ?? '',
-    postalCode: a.postalCode ?? '',
-    lines: (a.lines ?? []).join('\n'),
-    country: f.country ?? '',
-    routing: f.routing ?? '',
-    scanService: f.scanService ?? '',
-    pageLimit: f.pageLimit !== null ? String(f.pageLimit) : '',
-    photoLimit: f.photoLimit !== null ? String(f.photoLimit) : '',
-    mailLanguages: (f.mailLanguages ?? []).join(', '),
-    notes: f.notes ?? '',
-    recordStatus: f.recordStatus ?? 'published',
-    verificationNotes: f.verificationNotes ?? '',
-  }
-}
-
-/** The address as the form would save it: the record's other keys kept, blank fields dropped. */
-function buildAddress(original: PrisonAddress, v: FormValues): PrisonAddress {
-  const out: PrisonAddress = Object.fromEntries(Object.entries(original).filter(([key]) => !ADDRESS_KEYS.includes(key)))
-  if (v.street.trim()) out.street = v.street.trim()
-  if (v.city.trim()) out.city = v.city.trim()
-  if (v.postalCode.trim()) out.postalCode = v.postalCode.trim()
-  const lines = toLines(v.lines)
-  if (lines.length) out.lines = lines
-  return out
-}
-
-/** Problems the API would refuse, said before the request. */
-function problems(v: FormValues, rules: Set<string>, list: MailRuleList | null): string[] {
-  const out: string[] = []
-  if (!v.prisonName.trim()) out.push('The facility needs a name.')
-  if (toLines(v.lines).length > MAX_PRINT_LINES) out.push(`An envelope takes at most ${MAX_PRINT_LINES} print lines.`)
-  for (const [key, label] of [['pageLimit', 'Page limit'], ['photoLimit', 'Photo limit']] as const) {
-    const raw = v[key].trim()
-    // isSafeInteger, not just digits: a long enough digit string is Infinity (sent as
-    // null, i.e. "no limit") or loses precision on the way to JSON.
-    if (raw && !(/^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) && Number(raw) >= 1))
-      out.push(`${label} must be a whole number of at least 1, or blank for no limit.`)
-  }
-  // The API refuses a photo limit on a facility that takes no photos at all.
-  if (v.photoLimit.trim() && rules.has('no_photos')) {
-    const label = list?.rules.find((r) => r.tag === 'no_photos')?.label ?? 'No photos'
-    out.push(`A facility with “${label}” takes no photos, so it can’t have a photo limit: clear one or the other.`)
-  }
-  const codes = toCodes(v.mailLanguages)
-  const bad = codes.filter((c) => !/^[a-z]{2}$/.test(c))
-  if (bad.length) out.push(`Languages are two-letter codes, like en or es: ${bad.join(', ')} isn't one.`)
-  if (new Set(codes).size !== codes.length) out.push('A language is listed twice.')
-  for (const [a, b] of list?.conflicts ?? []) {
-    if (rules.has(a) && rules.has(b)) {
-      const label = (tag: string) => list?.rules.find((r) => r.tag === tag)?.label ?? tag
-      out.push(`“${label(a)}” and “${label(b)}” can’t both apply.`)
-    }
-  }
-  return out
-}
-
-const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i])
-
-/** The API body for what changed. Blank text and limits are null; rules go in master-list order. */
-function changes(f: Prison, initial: FormValues, v: FormValues, rules: Set<string>, list: MailRuleList | null): FacilityFields {
-  const out: FacilityFields = {}
-  const text = (s: string) => s.trim() || null
-  if (v.prisonName.trim() !== initial.prisonName.trim()) out.prisonName = v.prisonName.trim()
-  for (const key of ['country', 'scanService', 'notes', 'verificationNotes'] as const)
-    if (v[key].trim() !== initial[key].trim()) out[key] = text(v[key])
-  if (v.routing !== initial.routing) out.routing = (v.routing || null) as RoutingMethod | null
-  if (v.recordStatus !== initial.recordStatus) out.recordStatus = v.recordStatus as RecordStatus
-  for (const key of ['pageLimit', 'photoLimit'] as const)
-    if (v[key].trim() !== initial[key].trim()) out[key] = v[key].trim() ? Number(v[key]) : null
-  const codes = toCodes(v.mailLanguages)
-  if (!sameList(codes, toCodes(initial.mailLanguages))) out.mailLanguages = codes.length ? codes : null
-  const address = buildAddress(f.address ?? {}, v)
-  if (JSON.stringify(address) !== JSON.stringify(buildAddress(f.address ?? {}, initial))) out.address = address
-  const order = list?.rules.map((r) => r.tag) ?? []
-  const sorted = [...rules].sort((a, b) => (order.indexOf(a) + 1 || Infinity) - (order.indexOf(b) + 1 || Infinity))
-  if (!sameList([...sorted].sort(), [...(f.mailRules ?? [])].sort())) out.mailRules = sorted
-  return out
-}
+// value, so it goes whole. The form, its checks and the rule picker are shared
+// with NewFacility.tsx (utils/facilityForm.ts, components/admin/RulePicker.tsx).
+// Relay groups are links of their own (PUT and DELETE /prison/relay) and change
+// at once, apart from Save. Unlike a prisoner's, a facility's edits don't touch
+// queued letters.
 
 export default function EditFacility() {
   const id = Number(useParams().id)
@@ -231,11 +106,11 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
 
-  const set = (key: keyof FormValues, value: string) => {
+  const set = <K extends keyof FacilityFormValues>(key: K, value: FacilityFormValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }))
     onEdit()
   }
-  const field = (key: keyof FormValues) => ({
+  const field = (key: Exclude<keyof FacilityFormValues, 'recordStatus'>) => ({
     id: `f-${key}`,
     value: values[key],
     disabled: busy,
@@ -250,11 +125,6 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
     })
     onEdit()
   }
-
-  const languageHint = toCodes(values.mailLanguages)
-    .filter((c) => /^[a-z]{2}$/.test(c))
-    .map((c) => languageNames.of(c) ?? c)
-    .join(', ')
 
   async function save() {
     onEdit()
@@ -350,7 +220,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
               ))}
             </select>
           </Field>
-          <Field label="Mail languages" htmlFor="f-mailLanguages" hint={languageHint || 'Two-letter codes, e.g. “en, es”. Blank for no restriction.'}>
+          <Field label="Mail languages" htmlFor="f-mailLanguages" hint={languageHint(values.mailLanguages) || 'Two-letter codes, e.g. “en, es”. Blank for no restriction.'}>
             <input className="form-input" {...field('mailLanguages')} />
           </Field>
         </div>
@@ -375,7 +245,7 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
 
       <Section title="Publishing and verification">
         <Field label="Record status" htmlFor="f-recordStatus" hint="Only published records appear in the public directory.">
-          <select className="form-select" {...field('recordStatus')}>
+          <select id="f-recordStatus" className="form-select" value={values.recordStatus} disabled={busy} onChange={(e) => set('recordStatus', e.target.value as RecordStatus)}>
             {RECORD_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -422,36 +292,6 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
         </div>
       </div>
     </form>
-  )
-}
-
-const categoryLabel = (c: MailRuleCategory) => (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ')
-
-/**
- * The master list by category. A retired rule appears only if the facility
- * already has it: it can be kept or removed, but the API refuses to add one.
- */
-function RulePicker(props: { list: MailRuleList; held: Set<string>; selected: Set<string>; disabled: boolean; onToggle: (tag: string) => void }) {
-  const { list, held, selected, disabled, onToggle } = props
-  return (
-    <div className="rule-picker">
-      {list.categories.map((category) => {
-        const inCategory = list.rules.filter((r) => r.category === category && (!r.retired || held.has(r.tag)))
-        if (!inCategory.length) return null
-        return (
-          <fieldset key={category} className="rule-group">
-            <legend className="form-hint">{categoryLabel(category)}</legend>
-            {inCategory.map((rule) => (
-              <label key={rule.tag} className="queue-check" title={rule.description ?? undefined}>
-                <input type="checkbox" checked={selected.has(rule.tag)} disabled={disabled} onChange={() => onToggle(rule.tag)} />
-                {rule.label}
-                {rule.retired && <span className="list-sub"> (retired)</span>}
-              </label>
-            ))}
-          </fieldset>
-        )
-      })}
-    </div>
   )
 }
 

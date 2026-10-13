@@ -3,6 +3,7 @@ import { createMailRule, deleteMailRule, getFacilities, getMailRules, updateMail
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, MailRule, MailRuleCategory, MailRuleList } from '../../types'
+import { categoryLabel } from '../../utils/facilities'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 
 // The master list of mail rules (README "Mail rules" > "Changing the master
@@ -15,8 +16,6 @@ import { commonRefusal, otherRefusal } from '../../utils/refusals'
 // on each facility, listed here read-only, as are the pairs that conflict.
 
 const TAG = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/
-
-const categoryLabel = (c: string) => (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ')
 
 /**
  * The words of a tag or label, order and plurals aside, as the API compares

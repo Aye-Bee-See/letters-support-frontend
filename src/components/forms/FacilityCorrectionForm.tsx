@@ -3,7 +3,8 @@ import { submitCorrection } from '../../api/corrections'
 import { getMailRules } from '../../api/facilities'
 import { toApiError } from '../../api/client'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, MailRuleCategory, Prison, PrisonAddress, RoutingMethod } from '../../types'
+import type { ApiError, Prison, PrisonAddress, RoutingMethod } from '../../types'
+import { categoryLabel } from '../../utils/facilities'
 import { refusalText } from '../../utils/refusals'
 
 const ROUTING_OPTIONS: [RoutingMethod, string][] = [
@@ -12,8 +13,6 @@ const ROUTING_OPTIONS: [RoutingMethod, string][] = [
   ['direct_and_scan', 'Direct mail + scan service available'],
   ['relay_only', 'Relay only — direct mail not accepted'],
 ]
-
-const categoryLabel = (c: MailRuleCategory) => (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ')
 
 const sameSet = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((x) => b.has(x))
 
