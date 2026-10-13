@@ -228,7 +228,13 @@ function Batch({ params }: { params: URLSearchParams }) {
           <h1 className="thread-title">Print a batch</h1>
           <div className="thread-meta">
             <span>
-              {list ? `${lettersWord(sheets.length)} to print` : ids.length > 0 && ready ? `Opening ${progress} of ${ids.length}…` : ''}
+              {list
+                ? marked
+                  ? `${lettersWord(sheets.length)}, marked printed`
+                  : `${lettersWord(sheets.length)} to print`
+                : ids.length > 0 && ready
+                  ? `Opening ${progress} of ${ids.length}…`
+                  : ''}
               {list && skipped.length > 0 ? `, ${skipped.length} left out` : ''}
             </span>
           </div>

@@ -158,7 +158,10 @@ function ConvoRow({ chat, news }: { chat: Chat; news: string[] }) {
         )}
       </td>
       <td>
-        <span className="convo-date">{inboxDate(chat.lastMessageAt)}</span>
+        {/* A real link to the conversation, beside the row's own click. */}
+        <Link to={`/threads/${chat.id}`} className="convo-thread-link" onClick={(e) => e.stopPropagation()} aria-label={`Open the conversation with ${threadPrisonerName(chat)}`}>
+          <span className="convo-date">{inboxDate(chat.lastMessageAt)}</span>
+        </Link>
       </td>
     </tr>
   )

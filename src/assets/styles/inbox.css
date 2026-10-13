@@ -224,6 +224,13 @@
 
 .convo-prisoner-link:hover { text-decoration: underline; }
 
+.convo-thread-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.convo-thread-link:hover { text-decoration: underline; }
+
 .convo-prisoner {
   font-family: var(--sans);
   font-size: 0.9rem;

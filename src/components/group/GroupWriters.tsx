@@ -144,7 +144,11 @@ export default function GroupWriters() {
         return (
           <div key={w.id} className="writer-block">
             <div className="writer-block-header">
-              <span className="writer-name">{writerLabel(w)}</span>
+              <span className="writer-name">
+                {writerLabel(w)}
+                {/* The name the group knows them by, beside the pen name their letters are signed with. */}
+                {w.penName && w.name && w.name !== w.penName ? ` · ${w.name}` : ''}
+              </span>
               {state && <span className="writer-meta">{state}</span>}
               <div className="writer-block-actions">
                 <Link to={`/letters/new?writer=${w.id}`} className="btn btn-sm writer-new-letter-btn">

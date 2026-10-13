@@ -64,7 +64,7 @@ export default function InviteCodes() {
               preview={preview}
               onPreview={setPreview}
               onDone={() => {
-                if (!window.confirm('Clear these codes from the screen? They can’t be shown again: only the printed or copied ones will work.')) return
+                // The button's own words are the confirmation; no second question.
                 setIssued(null)
                 setPreview(false)
               }}

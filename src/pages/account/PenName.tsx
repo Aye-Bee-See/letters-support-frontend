@@ -66,7 +66,8 @@ export default function PenName() {
             </div>
 
             <div className="claim-body">
-              {error && (
+              {/* A taken name is said once, under the field. */}
+              {error && !refused && (
                 <span className="claim-error is-visible" role="alert">
                   {error}
                 </span>

@@ -181,6 +181,8 @@ export default function NewPrisoner() {
                   onSelect={(f) => {
                     setFacility(f)
                     set('prison', String(f.id))
+                    // The facility's country, when none is typed yet.
+                    if (f.country) setValues((v) => (v.country.trim() ? v : { ...v, country: f.country ?? '' }))
                   }}
                 />
               </Field>
