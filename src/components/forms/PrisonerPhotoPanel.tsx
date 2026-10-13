@@ -8,7 +8,7 @@ import type { Prisoner, PrisonerPhoto } from '../../types'
 import { PHOTO_MAX_MB, type PhotoRole } from '../../utils/photos'
 import { displayName } from '../../utils/prisoners'
 import { refusalText } from '../../utils/refusals'
-import { date } from '../invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { Field, Section } from './ClassedParts'
 import { ADMIN_UI, GROUP_UI, type UiClasses } from './uiClasses'
 
@@ -134,7 +134,7 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
           )}
           {current && (
             <span className={c.hint}>
-              {[current.credit ? `Photo: ${current.credit}.` : mode === 'admin' ? 'No credit given.' : '', `Added ${date(current.updatedAt)}.`]
+              {[current.credit ? `Photo: ${current.credit}.` : mode === 'admin' ? 'No credit given.' : '', `Added ${shortDate(current.updatedAt)}.`]
                 .filter(Boolean)
                 .join(' ')}
             </span>

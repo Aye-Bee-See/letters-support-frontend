@@ -18,5 +18,11 @@ describe('actorName', () => {
 
   it('says what a null actor means', () => {
     expect(actorName(null, 1)).toBe('the site itself, or an account since deleted')
+    expect(actorName(null, 1, 'someone no longer here')).toBe('someone no longer here')
+  })
+
+  it('names someone given without a role (who made a block) by name or username', () => {
+    expect(actorName({ id: 3, username: 'chapter2', name: null }, 1)).toBe('chapter2')
+    expect(actorName({ id: 3, username: 'chapter2', name: 'Sam' }, 3)).toBe('you')
   })
 })

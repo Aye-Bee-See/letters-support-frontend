@@ -10,7 +10,7 @@ import { ROUTING_LABELS } from './facilities'
 // verified it (verifiedAt, verifiedBy) stays with each page.
 
 export const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
-/** The record statuses in a record's order of life; the prisoner form lists them so too. */
+/** The record statuses in a record's order of life; the prisoner and group forms list them so too. */
 export const RECORD_STATUSES: RecordStatus[] = ['draft', 'pending', 'published']
 /** An envelope takes at most this many print lines (PrisonAddress.lines: 1 to 8). */
 export const MAX_PRINT_LINES = 8

@@ -13,7 +13,7 @@ import { useLinkAction } from '../../components/group/useLinkAction'
 import { useApi } from '../../hooks/useApi'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
-import { capitalise, changes, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
+import { capitalise, changes, problems, RECORD_STATUSES, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one group (PUT /chapter/chapter, superadmins only). Only changed fields
@@ -27,7 +27,6 @@ import { refusalText } from '../../utils/refusals'
 // the group's own members through /auth, never here.
 
 const ACCOUNT_STATUSES: AccountStatus[] = ['pending', 'active', 'suspended']
-const RECORD_STATUSES: RecordStatus[] = ['published', 'pending', 'draft']
 
 /** The shared group form (utils/groupForm.ts) plus the fields only a site admin sets. */
 interface FormValues extends GroupFormValues {

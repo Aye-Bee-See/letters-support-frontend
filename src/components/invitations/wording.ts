@@ -6,9 +6,6 @@ import type { UiClasses } from '../forms/uiClasses'
 // state badges, and refusals worded from the status, name and condition, never
 // the API's sentence unless nothing else fits.
 
-/** utils/dates.ts's shortDate, under the name the admin record pages still import. */
-export { shortDate as date } from '../../utils/dates'
-
 /** Asked before a create or renew while a code is on screen: it is shown once, and the new one replaces it. */
 export const REPLACE_CODE_QUESTION = 'The code on screen is shown only now. Replace it?'
 

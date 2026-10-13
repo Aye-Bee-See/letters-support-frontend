@@ -6,7 +6,7 @@ import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus, SocialLinkKey } from '../../types'
-import { buildLocation, buildSocial, capitalise, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, type GroupFormValues } from '../../utils/groupForm'
+import { buildLocation, buildSocial, capitalise, problems, RECORD_STATUSES, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, type GroupFormValues } from '../../utils/groupForm'
 import { SERVICE_LABELS } from '../../utils/groups'
 import { siteAdminRefusal } from '../../utils/refusals'
 
@@ -21,7 +21,6 @@ import { siteAdminRefusal } from '../../utils/refusals'
 // draft unless chosen otherwise: published makes it public at once.
 
 const ACCOUNT_STATUSES: AccountStatus[] = ['pending', 'active', 'suspended']
-const RECORD_STATUSES: RecordStatus[] = ['draft', 'pending', 'published']
 
 interface Values extends GroupFormValues {
   accountStatus: AccountStatus
