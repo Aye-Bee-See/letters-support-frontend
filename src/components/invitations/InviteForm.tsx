@@ -174,12 +174,12 @@ export default function InviteForm(props: Props) {
         )}
         {kind === 'member' && ownGroup && (
           // group-admin-plan.md section 3: any screen that leads to handing out the group key says this.
-          <div className={c.alertWarn}>
+          <div className={c.alertWarn} role="status">
             <strong>A group admin can be handed the group key, and the group key reads every letter {ownGroup.name} mails.</strong> Invite only people
             your group trusts with that, and keep the group small: each one is another person who could be pressured or lose a device.
           </div>
         )}
-        {error && <div className={c.alertErr}>{error}</div>}
+        {error && <div className={c.alertErr} role="alert">{error}</div>}
       </div>
       <div className={c.footer}>
         <span />

@@ -76,7 +76,7 @@ export default function EditGroup() {
       <div className="admin-content">
         {group.loading && <p className="dash-note">Loading the group…</p>}
         {group.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             {group.error.status === 404 ? `There is no group #${id}.` : `Couldn't load group #${id} (${refusalText(group.error)}).`}
             {group.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={group.reload}>
@@ -85,7 +85,7 @@ export default function EditGroup() {
             )}
           </div>
         )}
-        {saved && <div className="admin-alert admin-alert-ok">Saved.</div>}
+        {saved && <div className="admin-alert admin-alert-ok" role="status">Saved.</div>}
         {group.data && (
           <>
             <GroupForm
@@ -341,7 +341,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
           </Field>
         </div>
         {droppingRelay && relayCount > 0 && (
-          <div className="admin-alert admin-alert-warn">
+          <div className="admin-alert admin-alert-warn" role="status">
             This group is linked as the relay group for {relayCount} {relayCount === 1 ? 'facility' : 'facilities'}. Changing it to collecting only keeps those
             links, and the API still treats a group attached to a facility as relaying; unlink them below if it should stop.
           </div>
@@ -416,13 +416,13 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
       </Section>
 
       {issues.length > 0 && (
-        <div className="admin-alert admin-alert-warn form-error">
+        <div className="admin-alert admin-alert-warn form-error" role="status">
           {issues.map((text) => (
             <div key={text}>{text}</div>
           ))}
         </div>
       )}
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>
@@ -479,7 +479,7 @@ function GroupTwoFactor({ group: g }: { group: Chapter }) {
             It’s required of every group’s admins at the moment, so this group’s admins must use it whatever this says.
           </p>
         )}
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       </Section>
     </div>
   )

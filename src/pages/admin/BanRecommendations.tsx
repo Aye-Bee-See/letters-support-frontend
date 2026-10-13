@@ -81,7 +81,7 @@ export default function BanRecommendations() {
         )}
         {list.loading && <p className="dash-note">Loading…</p>}
         {list.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             Couldn't load the recommendations ({refusalText(list.error)}).
             <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
               Try again
@@ -185,7 +185,7 @@ function WriterCard({ recs, onDecided }: { recs: BanRecommendation[]; onDecided:
         </div>
       ))}
 
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       <div className="ban-rec-actions ban-decision">
         <input
           className="form-input"

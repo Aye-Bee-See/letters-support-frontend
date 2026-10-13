@@ -56,7 +56,7 @@ export default function TokenNotice({ classes: c, invitation, renewed, group, on
         </button>
       </div>
       {copy === 'failed' && (
-        <div className={c.alertWarn}>This browser didn’t allow copying. Select the code or link above and copy it by hand, or write it down.</div>
+        <div className={c.alertWarn} role="status">This browser didn’t allow copying. Select the code or link above and copy it by hand, or write it down.</div>
       )}
       <div className={c.hint}>
         Valid until {dateTime(invitation.expiresAt)}. Nothing is sent by email: give it to them in person or through a channel you both already trust.

@@ -80,7 +80,7 @@ export default function RecordHistory({ resource, id, version }: { resource: Sub
       <Section title="History">
         {history.loading && <p className="form-static">Loading the history…</p>}
         {history.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             {history.error.status === 404
               ? 'There is no history for this record.'
               : `Couldn’t load the history: ${commonRefusal(history.error) ?? otherRefusal(history.error)}`}{' '}

@@ -264,13 +264,13 @@ export default function NewFacility() {
           </Section>
 
           {issues.length > 0 && (
-            <div className="admin-alert admin-alert-warn form-error">
+            <div className="admin-alert admin-alert-warn form-error" role="status">
               {issues.map((text) => (
                 <div key={text}>{text}</div>
               ))}
             </div>
           )}
-          {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+          {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
           <div className="admin-form-footer">
             <span />

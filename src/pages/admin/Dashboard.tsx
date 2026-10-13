@@ -143,16 +143,16 @@ function Alerts({ summary, readiness }: { summary: AdminSummary | null; readines
 
   if (errors.length === 0 && warnings.length === 0) {
     if (!summary || !readiness) return null
-    return <div className="admin-alert admin-alert-ok">Nothing needs attention: backups are current and encryption is ready.</div>
+    return <div className="admin-alert admin-alert-ok" role="status">Nothing needs attention: backups are current and encryption is ready.</div>
   }
 
   return (
     <>
       {errors.map((text, i) => (
-        <div key={`e${i}`} className="admin-alert admin-alert-err">{text}</div>
+        <div key={`e${i}`} className="admin-alert admin-alert-err" role="alert">{text}</div>
       ))}
       {warnings.map((text, i) => (
-        <div key={`w${i}`} className="admin-alert admin-alert-warn">{text}</div>
+        <div key={`w${i}`} className="admin-alert admin-alert-warn" role="status">{text}</div>
       ))}
     </>
   )

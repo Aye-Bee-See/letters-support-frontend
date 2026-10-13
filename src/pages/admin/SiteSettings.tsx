@@ -48,7 +48,7 @@ export default function SiteSettings() {
             </p>
             {policy.loading && <p className="dash-note">Loading…</p>}
             {policy.error && (
-              <div className="admin-alert admin-alert-err">
+              <div className="admin-alert admin-alert-err" role="alert">
                 Couldn’t load who must use it ({refusalText(policy.error)}).
                 <button type="button" className="a-btn a-btn-sm" onClick={policy.reload}>
                   Try again
@@ -235,7 +235,7 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
         </div>
       </div>
 
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
     </>
   )
 }
@@ -314,7 +314,7 @@ function ResetTwoFactor() {
           <Link to={`/admin/users?q=${encodeURIComponent(results.q)}`}>See them all in Accounts</Link>, or search for more of the name.
         </p>
       )}
-      {message && <div className={`admin-alert ${message.ok ? 'admin-alert-ok' : 'admin-alert-err'}`}>{message.text}</div>}
+      {message && <div className={`admin-alert ${message.ok ? 'admin-alert-ok' : 'admin-alert-err'}`} role={message.ok ? 'status' : 'alert'}>{message.text}</div>}
     </>
   )
 }

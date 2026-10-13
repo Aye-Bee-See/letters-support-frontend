@@ -201,7 +201,7 @@ export default function Queue() {
 
         {list.loading && <p className="dash-note">Loading the queue…</p>}
         {list.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             Couldn't load the queue ({refusalText(list.error)}).
             <button type="button" className="a-btn a-btn-sm" onClick={list.reload}>
               Try again
@@ -211,7 +211,7 @@ export default function Queue() {
         {list.data && list.data.items.length === 0 && (
           <p className="dash-note">{status === 'pending' ? 'Nothing is waiting for review.' : 'No proposals match these filters.'}</p>
         )}
-        {bulkResult && <div className={`admin-alert ${bulkResult.ok ? 'admin-alert-ok' : 'admin-alert-err'}`}>{bulkResult.text}</div>}
+        {bulkResult && <div className={`admin-alert ${bulkResult.ok ? 'admin-alert-ok' : 'admin-alert-err'}`} role={bulkResult.ok ? 'status' : 'alert'}>{bulkResult.text}</div>}
         {selectable.length > 1 && (
           <div className="queue-item-actions">
             <label className="queue-check">
@@ -346,7 +346,7 @@ function Review({ submission: s, onClose, onDecided }: { submission: Submission;
     <div className="queue-review">
       {detail.loading && <p className="dash-note">Loading the current values…</p>}
       {detail.error && (
-        <div className="admin-alert admin-alert-err">
+        <div className="admin-alert admin-alert-err" role="alert">
           Couldn't load this proposal ({refusalText(detail.error)}).
           <button type="button" className="a-btn a-btn-sm" onClick={detail.reload}>
             Try again
@@ -380,7 +380,7 @@ function Changes({ submission: s }: { submission: Submission }) {
   if (fields.length === 0) return <p className="dash-note">This proposal changes no fields.</p>
   if (isUpdate && current === null && s.status === 'pending')
     return (
-      <div className="admin-alert admin-alert-warn">
+      <div className="admin-alert admin-alert-warn" role="status">
         The record this proposal changes no longer exists. Approving it will fail; reject it instead.
       </div>
     )
@@ -616,7 +616,7 @@ function DecisionForm({ submission: s, onCancel, onDecided }: { submission: Subm
           Mark the record verified on approval
         </label>
       )}
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       <div className="queue-item-actions">
         <button type="button" className="a-btn a-btn-primary a-btn-sm" disabled={busy} onClick={() => decide('approve')}>
           {edited.length > 0 ? `Approve with ${edited.length} change${edited.length === 1 ? '' : 's'}` : 'Approve'}

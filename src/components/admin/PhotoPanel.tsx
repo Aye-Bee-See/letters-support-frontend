@@ -201,8 +201,8 @@ export default function PhotoPanel({ prisoner, onChanged }: { prisoner: Prisoner
           </>
         )}
 
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
-        {done && <div className="admin-alert admin-alert-ok">{done}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
+        {done && <div className="admin-alert admin-alert-ok" role="status">{done}</div>}
       </Section>
     </div>
   )

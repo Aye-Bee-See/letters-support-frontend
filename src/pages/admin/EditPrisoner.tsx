@@ -127,7 +127,7 @@ export default function EditPrisoner() {
       <div className="admin-content">
         {prisoner.loading && <p className="dash-note">Loading the record…</p>}
         {prisoner.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             {prisoner.error.status === 404 ? `There is no prisoner #${id}.` : `Couldn't load prisoner #${id} (${refusalText(prisoner.error)}).`}
             {prisoner.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={prisoner.reload}>
@@ -168,7 +168,7 @@ function SavedNotice({ mail }: { mail?: PrisonerMailChange }) {
   if (mail?.held) parts.push(`${mail.held} letter${mail.held === 1 ? '' : 's'} held`)
   if (mail?.released) parts.push(`${mail.released} held letter${mail.released === 1 ? '' : 's'} let go`)
   return (
-    <div className="admin-alert admin-alert-ok">
+    <div className="admin-alert admin-alert-ok" role="status">
       Saved.{parts.length > 0 && ` Their mail: ${parts.join(', ')}. Their writers have been told.`}
     </div>
   )
@@ -325,7 +325,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
           </Field>
         </div>
         {warnings.map((text) => (
-          <div key={text} className="admin-alert admin-alert-warn">
+          <div key={text} className="admin-alert admin-alert-warn" role="status">
             {text}
           </div>
         ))}
@@ -413,7 +413,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
         </Field>
       </Section>
 
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>

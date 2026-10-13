@@ -169,7 +169,7 @@ function GroupTable({ groups, onChanged }: { groups: Chapter[]; onChanged: () =>
 
   return (
     <>
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
       <table className="admin-table">
         <thead>
           <tr>

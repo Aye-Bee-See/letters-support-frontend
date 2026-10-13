@@ -43,7 +43,7 @@ export default function InvitationTable({ classes: c, invitations, groupById, ki
 
   return (
     <>
-      {error && <div className={`${c.alertErr} ${c.formError}`}>{error}</div>}
+      {error && <div className={`${c.alertErr} ${c.formError}`} role="alert">{error}</div>}
       <table className={c.table}>
         <thead>
           <tr>

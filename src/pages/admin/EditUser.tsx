@@ -66,7 +66,7 @@ function EditUser({ id }: { id: number }) {
       <div className="admin-content">
         {user.loading && !user.data && <p className="dash-note">Loading the account…</p>}
         {user.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             {user.error.status === 404
               ? `There is no account #${id}. It may have been deleted: the audit log keeps an account’s number, never its name.`
               : `Couldn't load account #${id} (${accountRefusal(user.error)}).`}
@@ -86,7 +86,7 @@ function EditUser({ id }: { id: number }) {
           <>
             <AccountRecord u={user.data} groups={groups} />
             {me?.id === user.data.id ? (
-              <div className="admin-alert admin-alert-warn">
+              <div className="admin-alert admin-alert-warn" role="status">
                 This is your own account. Its role, sessions and deletion are another site admin’s to change; your password and two-factor sign-in are on{' '}
                 <Link to="/account/security">your account’s security page</Link>.
               </div>
@@ -119,7 +119,7 @@ function AccountRecord({ u, groups }: { u: User; groups: Chapter[] | null }) {
     <div className="admin-form">
       <Section title="Account">
         <p className="form-hint">An account holds no letters: nothing on this page reads one, and nothing here opens them.</p>
-        {managed && <div className="admin-alert admin-alert-warn">{managed}</div>}
+        {managed && <div className="admin-alert admin-alert-warn" role="status">{managed}</div>}
         <div className="form-row">
           <Row label="Username">{u.username}</Row>
           <Row label="Email">{u.email}</Row>
@@ -289,13 +289,13 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
               )}
             </div>
             {role === 'banned' && u.role !== 'banned' && (
-              <div className="admin-alert admin-alert-warn">
+              <div className="admin-alert admin-alert-warn" role="status">
                 Banning ends every session of this account at once, on every device, and it can’t sign in again until its role is changed back. Nothing is deleted.
                 Groups’ recommendations to block this writer, if there are any, stay waiting on <Link to="/admin/bans">Block recommendations</Link>.
               </div>
             )}
             {role === 'admin' && u.role !== 'admin' && (
-              <div className="admin-alert admin-alert-warn">A site admin runs the whole site. They still hold no group key and can read no letter.</div>
+              <div className="admin-alert admin-alert-warn" role="status">A site admin runs the whole site. They still hold no group key and can read no letter.</div>
             )}
             <div className="relay-add">
               <button
@@ -384,7 +384,7 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
         </div>
       )}
 
-      {error && <div className="admin-alert admin-alert-err">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
 
       {u.anonymousForChapter === null && (
         <div className="admin-form relay-panel">
@@ -393,7 +393,7 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
               Deletes the account and everything written or received through it, letters and replies included. It can’t be undone. What they did as staff stays,
               without their name.
             </p>
-            {deleteError && <div className="admin-alert admin-alert-err">{deleteError}</div>}
+            {deleteError && <div className="admin-alert admin-alert-err" role="alert">{deleteError}</div>}
             <div className="relay-add">
               <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>
                 Delete account…

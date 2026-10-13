@@ -170,7 +170,7 @@ export default function EditFacility() {
       <div className="admin-content">
         {facility.loading && <p className="dash-note">Loading the record…</p>}
         {facility.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             {facility.error.status === 404 ? `There is no facility #${id}.` : `Couldn't load facility #${id} (${refusalText(facility.error)}).`}
             {facility.error.status !== 404 && (
               <button type="button" className="a-btn a-btn-sm" onClick={facility.reload}>
@@ -179,7 +179,7 @@ export default function EditFacility() {
             )}
           </div>
         )}
-        {saved && <div className="admin-alert admin-alert-ok">Saved.</div>}
+        {saved && <div className="admin-alert admin-alert-ok" role="status">Saved.</div>}
         {facility.data && (
           <>
             <FacilityForm
@@ -400,13 +400,13 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
       </Section>
 
       {issues.length > 0 && (
-        <div className="admin-alert admin-alert-warn form-error">
+        <div className="admin-alert admin-alert-warn form-error" role="status">
           {issues.map((text) => (
             <div key={text}>{text}</div>
           ))}
         </div>
       )}
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void remove()}>
@@ -518,7 +518,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
           </ul>
         )}
         {f.routing === 'relay_only' && active.length === 0 && (
-          <div className="admin-alert admin-alert-warn">This facility takes mail through a relay group only, and has no active one: nobody can write to it.</div>
+          <div className="admin-alert admin-alert-warn" role="status">This facility takes mail through a relay group only, and has no active one: nobody can write to it.</div>
         )}
         <div className="relay-add">
           <RecordPicker
@@ -544,7 +544,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
             Link group
           </button>
         </div>
-        {error && <div className="admin-alert admin-alert-err">{error}</div>}
+        {error && <div className="admin-alert admin-alert-err" role="alert">{error}</div>}
       </Section>
     </div>
   )

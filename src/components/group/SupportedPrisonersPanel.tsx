@@ -103,7 +103,7 @@ export default function SupportedPrisonersPanel({ group: g, classes: c, linkTo }
             Link prisoner
           </button>
         </div>
-        {error && <div className={c.alertErr}>{error}</div>}
+        {error && <div className={c.alertErr} role="alert">{error}</div>}
       </Section>
     </div>
   )

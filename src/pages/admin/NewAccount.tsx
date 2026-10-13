@@ -76,7 +76,7 @@ export default function NewAccount() {
         </p>
         {readiness.loading && <p className="dash-note">Checking how the site encrypts letters…</p>}
         {readiness.error && (
-          <div className="admin-alert admin-alert-err">
+          <div className="admin-alert admin-alert-err" role="alert">
             Couldn’t check how the site encrypts letters ({createRefusal(readiness.error)}), and a staff account can only be made here in server mode.{' '}
             <button type="button" className="a-btn a-btn-sm" onClick={readiness.reload}>
               Try again
@@ -84,7 +84,7 @@ export default function NewAccount() {
           </div>
         )}
         {mode === 'e2e' && (
-          <div className="admin-alert admin-alert-warn">
+          <div className="admin-alert admin-alert-warn" role="status">
             This site encrypts letters end to end, and then the API makes an account only together with its keys. Those must be made on the person’s own device
             (a site admin never holds anyone’s private key), so a staff account can’t be made here. <Link to="/admin/invite">Invite them</Link> as a group
             admin of their group instead. To make someone a site admin, change the role of their account once it exists.
@@ -188,7 +188,7 @@ function AccountForm() {
           )}
         </div>
         {values.role === 'admin' && (
-          <div className="admin-alert admin-alert-warn">A site admin runs the whole site: the directory, every group, every account. They hold no group key and can read no letter.</div>
+          <div className="admin-alert admin-alert-warn" role="status">A site admin runs the whole site: the directory, every group, every account. They hold no group key and can read no letter.</div>
         )}
       </Section>
 
@@ -205,7 +205,7 @@ function AccountForm() {
             <input type="password" className="form-input" autoComplete="new-password" required {...field('confirm')} />
           </Field>
         </div>
-        <div className="admin-alert admin-alert-warn">
+        <div className="admin-alert admin-alert-warn" role="status">
           The account has no keys until its first sign-in on the Android or iOS app, which makes them. Until then the web refuses it (every account here needs
           keys), so they sign in on a phone first. An <Link to="/admin/invite">invitation</Link> avoids this: the person makes the account with its keys
           wherever they accept it.
@@ -213,13 +213,13 @@ function AccountForm() {
       </Section>
 
       {issues.length > 0 && (
-        <div className="admin-alert admin-alert-warn form-error">
+        <div className="admin-alert admin-alert-warn form-error" role="status">
           {issues.map((text) => (
             <div key={text}>{text}</div>
           ))}
         </div>
       )}
-      {error && <div className="admin-alert admin-alert-err form-error">{error}</div>}
+      {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
         <span />
