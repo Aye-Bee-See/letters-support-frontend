@@ -380,7 +380,7 @@ function LetterItem({
             <p className="letter-body-before">
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn btn-sm btn-on-light"
                 onClick={() => onWriteAgain({ id: m.id, date: m.createdAt, text: opened.state === 'open' ? (opened.text ?? '') : '', kind: 'resend' })}
               >
                 Write it again
@@ -425,7 +425,7 @@ function LetterItem({
               {onKept && (
                 <>
                   {' '}
-                  <button type="button" className="btn btn-sm" disabled={keeping.busy} onClick={toggleKeep}>
+                  <button type="button" className={outbound ? 'btn btn-sm btn-on-light' : 'btn btn-sm'} disabled={keeping.busy} onClick={toggleKeep}>
                     {keeping.busy ? 'Saving…' : m.keep ? 'Stop keeping' : 'Keep'}
                   </button>
                 </>
@@ -685,7 +685,7 @@ export default function Thread() {
             {page.error && (
               <p className="thread-updating" role="alert">
                 Couldn’t update the conversation ({refusalText(page.error)}).{' '}
-                <button type="button" className="btn btn-sm" onClick={page.reload}>
+                <button type="button" className="btn btn-sm btn-on-light" onClick={page.reload}>
                   Try again
                 </button>
               </p>

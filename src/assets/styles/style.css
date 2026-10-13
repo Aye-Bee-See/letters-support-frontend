@@ -189,6 +189,12 @@ h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
   padding: 0.3rem 0.75rem;
 }
 
+/* A plain .btn on a light ground (a letter's body, a notice): ink, not the
+   header's white. .btn.x outranks .btn and .btn:hover. */
+.btn.btn-on-light { color: var(--text); border-color: var(--border); }
+.btn.btn-on-light:hover { background: var(--off-white); border-color: var(--text); }
+.btn.btn-on-light:disabled { opacity: 0.45; cursor: default; }
+
 /* ============================================================
    SECTION HEADINGS (with red rule)
    ============================================================ */

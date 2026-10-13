@@ -56,7 +56,7 @@ function ChooseGroup({
     return (
       <p className="letter-body-scan-note">
         Couldn’t load the groups that mail there.{' '}
-        <button type="button" className="btn btn-sm" onClick={facility.reload}>
+        <button type="button" className="btn btn-sm btn-on-light" onClick={facility.reload}>
           Try again
         </button>
       </p>
@@ -166,7 +166,7 @@ function EditLetter({
         <button type="button" className="btn btn-primary btn-sm" disabled={busy || !changed || text.trim() === ''} onClick={save}>
           {busy ? 'Saving…' : 'Save the changes'}
         </button>
-        <button type="button" className="btn btn-sm" disabled={busy} onClick={onDone}>
+        <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={onDone}>
           Cancel
         </button>
       </p>
@@ -258,21 +258,21 @@ export default function QueuedLetterActions({
         <p className="letter-body-scan-note">
           {deleteQuestion(held, prisonerName, rewrite)}
           {message.attachments?.length && rewrite ? ' Its enclosed file isn’t carried over: add it again.' : ''}{' '}
-          <button type="button" className="btn btn-sm" disabled={busy} onClick={remove}>
+          <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={remove}>
             {busy ? 'Deleting…' : rewrite ? 'Yes, delete it and write it again' : 'Yes, delete it'}
           </button>{' '}
-          <button type="button" className="btn btn-sm" disabled={busy} onClick={() => setConfirming(false)}>
+          <button type="button" className="btn btn-sm btn-on-light" disabled={busy} onClick={() => setConfirming(false)}>
             Keep it
           </button>
         </p>
       ) : (
         <p className="letter-actions">
           {editable && (
-            <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>
+            <button type="button" className="btn btn-sm btn-on-light" onClick={() => setEditing(true)}>
               Edit this letter
             </button>
           )}
-          <button type="button" className="btn btn-sm" onClick={() => setConfirming(true)}>
+          <button type="button" className="btn btn-sm btn-on-light" onClick={() => setConfirming(true)}>
             {rewrite ? 'Delete it and write it again' : 'Delete this letter'}
           </button>
         </p>
