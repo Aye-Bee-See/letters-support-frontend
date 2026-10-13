@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getAllChats } from '../../api/letters'
 import { getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import AppShell from '../../components/layout/AppShell'
+import { BlocksNotice } from '../account/Blocks'
 import LoadState from '../../components/ui/LoadState'
 import StatusNotice from '../../components/ui/StatusNotice'
 import { useApi } from '../../hooks/useApi'
@@ -218,6 +219,7 @@ export default function InboxWriter() {
         <h1 className="inbox-hero-title">{user?.penName ?? user?.username}</h1>
       </div>
 
+      <BlocksNotice />
       {inbox.data && unread.length > 0 && <WhatsNew unread={unread} chats={inbox.data.chats} onMarkedRead={inbox.reload} />}
 
       <div className="inbox-section">

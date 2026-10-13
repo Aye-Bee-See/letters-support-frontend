@@ -179,3 +179,31 @@ export const updateLetter = (id: number, fields: LetterFields) =>
 
 /** DELETE /messaging/message: the same people as an edit; once printed or mailed, only an admin. Attachments go with it. */
 export const deleteLetter = (id: number) => del<number>('/messaging/message', { id })
+
+// --- Retention (README "Retention") ---------------------------------------------
+
+/**
+ * GET /messaging/retention: the site's default window and cap, the caller's own
+ * choice (`chosenDays`: null for the default, 0 for ever) and the window that
+ * applies (`effectiveDays`: null when nothing is deleted). Days count from the
+ * moment a letter was mailed, came back or was declined, or a reply was recorded.
+ */
+export interface RetentionRules {
+  defaultDays: number
+  /** RETENTION_MAX_DAYS: caps every choice, "for ever" included; null when unset. */
+  maxDays: number | null
+  chosenDays: number | null
+  effectiveDays: number | null
+  /** Always true: a writer's window covers the replies in their threads. */
+  coversReplies: boolean
+}
+
+export const getRetention = () => getOne<RetentionRules>('/messaging/retention')
+
+/**
+ * Pin a letter past the retention window, or unpin it (PUT /messaging/message
+ * { keep }): the only change a writer may make once a letter is printed or
+ * mailed. The writer, or the group that manages them; a group that only mails
+ * the letter gets a 403.
+ */
+export const setLetterKept = (id: number, keep: boolean) => updateLetter(id, { keep })

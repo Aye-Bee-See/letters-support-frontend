@@ -86,6 +86,19 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
  */
 export const getMyBlocks = () => getOne<WriterBlock[]>('/auth/blocks')
 
+/**
+ * How long the caller's letters, and the replies in their threads, are kept
+ * (PUT /auth/user { retentionDays }): a number of days, 0 for ever, null for
+ * the site default. A 400 `out_of_range` over the site's maximum (README "Retention").
+ */
+export const setMyRetention = (id: number, retentionDays: number | null) => put('/auth/user', { id, retentionDays })
+
+/**
+ * GET /auth/user?id=: the caller's own account, or for a group admin one of the
+ * group's unclaimed managed writers (with their `retentionDays`); 403 for anyone else.
+ */
+export const getAccount = (id: number) => getOne<User>('/auth/user', { id })
+
 /** GET /auth/pen-name: the caller's current pen name (as the API stored it) and every name they have used. */
 export const getMyPenName = () => getOne<{ penName: string | null; names: { name: string; current: boolean; since: string }[] }>('/auth/pen-name')
 

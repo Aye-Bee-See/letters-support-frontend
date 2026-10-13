@@ -59,6 +59,11 @@ export default function NewLetter() {
   const unknownPrisoner = prisonerId !== null && directory.data !== null && !prisoner
   /** In the directory, but held at no facility on record: there is nowhere to mail a letter. */
   const noFacility = prisoner !== null && !prisoner.prison
+  // README "Moved and freed": mail to a prison someone has left may never reach
+  // them. The writer confirms before sending, once for each such prisoner.
+  const freed = prisoner?.status === 'free'
+  const [freedConfirmedFor, setFreedConfirmedFor] = useState<number | null>(null)
+  const freedConfirmed = !freed || freedConfirmedFor === prisoner?.id
 
   const draft = useLetterDraft(prisoner?.id ?? null, facility, undefined, undefined, writeAs)
   const [notesOpen, setNotesOpen] = useState(false)
@@ -205,8 +210,30 @@ export default function NewLetter() {
             <p className="notes-hint">Only the group that mails your letter sees this. It is not sent to the prisoner.</p>
           </div>
 
+          {freed && prisoner && (
+            <div className="claim-encryption-note security-required" style={{ marginTop: '1rem' }}>
+              <p>
+                <strong>{displayName(prisoner)} has been released.</strong> A letter mailed to {facility?.prisonName ?? 'their last facility'} may
+                never reach someone who has left it. Letters that were waiting when they were released are held for the group to decide; a new
+                one goes into the queue like any other.
+                {prisoner.statusNotice && ` The directory says: “${prisoner.statusNotice}”`}
+              </p>
+              <div className="claim-check-row" style={{ marginTop: '0.6rem' }}>
+                <input
+                  type="checkbox"
+                  id="freedConfirm"
+                  checked={freedConfirmed}
+                  onChange={(e) => setFreedConfirmedFor(e.target.checked ? prisoner.id : null)}
+                />
+                <label className="claim-check-label" htmlFor="freedConfirm">
+                  I know they may not get it: send it anyway
+                </label>
+              </div>
+            </div>
+          )}
+
           <div className="submit-row">
-            <button type="button" className="submit-btn" disabled={!draft.canSend} onClick={onSend}>
+            <button type="button" className="submit-btn" disabled={!draft.canSend || !freedConfirmed} onClick={onSend}>
               {draft.sending ? 'Sending…' : 'Send letter'}
             </button>
             <div className="submit-notes">
