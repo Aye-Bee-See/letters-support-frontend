@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getAuditLog } from '../../api/admin'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { AccountBrief, AuditEntry } from '../../types'
@@ -148,7 +149,7 @@ export default function AuditLog() {
           )}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

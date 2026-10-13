@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { approveSubmission, rejectSubmission } from '../../api/admin'
 import { getSubmission, getSubmissions } from '../../api/corrections'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
-import { usePageClamp } from '../../hooks/useListParams'
+import { useListParams, usePageClamp } from '../../hooks/useListParams'
 import type { AccountBrief, ApiError, Submission, SubmissionResource, SubmissionStatus } from '../../types'
 import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
 
@@ -85,28 +86,16 @@ function bulkEligibility(items: Submission[]): Map<number, string | null> {
 }
 
 export default function Queue() {
-  const [params, setParams] = useSearchParams()
+  const { params, page, update } = useListParams()
   const statusParam = params.get('status')
   const resourceParam = params.get('resource')
   const status = isStatus(statusParam) ? statusParam : 'pending'
   const resource = isResource(resourceParam) ? resourceParam : undefined
-  const page = Math.max(1, Number(params.get('page')) || 1)
 
   const list = useApi(() => getSubmissions({ status, resource, page, page_size: PAGE_SIZE }), [status, resource, page], { keepPrevious: true })
 
-  const setFilter = (key: string, value: string | undefined) => {
-    const next = new URLSearchParams(params)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    next.delete('page')
-    setParams(next)
-  }
-  const goToPage = (n: number, replace = false) => {
-    const next = new URLSearchParams(params)
-    if (n > 1) next.set('page', String(n))
-    else next.delete('page')
-    setParams(next, { replace })
-  }
+  const setFilter = (key: string, value: string | undefined) => update({ [key]: value })
+  const goToPage = (n: number, replace = false) => update({ page: n > 1 ? String(n) : undefined }, { replace })
 
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -241,7 +230,7 @@ export default function Queue() {
           />
         ))}
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => goToPage(n)} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => goToPage(n)} />}
       </div>
     </>
   )

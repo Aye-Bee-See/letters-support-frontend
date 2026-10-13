@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getFacilities, getFacilityFilters, type FacilityListParams } from '../../api/facilities'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prison, RecordStatus, RoutingMethod } from '../../types'
@@ -173,7 +174,7 @@ export default function FacilitiesList() {
           )}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

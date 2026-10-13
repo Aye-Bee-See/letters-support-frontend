@@ -3,7 +3,11 @@
 // components/invitations). admin.css is loaded only under /admin (see
 // AdminLayout), so a group admin's page can't use its names: the shared parts
 // take one of these two sets instead. ADMIN_UI reproduces the admin pages'
-// markup exactly; GROUP_UI names the classes in pages/org-settings.css.
+// markup exactly; GROUP_UI names the classes in pages/org-settings.css. The
+// pager (components/ui/Pager) has its own three sets at the end, the public
+// directory pages being the third.
+
+import type { CSSProperties } from 'react'
 
 export interface UiClasses {
   /** A panel holding one titled section (a link panel, the invite form). */
@@ -150,3 +154,29 @@ export const GROUP_UI: UiClasses = {
   copyButton: 'token-copy-btn',
   linkButton: 'settings-link-button',
 }
+
+/** The pager under a list (components/ui/Pager): its row, its buttons and its "Page 2 of 5". */
+export interface PagerClasses {
+  nav?: string
+  navStyle?: CSSProperties
+  button: string
+  /** Added to a disabled button (Previous on the first page, Next on the last). */
+  disabledStyle?: CSSProperties
+  text?: string
+  textStyle?: CSSProperties
+}
+
+/** The admin lists (admin.css). */
+export const ADMIN_PAGER: PagerClasses = { nav: 'queue-pager', button: 'a-btn a-btn-sm' }
+
+/** The public directory pages: style.css's .filter-chip and .results-count, the rest inline. */
+export const PUBLIC_PAGER: PagerClasses = {
+  navStyle: { display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'center', padding: '1.5rem 0 0' },
+  button: 'filter-chip',
+  disabledStyle: { opacity: 0.4, cursor: 'default' },
+  text: 'results-count',
+  textStyle: { marginLeft: 0 },
+}
+
+/** A group admin's settings pages (pages/org-settings.css). */
+export const GROUP_PAGER: PagerClasses = { nav: 'settings-add-row', navStyle: { marginTop: '1rem' }, button: 'settings-btn', text: 'settings-sub' }

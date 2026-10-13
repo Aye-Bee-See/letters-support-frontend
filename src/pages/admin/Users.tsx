@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 import { getGroupsByIds } from '../../api/groups'
 import { getUsers, type DeletedAccount, type UserListParams } from '../../api/users'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Chapter, User } from '../../types'
@@ -108,7 +109,7 @@ export default function Users() {
           {list.data && list.data.items.length > 0 && <UserTable users={list.data.items} groups={found.data} />}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

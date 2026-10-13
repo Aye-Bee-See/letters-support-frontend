@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getPrisoners, type PrisonerListParams } from '../../api/prisoners'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prisoner, PrisonerStatus, RecordStatus } from '../../types'
@@ -143,7 +144,7 @@ export default function PrisonersList() {
           {list.data && list.data.items.length > 0 && <PrisonerTable prisoners={list.data.items} />}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

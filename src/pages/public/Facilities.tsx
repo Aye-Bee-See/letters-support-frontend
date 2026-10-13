@@ -2,7 +2,9 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { getFacilities, getFacilityFilters, getMailRules, type FacilityListParams } from '../../api/facilities'
 import { getGroupsByIds } from '../../api/groups'
-import { DirectoryPager, DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
+import { PUBLIC_PAGER } from '../../components/forms/uiClasses'
+import { DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
+import Pager from '../../components/ui/Pager'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import StaleWarning from '../../components/ui/StaleWarning'
@@ -204,7 +206,7 @@ export default function Facilities() {
             </tbody>
           </table>
         )}
-        {list.data && <DirectoryPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={PUBLIC_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )
