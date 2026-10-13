@@ -7,6 +7,7 @@ import { useListParams } from '../../hooks/useListParams'
 import type { AccountBrief, AuditEntry } from '../../types'
 import { ROLE_LABELS } from '../../utils/users'
 import { refusalText } from '../../utils/refusals'
+import { dateTime } from '../../utils/dates'
 
 // The audit log (GET /moderation/audit, superadmins only), newest first. The
 // API filters on exact values (actor, action, resource, target), and records
@@ -47,9 +48,6 @@ function recordLink(resource: string, id: number): string | null {
   }
 }
 
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })
-
 const who = (a: AccountBrief | null) => (a ? a.name || a.username : null)
 
 /** "verifiedAt" → "Verified at". */
@@ -61,7 +59,7 @@ const label = (key: string) => {
 function show(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   if (Array.isArray(value)) return value.length ? value.map(show).join(', ') : '—'
-  if (typeof value === 'string') return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? dateTime(value) : value
+  if (typeof value === 'string') return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? dateTime(value, { seconds: true }) : value
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value)
   // An object (or anything else JSON can hold) as JSON, never "[object Object]".
   return JSON.stringify(value) ?? '—'
@@ -171,7 +169,7 @@ function AuditRow({ entry: e, onFilter }: { entry: AuditEntry; onFilter: (change
   const open = e.targetId !== null ? recordLink(e.resource, e.targetId) : null
   return (
     <tr>
-      <td className="dash-nowrap">{dateTime(e.createdAt)}</td>
+      <td className="dash-nowrap">{dateTime(e.createdAt, { seconds: true })}</td>
       <td>
         {e.actor !== null ? (
           <button type="button" className="link-button" title="Only this person's actions" onClick={() => onFilter({ actor: String(e.actor) })}>

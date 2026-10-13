@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatCode } from '../../crypto'
 import type { Chapter, Invitation } from '../../types'
 import type { UiClasses } from '../forms/uiClasses'
-import { dateTime } from './wording'
+import { dateTime } from '../../utils/dates'
 
 // An invitation's token, once (README "Invitations": it appears in the create
 // and renew answers and nowhere else, and the API never sends it): what to hand

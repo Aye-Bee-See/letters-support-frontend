@@ -8,6 +8,7 @@ import { useGatedGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import type { ApiError, InviteCodeBatch, InviteCodeSummary, IssuedInviteCodes } from '../../types'
 import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
+import { shortDate } from '../../utils/dates'
 
 // Invite codes (README "Invite codes"): the group issues a batch, prints the
 // codes as slips and hands them out; a newcomer joins with one at /join
@@ -28,7 +29,6 @@ const MAX_COUNT = 50
 const MAX_LABEL = 80
 const MAX_DAYS = 30
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** The page /join reads the code from (Join.tsx: `?code=`, checked straight away). */
@@ -293,7 +293,7 @@ function IssuedPanel({
       <div className="settings-form">
         <div className="settings-alert settings-alert-warn" role="status">
           <strong>These codes are shown only now.</strong> Print the slips or copy the codes before you clear them from the screen: the site keeps
-          only a scrambled form and can’t show them again. They work until {date(issued.expiresAt)}, once each.
+          only a scrambled form and can’t show them again. They work until {shortDate(issued.expiresAt)}, once each.
         </div>
         <p className="invite-quota">
           Your group now has <strong>{issued.outstanding}</strong> of {issued.limit} unused codes out.
@@ -345,7 +345,7 @@ function Slips({ issued, groupName, preview }: { issued: IssuedInviteCodes; grou
       }),
     [issued.codes],
   )
-  const until = date(issued.expiresAt)
+  const until = shortDate(issued.expiresAt)
 
   return (
     <div className={preview ? 'invite-slips is-preview' : 'invite-slips'} aria-hidden={!preview}>
@@ -391,7 +391,7 @@ function Batches({ summary, onCancelled }: { summary: InviteCodeSummary; onCance
     }
   }
 
-  const name = (b: InviteCodeBatch) => b.label ?? `Batch of ${date(b.createdAt)}`
+  const name = (b: InviteCodeBatch) => b.label ?? `Batch of ${shortDate(b.createdAt)}`
 
   return (
     <>
@@ -437,8 +437,8 @@ function Batches({ summary, onCancelled }: { summary: InviteCodeSummary; onCance
               {summary.batches.map((b) => (
                 <tr key={b.batch}>
                   <td>{name(b)}</td>
-                  <td className="settings-nowrap">{date(b.createdAt)}</td>
-                  <td className={new Date(b.expiresAt) < new Date() ? 'settings-nowrap settings-stale' : 'settings-nowrap'}>{date(b.expiresAt)}</td>
+                  <td className="settings-nowrap">{shortDate(b.createdAt)}</td>
+                  <td className={new Date(b.expiresAt) < new Date() ? 'settings-nowrap settings-stale' : 'settings-nowrap'}>{shortDate(b.expiresAt)}</td>
                   <td className="num">{b.total}</td>
                   <td className="num">{b.used}</td>
                   <td className="num">{b.unused}</td>

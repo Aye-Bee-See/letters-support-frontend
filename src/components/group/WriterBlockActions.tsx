@@ -12,12 +12,12 @@ import {
   blockRefusal,
   canActOn,
   letterCount,
-  longDate,
   personLabel,
   type BlockableWriter,
 } from '../../utils/blocks'
 import { writerInSentence } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
+import { longDate } from '../../utils/dates'
 
 // A group admin's two ways to deal with a writer who is misusing the system
 // (web issue #9):

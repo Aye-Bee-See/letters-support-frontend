@@ -10,7 +10,8 @@ import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { Prison } from '../../types'
 import { addressLine, mailRuleLines } from '../../utils/facilities'
-import { displayName, estimatedRelease, longDate, otherNames } from '../../utils/prisoners'
+import { calendarDate, longDate } from '../../utils/dates'
+import { displayName, estimatedRelease, otherNames } from '../../utils/prisoners'
 
 /** The prisoner with the whole facility and support groups, plus the verifying group's name. */
 async function loadProfile(id: number) {
@@ -98,7 +99,7 @@ export default function PrisonerProfile() {
               {p.detainedSince && (
                 <>
                   <dt>Detained since</dt>
-                  <dd>{longDate(p.detainedSince)}</dd>
+                  <dd>{calendarDate(p.detainedSince, 'long')}</dd>
                 </>
               )}
 

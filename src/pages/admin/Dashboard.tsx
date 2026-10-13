@@ -5,6 +5,7 @@ import { getSubmissions } from '../../api/corrections'
 import { useApi, type ApiState } from '../../hooks/useApi'
 import type { AccountBrief, AdminSummary, AuditEntry, EncryptionReadiness, Submission, SubmissionResource } from '../../types'
 import { refusalText } from '../../utils/refusals'
+import { dateTime } from '../../utils/dates'
 
 // Built on GET /moderation/summary, /auth/encryption-readiness, /moderation/submissions
 // and /moderation/audit. Each panel loads on its own, so one failing request
@@ -17,9 +18,6 @@ const RESOURCES: SubmissionResource[] = ['prisoner', 'prison', 'chapter']
 const BACKUP_OVERDUE_HOURS = 48
 
 const sum = (counts: Record<string, number>) => Object.values(counts).reduce((a, b) => a + b, 0)
-
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 const who = (account: AccountBrief | null | undefined) => (account ? account.name || account.username : 'System')
 

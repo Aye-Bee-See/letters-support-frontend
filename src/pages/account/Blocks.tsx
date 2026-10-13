@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
 import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
-import { longDate } from '../../utils/blocks'
+import { longDate } from '../../utils/dates'
 
 // Groups not mailing the writer's letters (README "Blocking a writer", GET
 // /auth/blocks): the group, the reason it gave and when. Only what the writer

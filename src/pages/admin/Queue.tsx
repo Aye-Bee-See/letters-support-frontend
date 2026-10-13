@@ -8,6 +8,7 @@ import { useApi } from '../../hooks/useApi'
 import { useListParams, usePageClamp } from '../../hooks/useListParams'
 import type { AccountBrief, ApiError, Submission, SubmissionResource, SubmissionStatus } from '../../types'
 import { commonRefusal, otherRefusal, refusalText } from '../../utils/refusals'
+import { dateTime } from '../../utils/dates'
 
 // The moderation queue: directory proposals from group admins (and superadmins),
 // oldest first. A superadmin reads each one against the record's current values,
@@ -30,9 +31,6 @@ const VERIFIABLE: SubmissionResource[] = ['prisoner', 'prison']
 
 const isStatus = (v: string | null): v is SubmissionStatus | 'all' => STATUSES.includes(v as SubmissionStatus)
 const isResource = (v: string | null): v is SubmissionResource => RESOURCES.includes(v as SubmissionResource)
-
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 const who = (account: AccountBrief | null | undefined) => (account ? account.name || account.username : 'someone no longer here')
 

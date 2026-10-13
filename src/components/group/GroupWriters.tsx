@@ -7,7 +7,7 @@ import type { Chat, PrisonSummary, Writer } from '../../types'
 import { writerLabel } from '../../utils/groupLetters'
 import { inboxDate, threadPrisonerName } from '../../utils/letters'
 import { heldAt } from '../../utils/prisoners'
-import { date } from '../invitations/wording'
+import { shortDate } from '../../utils/dates'
 import LoadState from '../ui/LoadState'
 import LastLetter from './LastLetter'
 
@@ -90,7 +90,7 @@ function ThreadTable({ chats }: { chats: Chat[] }) {
 
 /** What the group should know about a writer at a glance: a live hand-off, or no keys yet. */
 function writerState(w: Writer): string | null {
-  if (w.claimToken) return `Hand-off code issued, good until ${date(w.claimToken.expiresAt)}`
+  if (w.claimToken) return `Hand-off code issued, good until ${shortDate(w.claimToken.expiresAt)}`
   if (!w.publicKey) return 'No keys yet'
   return null
 }

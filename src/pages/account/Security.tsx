@@ -7,6 +7,7 @@ import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, TwoFactorReason } from '../../types'
 import { refusalText } from '../../utils/refusals'
+import { longDate } from '../../utils/dates'
 
 // Sign-in security: two-factor sign-in for any signed-in account (README
 // "Two-factor sign-in"). Optional for everyone; a superadmin can require it of
@@ -27,7 +28,6 @@ type Step =
   | { name: 'scan'; secret: string; otpauthUri: string }
   | { name: 'codes'; codes: string[]; title: string }
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const groups = (s: string, n = 4) => s.match(new RegExp(`.{1,${n}}`, 'g'))?.join(' ') ?? s
 const errorText = (err: unknown) => {
   const e = err as ApiError
@@ -377,7 +377,7 @@ function Scan({ secret, otpauthUri, onConfirmed, onCancel }: { secret: string; o
 function downloadCodes(codes: string[]) {
   const text = [
     'letters.support: two-factor sign-in recovery codes',
-    `Saved ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+    `Saved ${longDate(new Date())}`,
     '',
     'Each code signs you in once, in place of a code from your authenticator app.',
     'Making new codes stops these from working.',
@@ -489,7 +489,7 @@ function Enabled(props: { enabledAt: string | null; codesLeft: number; required:
       <div className="claim-encryption-note">
         <p>
           Two-factor sign-in is <strong>on</strong>
-          {enabledAt && <> (since {date(enabledAt)})</>}. You have {codesLeft} recovery {codesLeft === 1 ? 'code' : 'codes'} left.
+          {enabledAt && <> (since {longDate(enabledAt)})</>}. You have {codesLeft} recovery {codesLeft === 1 ? 'code' : 'codes'} left.
         </p>
         {codesLeft <= 2 && <p>That’s not many: make a new set below.</p>}
         {required && <p>It’s required for your account, so it can’t be switched off.</p>}

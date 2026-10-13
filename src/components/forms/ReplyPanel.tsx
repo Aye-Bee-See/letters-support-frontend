@@ -7,6 +7,7 @@ import { mailRuleLines } from '../../utils/facilities'
 import AttachmentRetry from './AttachmentRetry'
 import UploadZone from './UploadZone'
 import { refusalText } from '../../utils/refusals'
+import { longDate } from '../../utils/dates'
 
 // The inline reply panel from solidarity-site/thread.html (pages/thread.css):
 // the same draft and send as New Letter (useLetterDraft, src/letters/send.ts),
@@ -118,7 +119,7 @@ export default function ReplyPanel({
         {/* Writing a returned or declined letter again: it goes out as a new letter, marked as replacing that one. */}
         {draft.resendOf && resend && (
           <p className="reply-notes-hint reply-resend">
-            Writing again your letter of {new Date(resend.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Change
+            Writing again your letter of {longDate(resend.date)}. Change
             anything you need to; it goes out as a new letter.{' '}
             {onCancelResend && (
               <button type="button" className="reply-notes-toggle" onClick={onCancelResend}>
@@ -130,7 +131,7 @@ export default function ReplyPanel({
         {/* A held letter deleted to be sent again: its text is here, and the letter is gone from the queue. */}
         {resend?.kind === 'rewrite' && (
           <p className="reply-notes-hint reply-resend">
-            Your letter of {new Date(resend.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} was deleted; its
+            Your letter of {longDate(resend.date)} was deleted; its
             text is below to send again. Change anything you need to.
           </p>
         )}

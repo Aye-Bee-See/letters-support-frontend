@@ -6,7 +6,7 @@ import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prison, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
 // Every facility record, drafts and pending included (superadmins are staff).
@@ -216,7 +216,7 @@ function FacilityTable({ facilities, hasRelay }: { facilities: Prison[]; hasRela
               </td>
               <td>{f.recordStatus && <span className={`badge ${RECORD_BADGES[f.recordStatus]}`}>{f.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
-                {f.verifiedAt ? date(f.verifiedAt) : 'Never'}
+                {f.verifiedAt ? shortDate(f.verifiedAt) : 'Never'}
                 {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">

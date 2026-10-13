@@ -2,12 +2,12 @@ import type { ApiError, Invitation, InvitationKind } from '../../types'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import type { UiClasses } from '../forms/uiClasses'
 
-// Shared by the invitation parts (README "Invitations"): dates, kind labels,
+// Shared by the invitation parts (README "Invitations"): kind labels,
 // state badges, and refusals worded from the status, name and condition, never
 // the API's sentence unless nothing else fits.
 
-export const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-export const dateTime = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+/** utils/dates.ts's shortDate, under the name the admin record pages still import. */
+export { shortDate as date } from '../../utils/dates'
 
 /** Asked before a create or renew while a code is on screen: it is shown once, and the new one replaces it. */
 export const REPLACE_CODE_QUESTION = 'The code on screen is shown only now. Replace it?'

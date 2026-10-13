@@ -1,5 +1,6 @@
 import type { ApiError, Chat, HeldReason, LetterStatus, Sender } from '../types'
 import { displayName } from './prisoners'
+import { shortDate } from './dates'
 
 // Display helpers for threads and letters (no decryption here).
 
@@ -32,7 +33,7 @@ export function threadPrisonerName(chat: Chat): string {
 
 /** "Aug 9, 2026", as the prototype's inbox dates. */
 export const inboxDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+  iso ? shortDate(iso) : '—'
 
 /**
  * A group's envelope that would not open because it names another group key

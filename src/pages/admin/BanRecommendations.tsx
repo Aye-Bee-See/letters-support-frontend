@@ -5,6 +5,7 @@ import { useApi } from '../../hooks/useApi'
 import { useListParams } from '../../hooks/useListParams'
 import type { ApiError, BanRecommendation, BanRecommendationStatus } from '../../types'
 import { refusalText } from '../../utils/refusals'
+import { dateTime } from '../../utils/dates'
 
 // Site-wide block recommendations (API #172, README "Recommending a site-wide
 // block"). A group can block a writer from its own letters; to go further, a
@@ -20,8 +21,6 @@ const STATUSES: { value: BanRecommendationStatus; label: string }[] = [
 ]
 const NOTE_MAX = 500
 
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 const writerName = (r: BanRecommendation) => r.writer?.penName || r.writer?.name || r.writer?.username || `writer #${r.userId}`
 const person = (p: { username: string; name: string | null } | null) => (p ? p.name || p.username : 'someone no longer here')
 const errorText = (err: unknown) => {

@@ -8,6 +8,7 @@ import PrisonerTile from '../../components/ui/PrisonerTile'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import { addressLines, isStale, mailRuleLines, ROUTING_LABELS, ROUTING_TAGS } from '../../utils/facilities'
+import { monthYear } from '../../utils/dates'
 
 /** The facility with its prisoners and relay groups, plus the verifying group's name. */
 async function loadFacility(id: number) {
@@ -22,9 +23,6 @@ function monthsSince(iso: string): number {
   const now = new Date()
   return (now.getUTCFullYear() - then.getUTCFullYear()) * 12 + (now.getUTCMonth() - then.getUTCMonth())
 }
-
-const monthYear = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
 /** Text with line breaks as <br> (the prototype's address blocks). */
 const Lines = ({ lines }: { lines: string[] }) => (
