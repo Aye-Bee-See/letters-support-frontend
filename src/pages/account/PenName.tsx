@@ -2,6 +2,7 @@ import { useState, type SubmitEvent } from 'react'
 import { Navigate, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { getMyPenName, setMyPenName } from '../../api/auth'
 import PenNameField from '../../components/forms/PenNameField'
+import { destination } from '../../components/layout/paths'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignOut } from '../../hooks/useSignOut'
 import type { ApiError } from '../../types'
@@ -29,7 +30,7 @@ export default function PenName() {
   const [error, setError] = useState<string | null>(null)
 
   // Only a writer without one is asked.
-  if (!user || !isWriter || user.penName) return <Navigate to={from ?? '/inbox'} replace />
+  if (!user || !isWriter || user.penName) return <Navigate to={destination(from, '/inbox')} replace />
 
   const ready = penName.trim().length >= 3 && !refused && !busy
 
@@ -43,7 +44,7 @@ export default function PenName() {
       // The name as the API stored it (it tidies spacing).
       const stored = await getMyPenName().catch(() => null)
       penNameChosen(stored?.penName ?? penName.trim())
-      navigate(from ?? '/inbox', { replace: true })
+      navigate(destination(from, '/inbox'), { replace: true })
     } catch (err) {
       setError(errorText(err))
       setBusy(false)

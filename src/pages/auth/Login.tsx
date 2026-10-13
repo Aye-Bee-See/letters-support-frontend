@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type SubmitEvent } from 'react'
-import { Link, useLocation, useNavigate, type Location } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { signIn, SignInError, type CodeNeeded, type SignedIn } from '../../auth/signIn'
-import { SECURITY_PATH } from '../../components/layout/RouteGuards'
+import { destination, homeFor, SECURITY_PATH } from '../../components/layout/paths'
 import { wipe } from '../../crypto'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -26,7 +26,7 @@ function failureMessage(err: unknown): string {
 // Markup and classes from solidarity-site/login.html (pages/login.css).
 // The sign-in itself is src/auth/signIn.ts: the password never leaves the device.
 export default function Login() {
-  const { startSession } = useAuth()
+  const { startSession, user, twoFactorSetupRequired } = useAuth()
   const navigate = useNavigate()
   const state = useLocation().state as { from?: Location; notice?: string } | null
   const from = state?.from
@@ -67,9 +67,8 @@ export default function Login() {
       navigate(SECURITY_PATH, { replace: true })
       return
     }
-    const home = signedIn.result.user.role === 'admin' ? '/admin' : '/inbox'
     // Back where they were going, filters and all (a refresh on an admin list signs out).
-    navigate(from ? `${from.pathname}${from.search}${from.hash}` : home, { replace: true })
+    navigate(destination(from, homeFor(signedIn.result.user.role)), { replace: true })
   }
 
   const startAgain = useCallback((message: string | null = null) => {
@@ -127,6 +126,10 @@ export default function Login() {
       setError(failureMessage(err))
     }
   }
+
+  // Signed in (just now, or earlier and back here by a bookmark or Back): where
+  // finish() sends them, not a second sign-in.
+  if (user) return <Navigate to={twoFactorSetupRequired ? SECURITY_PATH : destination(from, homeFor(user.role))} replace />
 
   return (
     <div className="login-page">
