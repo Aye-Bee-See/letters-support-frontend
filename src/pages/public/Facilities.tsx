@@ -1,44 +1,93 @@
 import { useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { getAllFacilities, getFacilityFilters, type FacilityListParams } from '../../api/facilities'
-import { getAllGroups } from '../../api/groups'
+import { Link } from 'react-router-dom'
+import { getFacilities, getFacilityFilters, getMailRules, type FacilityListParams } from '../../api/facilities'
+import { getGroupsByIds } from '../../api/groups'
+import { DirectoryPager, DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import StaleWarning from '../../components/ui/StaleWarning'
 import { useApi } from '../../hooks/useApi'
-import { addressLine, restrictionPhrases, routingLines } from '../../utils/facilities'
+import { listSearch, useListParams, useSearchBox } from '../../hooks/useListParams'
+import type { RoutingMethod } from '../../types'
+import { addressLine, restrictionPhrases, ROUTING_LABELS, routingLines } from '../../utils/facilities'
 import { shortDate } from '../../utils/prisoners'
 
-/** The matching facilities with their relay groups, plus names for the groups that verified them. */
-async function loadFacilities(filter: Omit<FacilityListParams, 'page' | 'page_size'>) {
-  const facilities = await getAllFacilities({ sort: 'name', full: true, ...filter })
-  const groupNames = new Map<number, string>()
-  if (facilities.some((f) => f.verifiedBy)) {
-    for (const g of await getAllGroups()) groupNames.set(g.id, g.name)
-  }
-  return { facilities, groupNames }
+const PAGE_SIZE = 25
+const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
+
+/**
+ * Languages offered in the language filter, as ISO 639-1 codes. The API has
+ * no list of the languages facilities name, so this is a fixed one; a code
+ * from a link that isn't on it is offered too.
+ */
+const LANGUAGES = ['ar', 'be', 'de', 'el', 'en', 'es', 'fa', 'fr', 'he', 'it', 'ka', 'ku', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh']
+const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
+const languageName = (code: string) => languageNames.of(code) ?? code
+
+/** One page of matching facilities, plus names for the groups that verified them (one small request each). */
+async function loadFacilities(params: FacilityListParams) {
+  const page = await getFacilities(params)
+  const verifiers = page.items.map((f) => f.verifiedBy).filter((id): id is number => typeof id === 'number')
+  const groupNames = verifiers.length ? await getGroupsByIds(verifiers) : new Map()
+  return { page, groupNames }
 }
 
-// Markup and classes from solidarity-site/prisons.html. Chips come from
-// GET /prison/filters (countries and routing methods present); one is active
-// at a time, kept in the URL, and the API returns only the matching records.
+// Markup and classes from solidarity-site/prisons.html. The API searches,
+// filters and pages (README "Searching, filtering, and sorting lists"): a
+// search box (`q`), chips for the countries and routing methods present
+// (GET /prison/filters) and for a relay group, dropdowns for a language a
+// letter is written in and a mail rule, all combinable and kept in the URL
+// under the API's own names. Rows come without `full`, so without each
+// facility's prisoners and relay groups: the facility's page names its groups.
 export default function Facilities() {
-  const [params] = useSearchParams()
+  const { params, page, update } = useListParams()
+  const q = params.get('q') ?? ''
   const country = params.get('country') ?? undefined
-  const scanOnly = params.get('routing') === 'scan_only'
+  const routingParam = params.get('routing')
+  const routing = ROUTINGS.find((r) => r === routingParam)
   const relay = params.get('relay') === 'true'
+  const languageParam = params.get('language') ?? ''
+  const language = /^[a-z]{2}$/.test(languageParam) ? languageParam : undefined
+  const mailRule = params.get('mailRule') || undefined
+
   const filters = useApi(getFacilityFilters, [])
+  const rules = useApi(() => getMailRules(), [])
   const list = useApi(
-    () => loadFacilities({ country, routing: scanOnly ? 'scan_only' : undefined, relay: relay || undefined }),
-    [country, scanOnly, relay],
+    () =>
+      loadFacilities({
+        q: q || undefined,
+        country,
+        routing,
+        relay: relay || undefined,
+        language,
+        mailRule,
+        sort: 'name',
+        page,
+        page_size: PAGE_SIZE,
+      }),
+    [q, country, routing, relay, language, mailRule, page],
   )
-  const shown = useMemo(() => list.data?.facilities ?? [], [list.data])
+  const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
   const countries = useMemo(
     () => (filters.data?.country ?? []).map((c) => c.value).sort((a, b) => a.localeCompare(b)),
     [filters.data],
   )
-  const anyScanOnly = (filters.data?.routing ?? []).some((r) => r.value === 'scan_only')
+  const routings = useMemo(() => {
+    const present = new Set((filters.data?.routing ?? []).map((r) => r.value))
+    return ROUTINGS.filter((r) => present.has(r))
+  }, [filters.data])
+  const languages = useMemo(
+    () => [...new Set([...LANGUAGES, ...(language ? [language] : [])])].sort((a, b) => languageName(a).localeCompare(languageName(b))),
+    [language],
+  )
+
+  const rows = list.data?.page.items ?? []
+  const total = list.data?.page.total ?? 0
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const filtered = Boolean(country || routing || relay || language || mailRule)
+  /** A chip's link: its own filter on, or off when it is the one on; the others kept. */
+  const chip = (key: string, value: string, on: boolean) => `/facilities${listSearch(params, { [key]: on ? undefined : value })}`
 
   return (
     <>
@@ -55,27 +104,47 @@ export default function Facilities() {
 
       <div className="filter-bar">
         <div className="wrap">
+          <DirectorySearch label="Search by name" value={search} onChange={setSearch} />
           <span className="filter-label">Filter:</span>
-          <FilterChip to="/facilities" active={!country && !scanOnly && !relay}>
+          <FilterChip
+            to={`/facilities${listSearch(params, { country: undefined, routing: undefined, relay: undefined, language: undefined, mailRule: undefined })}`}
+            active={!filtered}
+          >
             All
           </FilterChip>
           {countries.map((c) => (
-            <FilterChip key={c} to={`/facilities?country=${encodeURIComponent(c)}`} active={country === c}>
+            <FilterChip key={c} to={chip('country', c, country === c)} active={country === c}>
               {c}
             </FilterChip>
           ))}
-          {anyScanOnly && (
-            <FilterChip to="/facilities?routing=scan_only" active={scanOnly}>
-              Scan service required
+          {routings.map((r) => (
+            <FilterChip key={r} to={chip('routing', r, routing === r)} active={routing === r}>
+              {ROUTING_LABELS[r]}
             </FilterChip>
-          )}
+          ))}
           {/* The filters endpoint has no relay values; like the prototype, this chip is always offered. */}
-          <FilterChip to="/facilities?relay=true" active={relay}>
+          <FilterChip to={chip('relay', 'true', relay)} active={relay}>
             Relay group available
           </FilterChip>
+          <FilterSelect label="Language the letter is written in" any="Any language" value={language ?? ''} onChange={(v) => update({ language: v })}>
+            {languages.map((code) => (
+              <option key={code} value={code}>
+                Accepts {languageName(code)}
+              </option>
+            ))}
+          </FilterSelect>
+          <FilterSelect label="Mail rule" any="Any mail rule" value={mailRule ?? ''} onChange={(v) => update({ mailRule: v })}>
+            {/* A rule in the URL that the list doesn't have (retired, or not loaded yet) still shows. */}
+            {mailRule && !rules.data?.rules.some((r) => r.tag === mailRule) && <option value={mailRule}>{mailRule}</option>}
+            {(rules.data?.rules ?? []).map((r) => (
+              <option key={r.tag} value={r.tag}>
+                {r.label}
+              </option>
+            ))}
+          </FilterSelect>
           {list.data && (
             <span className="results-count">
-              {shown.length} {shown.length === 1 ? 'facility' : 'facilities'}
+              {total} {total === 1 ? 'facility' : 'facilities'}
             </span>
           )}
         </div>
@@ -83,7 +152,8 @@ export default function Facilities() {
 
       <div className="prisons-table-wrap" style={{ maxWidth: 'var(--col)', margin: '0 auto', padding: '2.5rem var(--gutter)' }}>
         <LoadState state={list} what="facilities" />
-        {list.data && (
+        {list.data && total === 0 && <p>{q || filtered ? 'No facility matches this search.' : 'There are no facilities in the directory yet.'}</p>}
+        {list.data && rows.length > 0 && (
           <table className="prisons-table">
             <thead>
               <tr>
@@ -95,10 +165,10 @@ export default function Facilities() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((f) => {
+              {rows.map((f) => {
                 const address = addressLine(f.address)
                 const restrictions = restrictionPhrases(f)
-                const verifier = f.verifiedBy ? list.data?.groupNames.get(f.verifiedBy) : null
+                const verifier = f.verifiedBy ? list.data?.groupNames.get(f.verifiedBy)?.name : null
                 return (
                   <tr key={f.id}>
                     <td>
@@ -134,6 +204,7 @@ export default function Facilities() {
             </tbody>
           </table>
         )}
+        {list.data && <DirectoryPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAllGroups } from '../../api/groups'
+import { getGroupsByIds } from '../../api/groups'
 import { getInvitations } from '../../api/invitations'
 import { GROUP_UI } from '../../components/forms/uiClasses'
 import InvitationTable from '../../components/invitations/InvitationTable'
@@ -11,7 +11,7 @@ import { GROUP_KIND_LABELS } from '../../components/invitations/wording'
 import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import { useListParams } from '../../hooks/useListParams'
-import type { Invitation, InvitationKind } from '../../types'
+import type { Chapter, Invitation, InvitationKind } from '../../types'
 
 // A group's own invitations (README "Invitations"): a new group admin of this
 // group (kind `member`), or a new group this group vouches for (kind `group`).
@@ -32,11 +32,15 @@ export default function GroupInvitations() {
   const kind: InvitationKind | undefined = kindParam === 'member' || kindParam === 'group' ? kindParam : undefined
 
   const list = useApi(() => getInvitations({ kind, page, page_size: PAGE_SIZE }), [kind, page])
-  // For the names of groups this group vouched for once they joined. Groups
-  // still waiting for approval aren't public, and show as "group #id".
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // For the names of groups this group vouched for once they joined: only the
+  // ones this page of invitations names, fetched by id. Groups still waiting
+  // for approval aren't public, and show as "group #id".
+  const named = [...new Set((list.data?.items ?? []).flatMap((i) => [i.createdChapter, i.chapterId]))]
+    .filter((n): n is number => n !== null && n !== group.id)
+    .sort((a, b) => a - b)
+  const groups = useApi(() => (named.length ? getGroupsByIds(named) : Promise.resolve(new Map<number, Chapter>())), [named.join(',')])
   const groupById = useMemo(() => {
-    const map = new Map((groups.data ?? []).map((g) => [g.id, g]))
+    const map = new Map(groups.data ?? [])
     map.set(group.id, group)
     return map
   }, [groups.data, group])

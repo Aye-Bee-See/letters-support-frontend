@@ -2,6 +2,7 @@
 // blocks, its history, and its key (README "Group keys"), which the API serves
 // under /auth.
 import { del, getAllPages, getList, getOne, post, put } from './client'
+import { forgetWriters } from './writers'
 import type {
   AccountStatus,
   Chapter,
@@ -34,6 +35,17 @@ export const getAllGroups = (params?: Omit<GroupListParams, 'page' | 'page_size'
 /** full=true adds supported_prisoners and relay_prisons. */
 export const getGroup = (id: number, full = true) =>
   getOne<Chapter>('/chapter/chapter', { id, full })
+
+/**
+ * A few groups by id, without their embeds, for naming them: one request each
+ * (the list has no id filter). One that can't be read (not published, deleted)
+ * is left out rather than failing the rest.
+ */
+export async function getGroupsByIds(ids: Iterable<number>): Promise<Map<number, Chapter>> {
+  const unique = [...new Set(ids)]
+  const found = await Promise.all(unique.map((id) => getGroup(id, false).catch(() => null)))
+  return new Map(found.filter((g): g is Chapter => g !== null).map((g) => [g.id, g]))
+}
 
 /** The fields PUT /chapter/chapter accepts (CHAPTER_FIELDS in the API). lettersSent and averageTimeDays are counted, not set. */
 export type GroupFields = Partial<
@@ -165,7 +177,8 @@ export interface RotationInput {
  * a writer claimed their account, since getRotation) means start again.
  */
 export const postRotation = (input: RotationInput) =>
+  // Every writer's key is sealed anew: a kept writer list holds the old ones.
   post<{ chapter: number; publicKey: string; keyVersion: number; envelopes: number; writers: number; members: number[]; removed: number[] }>(
     '/auth/chapter-rotation',
     input,
-  )
+  ).finally(forgetWriters)

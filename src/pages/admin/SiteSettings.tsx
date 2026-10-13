@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { searchAccounts } from '../../api/admin'
-import { getAllGroups } from '../../api/groups'
+import { getGroups } from '../../api/groups'
 import { getTwoFactor, getTwoFactorPolicy, resetTwoFactor, setGroupTwoFactor, setTwoFactorPolicy } from '../../api/twoFactor'
 import { Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, User } from '../../types'
+import type { ApiError, Chapter, User } from '../../types'
 
 // Site settings. Today the API's one site-wide setting is who must use
 // two-factor sign-in (README "Two-factor sign-in"): every superadmin, every
@@ -22,7 +24,9 @@ const errorText = (err: unknown) => {
 }
 
 export default function SiteSettings() {
-  const policy = useApi(getTwoFactorPolicy, [])
+  // The policy names its groups, so nothing else is fetched to name them; kept
+  // on screen while a change reloads it, so the form isn't rebuilt each time.
+  const policy = useApi(getTwoFactorPolicy, [], { keepPrevious: true })
   // Requiring it of superadmins needs your own on first (the API answers 409 own_first).
   const mine = useApi(getTwoFactor, [])
 
@@ -89,8 +93,7 @@ interface PolicyProps {
 }
 
 function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOwn, onChanged }: PolicyProps) {
-  const allGroupList = useApi(() => getAllGroups({ sort: 'name' }), [])
-  const [choice, setChoice] = useState('')
+  const [choice, setChoice] = useState<Chapter | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -112,7 +115,6 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
     }
   }
 
-  const available = (allGroupList.data ?? []).filter((g) => !groups.some((r) => r.id === g.id))
   // Requiring it of superadmins is offered only once your own is known to be on:
   // not while that's loading, or if it couldn't be read.
   const superadminsBlocked = !superadmins && ownOn !== true
@@ -202,24 +204,27 @@ function PolicyForm({ superadmins, allGroups, groups, ownOn, ownError, onRetryOw
           </ul>
         )}
         <div className="relay-add">
-          <select className="form-select" aria-label="Group to require it of" value={choice} disabled={busy || !allGroupList.data} onChange={(e) => setChoice(e.target.value)}>
-            <option value="">{allGroupList.data ? 'Choose a group…' : allGroupList.error ? 'Couldn’t load the groups' : 'Loading groups…'}</option>
-            {available.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+          <RecordPicker<Chapter>
+            classes={{ input: 'form-input' }}
+            label="Group to require it of"
+            placeholder="Search groups by name…"
+            disabled={busy}
+            fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+            exclude={groups.map((g) => g.id)}
+            render={(g) => g.name}
+            onSelect={setChoice}
+          />
+          {choice && <span className="form-static">{choice.name}</span>}
           <button
             type="button"
             className="a-btn a-btn-sm"
             disabled={!choice || busy}
             onClick={() => {
-              const name = available.find((g) => String(g.id) === choice)?.name ?? 'this group'
-              if (window.confirm(`Require two-factor sign-in of ${name}’s admins?`))
+              const chosen = choice
+              if (chosen && window.confirm(`Require two-factor sign-in of ${chosen.name}’s admins?`))
                 void run(async () => {
-                  await setGroupTwoFactor(Number(choice), true)
-                  setChoice('')
+                  await setGroupTwoFactor(chosen.id, true)
+                  setChoice(null)
                 })
             }}
           >

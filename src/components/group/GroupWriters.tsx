@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getAllChats } from '../../api/letters'
+import { getChats } from '../../api/letters'
 import { getAllWriters } from '../../api/writers'
 import { useApi } from '../../hooks/useApi'
 import type { Chat, PrisonSummary, Writer } from '../../types'
@@ -15,15 +16,34 @@ import LastLetter from './LastLetter'
 // group's unclaimed writers, its anonymous writer among them (README "Managed
 // writers"); that one is "Write anonymously" at the end instead. The pages the
 // buttons open are other packages' (WP2): this only links to them.
+//
+// The writers come in one request; a writer's threads only when their block
+// is opened (Show letters), one request for that writer's most recent ones
+// (GET /chat/chats?user=), kept while the tab is open. Nothing fetches every
+// thread the group can see.
 
-async function loadWriters() {
-  const [writers, chats] = await Promise.all([getAllWriters(), getAllChats()])
-  return { writers, chats }
+/** How many of a writer's threads a block shows, most recent first. */
+const THREADS_SHOWN = 20
+
+/** One writer's most recent threads, fetched when their block is first opened. */
+function WriterThreads({ writer }: { writer: number }) {
+  const chats = useApi(() => getChats({ user: writer, page_size: THREADS_SHOWN }), [writer])
+  if (!chats.data) return <LoadState state={chats} what="their letters" />
+  if (chats.data.items.length === 0) return <p className="convo-empty">No letters yet.</p>
+  return (
+    <>
+      <ThreadTable chats={chats.data.items} />
+      {chats.data.total > chats.data.items.length && (
+        <p className="convo-empty">
+          The {chats.data.items.length} most recent of {chats.data.total}.
+        </p>
+      )}
+    </>
+  )
 }
 
-function WriterThreads({ chats }: { chats: Chat[] }) {
+function ThreadTable({ chats }: { chats: Chat[] }) {
   const navigate = useNavigate()
-  if (chats.length === 0) return <p className="convo-empty">No letters yet.</p>
   return (
     <table className="convo-table">
       <thead>
@@ -74,11 +94,41 @@ function writerState(w: Writer): string | null {
   return null
 }
 
+/**
+ * Show letters / Hide letters for one block. Once opened, a block's threads
+ * stay mounted (hidden when closed), so closing and opening again asks nothing.
+ */
+function ThreadsToggle({ open, controls, onToggle }: { open: boolean; controls: string; onToggle: () => void }) {
+  return (
+    <button type="button" className="btn btn-sm writer-handoff-btn" aria-expanded={open} aria-controls={controls} onClick={onToggle}>
+      {open ? 'Hide letters' : 'Show letters'}
+    </button>
+  )
+}
+
 export default function GroupWriters() {
-  const page = useApi(loadWriters, [])
-  const writers = (page.data?.writers ?? []).filter((w) => w.anonymousForChapter == null)
-  const anonymous = (page.data?.writers ?? []).find((w) => w.anonymousForChapter != null) ?? null
-  const chatsOf = (id: number) => (page.data?.chats ?? []).filter((c) => c.user === id)
+  const page = useApi(getAllWriters, [])
+  const writers = (page.data ?? []).filter((w) => w.anonymousForChapter == null)
+  const anonymous = (page.data ?? []).find((w) => w.anonymousForChapter != null) ?? null
+  // Blocks opened at least once (their threads fetched), and those open now.
+  const [opened, setOpened] = useState<ReadonlySet<number>>(() => new Set())
+  const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set())
+  const toggle = (id: number) => {
+    setOpened((s) => new Set(s).add(id))
+    setOpen((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  /** The threads under a block: fetched on first opening, then kept. */
+  const threads = (id: number) =>
+    opened.has(id) && (
+      <div className="inbox-card" id={`writer-${id}-letters`} hidden={!open.has(id)}>
+        <WriterThreads writer={id} />
+      </div>
+    )
 
   return (
     <div className="inbox-section">
@@ -105,11 +155,10 @@ export default function GroupWriters() {
                 <Link to={`/writers/${w.id}/edit`} className="btn btn-sm writer-handoff-btn">
                   Edit
                 </Link>
+                <ThreadsToggle open={open.has(w.id)} controls={`writer-${w.id}-letters`} onToggle={() => toggle(w.id)} />
               </div>
             </div>
-            <div className="inbox-card">
-              <WriterThreads chats={chatsOf(w.id)} />
-            </div>
+            {threads(w.id)}
           </div>
         )
       })}
@@ -123,13 +172,12 @@ export default function GroupWriters() {
               <Link to="/letters/new?writer=anonymous" className="btn btn-sm writer-new-letter-btn">
                 + Write anonymously
               </Link>
+              {anonymous && (
+                <ThreadsToggle open={open.has(anonymous.id)} controls={`writer-${anonymous.id}-letters`} onToggle={() => toggle(anonymous.id)} />
+              )}
             </div>
           </div>
-          {anonymous && (
-            <div className="inbox-card">
-              <WriterThreads chats={chatsOf(anonymous.id)} />
-            </div>
-          )}
+          {anonymous && threads(anonymous.id)}
         </div>
       )}
 
