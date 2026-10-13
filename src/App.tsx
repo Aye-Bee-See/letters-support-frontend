@@ -28,6 +28,7 @@ const AdminStyles = lazy(() =>
 const Login = lazy(() => import('./pages/auth/Login'))
 const Blocks = lazy(() => import('./pages/account/Blocks'))
 const ChangePassword = lazy(() => import('./pages/account/ChangePassword'))
+const DeleteAccount = lazy(() => import('./pages/account/DeleteAccount'))
 const PenName = lazy(() => import('./pages/account/PenName'))
 const RecoveryCode = lazy(() => import('./pages/account/RecoveryCode'))
 const Retention = lazy(() => import('./pages/account/Retention'))
@@ -128,6 +129,7 @@ export default function App() {
               <Route path="account/security" element={<Security />} />
               <Route path="account/recovery-code" element={<RecoveryCode />} />
               <Route path="account/password" element={<ChangePassword />} />
+              <Route path="account/delete" element={<DeleteAccount />} />
             </Route>
             <Route element={<RequireAuth roles={['user']} />}>
               <Route path="account/pen-name" element={<PenName />} />
