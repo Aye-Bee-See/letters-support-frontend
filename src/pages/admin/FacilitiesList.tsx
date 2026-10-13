@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
-import { getFacilities, getFacilityFilters, type FacilityListParams } from '../../api/facilities'
+import { getFacilities, getFacilityFilters, getMailRules, type FacilityListParams } from '../../api/facilities'
 import { ADMIN_PAGER } from '../../components/forms/uiClasses'
 import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prison, RecordStatus, RoutingMethod } from '../../types'
-import { isStale, ROUTING_LABELS } from '../../utils/facilities'
+import { isStale, languageName, languageOptions, languageParam, ROUTING_LABELS } from '../../utils/facilities'
 import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
@@ -14,6 +14,10 @@ import { refusalText } from '../../utils/refusals'
 // facility: the edit page names the relay groups and the prisoners. Whether a
 // facility has an active relay group comes from one more request, the same
 // filters with relay=false. Filters live in the URL under the API's own names.
+// The mail-rule and language filters are the public page's (README "GET
+// /prison/prisons": `mailRule`, `language`): the rules from GET
+// /prison/mail-rules, retired ones too, since a facility may still carry one;
+// the languages from the fixed list utils/facilities.ts shares with it.
 
 const PAGE_SIZE = 25
 
@@ -35,6 +39,8 @@ export default function FacilitiesList() {
   const routing = oneOf(ROUTINGS, params.get('routing'))
   const relay = oneOf(['true', 'false'] as const, params.get('relay'))
   const stale = params.get('stale') === 'true'
+  const mailRule = params.get('mailRule') || undefined
+  const language = languageParam(params.get('language'))
   const sort = oneOf(Object.keys(SORTS) as Sort[], params.get('sort')) ?? 'name'
 
   const query: FacilityListParams = {
@@ -42,13 +48,15 @@ export default function FacilitiesList() {
     recordStatus: record,
     country,
     routing,
+    mailRule,
+    language,
     ...(relay ? { relay: relay === 'true' } : {}),
     ...(stale ? { stale: true as const } : {}),
     sort,
     page,
     page_size: PAGE_SIZE,
   }
-  const list = useApi(() => getFacilities(query), [q, record, country, routing, relay, stale, sort, page])
+  const list = useApi(() => getFacilities(query), [q, record, country, routing, mailRule, language, relay, stale, sort, page])
   // Which of the matching facilities have no active relay group: the same
   // filters with relay=false, ids only. Not needed when the relay filter says.
   const unrelayed = useApi(
@@ -58,15 +66,16 @@ export default function FacilitiesList() {
         : getFacilities({ ...query, relay: false, sort: undefined, page: 1, page_size: 100 }).then((r) =>
             r.total > r.items.length ? null : new Set(r.items.map((f) => f.id)),
           ),
-    [q, record, country, routing, relay, stale],
+    [q, record, country, routing, mailRule, language, relay, stale],
   )
   // The countries present, with counts, for the country filter.
   const filters = useApi(getFacilityFilters, [])
+  const rules = useApi(() => getMailRules(true), [])
 
   const setParam = (key: string, value: string | undefined) => update({ [key]: value })
   const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
-  const filtered = Boolean(q || record || country || routing || relay || stale)
+  const filtered = Boolean(q || record || country || routing || mailRule || language || relay || stale)
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -125,6 +134,25 @@ export default function FacilitiesList() {
             {(['true', 'false'] as const).map((r) => (
               <option key={r} value={r}>
                 {RELAY[r]}
+              </option>
+            ))}
+          </select>
+          <select className="form-select" aria-label="Mail rule" value={mailRule ?? ''} onChange={(e) => setParam('mailRule', e.target.value || undefined)}>
+            <option value="">Any mail rule</option>
+            {/* A rule in the URL that the list doesn't have (not loaded yet, or unknown) still shows. */}
+            {mailRule && !rules.data?.rules.some((r) => r.tag === mailRule) && <option value={mailRule}>{mailRule}</option>}
+            {rules.data?.rules.map((r) => (
+              <option key={r.tag} value={r.tag}>
+                {r.label}
+                {r.retired ? ' (retired)' : ''}
+              </option>
+            ))}
+          </select>
+          <select className="form-select" aria-label="Language the letter is written in" value={language ?? ''} onChange={(e) => setParam('language', e.target.value || undefined)}>
+            <option value="">Any language</option>
+            {languageOptions(language).map((code) => (
+              <option key={code} value={code}>
+                Accepts {languageName(code)}
               </option>
             ))}
           </select>

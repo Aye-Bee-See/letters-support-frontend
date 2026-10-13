@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Prison } from '../types'
-import { addressLine, addressLines, isStale, mailRuleLines, printLines, restrictionPhrases } from './facilities'
+import { addressLine, addressLines, FILTER_LANGUAGES, isStale, languageOptions, languageParam, mailRuleLines, printLines, restrictionPhrases } from './facilities'
 
 type Limits = Pick<Prison, 'mail_rule_details' | 'pageLimit' | 'photoLimit' | 'mailLanguages'>
 const rules = (...labels: string[]) => labels.map((label, i) => ({ id: i + 1, label })) as unknown as Prison['mail_rule_details']
@@ -79,5 +79,26 @@ describe('restrictions', () => {
     const none: Limits = { mail_rule_details: [], pageLimit: null, photoLimit: null, mailLanguages: [] }
     expect(restrictionPhrases(none)).toEqual([])
     expect(mailRuleLines(none)).toEqual([])
+  })
+})
+
+describe('the language filter', () => {
+  it('takes only a two-letter code from the URL', () => {
+    expect(languageParam('es')).toBe('es')
+    expect(languageParam('ES')).toBeUndefined()
+    expect(languageParam('spanish')).toBeUndefined()
+    expect(languageParam('')).toBeUndefined()
+    expect(languageParam(null)).toBeUndefined()
+  })
+
+  it('offers the fixed list by name, and a code from a link that isn’t on it', () => {
+    const plain = languageOptions()
+    expect(plain).toHaveLength(FILTER_LANGUAGES.length)
+    expect(plain[0]).toBe('ar') // Arabic
+    expect(plain.indexOf('en')).toBeLessThan(plain.indexOf('es')) // English before Spanish
+    const more = languageOptions('nl')
+    expect(more).toContain('nl')
+    expect(more).toHaveLength(FILTER_LANGUAGES.length + 1)
+    expect(languageOptions('es')).toHaveLength(FILTER_LANGUAGES.length)
   })
 })
