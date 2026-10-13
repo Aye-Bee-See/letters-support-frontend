@@ -78,6 +78,8 @@ export default function NewLetter() {
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility ? mailRuleLines(facility) : []
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
+  // A group writing for one of its writers, through itself: the note is for its own queue.
+  const ownGroup = isGroup && group !== null && group.id === user?.chapterId
   useLeaveGuard(draft.hasContent, 'Leave without sending your letter?')
   // No group can take this letter: none mails to the facility, or every one has blocked this writer.
   const noGroup = Boolean(facility) && (draft.groups.length === 0 || draft.allBlocked)
@@ -205,18 +207,20 @@ export default function NewLetter() {
 
           {!noGroup && (
             <button type="button" className="notes-toggle" onClick={() => setNotesOpen((o) => !o)}>
-              {notesOpen ? '− Hide the note' : `+ Add a note to ${group?.name ?? 'the group'}`}
+              {notesOpen ? '− Hide the note' : ownGroup ? '+ Add a note for the queue' : `+ Add a note to ${group?.name ?? 'the group'}`}
             </button>
           )}
           <div className={notesOpen && !noGroup ? 'notes-area is-open' : 'notes-area'}>
             <textarea
               className="notes-textarea"
-              aria-label={`Note to ${group?.name ?? 'the group'}, not sent to the prisoner`}
+              aria-label={ownGroup ? 'Note for the queue, not sent to the prisoner' : `Note to ${group?.name ?? 'the group'}, not sent to the prisoner`}
               placeholder='Optional. E.g. "poor scan quality" or "written at the Aug 3 letter night."'
               value={draft.relayNote}
               onChange={(e) => draft.setRelayNote(e.target.value)}
             />
-            <p className="notes-hint">Only the group that mails your letter sees this. It is not sent to the prisoner.</p>
+            <p className="notes-hint">
+              {ownGroup ? 'Only your group sees this, beside the letter in its queue.' : 'Only the group that mails your letter sees this.'} It is not sent to the prisoner.
+            </p>
           </div>
 
           {freed && prisoner && (

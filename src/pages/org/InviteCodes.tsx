@@ -191,7 +191,7 @@ function IssueForm({
               How many
             </label>
             <input id="ic-count" className="settings-input" inputMode="numeric" value={count} disabled={busy} onChange={(e) => setCount(e.target.value)} />
-            <span className="settings-hint">1 to {MAX_COUNT}.</span>
+            <span className="settings-hint">{room === null || room >= MAX_COUNT ? `1 to ${MAX_COUNT}.` : room === 0 ? 'None for now.' : `1 to ${room}.`}</span>
           </div>
           <div className="settings-field">
             <label className="settings-label" htmlFor="ic-days">

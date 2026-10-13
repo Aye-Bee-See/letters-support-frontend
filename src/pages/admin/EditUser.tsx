@@ -351,7 +351,7 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
                 onClick={() =>
                   act(`End every session of ${name}, on every device? They can sign in again straight away.`, async () => {
                     await revokeSessions(u.id)
-                    return `Every session of ${name} has ended. They can sign in again with their password.`
+                    return `Every session of ${name} has ended. They can sign in again with their password${u.publicKey ? '' : ': on a phone app, or here once their account has keys'}.`
                   })
                 }
               >

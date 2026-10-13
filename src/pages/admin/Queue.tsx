@@ -20,6 +20,7 @@ const PAGE_SIZE = 20
 const STATUSES: (SubmissionStatus | 'all')[] = ['pending', 'approved', 'rejected', 'withdrawn', 'all']
 const RESOURCES: SubmissionResource[] = ['prisoner', 'prison', 'chapter']
 const RESOURCE_LABELS: Record<SubmissionResource, string> = { prisoner: 'prisoner', prison: 'facility', chapter: 'group' }
+const RESOURCE_PLURALS: Record<SubmissionResource, string> = { prisoner: 'Prisoners', prison: 'Facilities', chapter: 'Groups' }
 const ADMIN_PATHS: Record<SubmissionResource, string> = { prisoner: '/admin/prisoners', prison: '/admin/facilities', chapter: '/admin/groups' }
 /** The record's own admin edit page. */
 const editPath = (resource: SubmissionResource, id: number) => `${ADMIN_PATHS[resource]}/${id}/edit`
@@ -192,7 +193,7 @@ export default function Queue() {
               <option value="">All</option>
               {RESOURCES.map((r) => (
                 <option key={r} value={r}>
-                  {RESOURCE_LABELS[r].charAt(0).toUpperCase() + RESOURCE_LABELS[r].slice(1)}s
+                  {RESOURCE_PLURALS[r]}
                 </option>
               ))}
             </select>

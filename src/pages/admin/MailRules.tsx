@@ -350,7 +350,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
           <div className="list-name">{rule.label}</div>
           {rule.description && <div className="list-sub">{rule.description}</div>}
         </td>
-        <td>{rule.retired ? <span className="badge badge-pending">Retired</span> : <span className="badge badge-published">In use</span>}</td>
+        <td>{rule.retired ? <span className="badge badge-pending">Retired</span> : <span className="badge badge-published">Offered</span>}</td>
         <td className="dash-nowrap">
           {!editing && (
             <span style={{ display: 'inline-flex', gap: '0.4rem' }}>

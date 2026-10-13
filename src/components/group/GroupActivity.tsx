@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getNotifications, getUnreadNotifications, markNotificationsRead } from '../../api/notifications'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useApi } from '../../hooks/useApi'
+import { useAuth } from '../../hooks/useAuth'
 import { useGroup } from '../../hooks/useGroup'
 import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import type { Notification } from '../../types'
@@ -43,6 +44,7 @@ export default function GroupActivity() {
   const unread = useApi(() => getUnreadNotifications(), [])
   const refreshKey = useGroupKeyRefresh()
   const { reload: reloadGroup } = useGroup()
+  const { user } = useAuth()
   // Once per visit, when both have answered (or failed).
   const acted = useRef(false)
   const settled = !feed.loading && !unread.loading
@@ -74,7 +76,7 @@ export default function GroupActivity() {
     <ul className="activity-list">
       {items.map((n) => {
         const to = linkOf(n)
-        const text = wordEvent(n)
+        const text = wordEvent(n, { me: user?.id })
         return (
           <li key={n.id} className={n.readAt ? 'activity-item' : 'activity-item unread'}>
             {to ? <Link to={to}>{text}</Link> : text}

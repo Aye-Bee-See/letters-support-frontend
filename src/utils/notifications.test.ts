@@ -30,6 +30,8 @@ describe('wordEvent (README "The feed")', () => {
     expect(wordEvent(entry('group.key', { action: 'rotated', keyVersion: 3 }))).toContain('version 3')
     expect(wordEvent(entry('group.key', { action: 'handed', member: 7 }))).toContain('handed')
     expect(wordEvent(entry('group.owner', { owner: 7, previous: 2, by: 'superadmin' }))).toContain('site admin')
+    expect(wordEvent(entry('group.owner', { owner: 7, by: 'first key' }), { me: 7 })).toBe('You set up the group key, so you are the group-owner admin')
+    expect(wordEvent(entry('group.owner', { owner: 7, by: 'first key' }), { me: 8 })).toBe('The group admin who set up the group key is now the group-owner admin')
     expect(wordEvent(entry('group.waiting', { member: 9 }))).toContain('waiting')
     expect(wordEvent(entry('group.block', { action: 'blocked', writer: 12, held: 2 }))).toBe('A group admin blocked a writer from your group; 2 letters of theirs waiting in your queue are held')
     expect(wordEvent(entry('group.block', { action: 'lifted', writer: 12, released: 1 }))).toBe('A group admin unblocked a writer from your group; 1 letter went back into the queue')
