@@ -68,6 +68,12 @@ const Invitations = lazy(() => import('./pages/admin/Invitations'))
 const MailRules = lazy(() => import('./pages/admin/MailRules'))
 const Queue = lazy(() => import('./pages/admin/Queue'))
 const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'))
+const Users = lazy(() => import('./pages/admin/Users'))
+const EditUser = lazy(() => import('./pages/admin/EditUser'))
+const NewAccount = lazy(() => import('./pages/admin/NewAccount'))
+const NewPrisoner = lazy(() => import('./pages/admin/NewPrisoner'))
+const NewFacility = lazy(() => import('./pages/admin/NewFacility'))
+const NewGroup = lazy(() => import('./pages/admin/NewGroup'))
 
 /** /inbox shows the writer or the group view by role; superadmins have no inbox. */
 function InboxRoute() {
@@ -165,6 +171,12 @@ export default function App() {
                 <Route path="invite" element={<Invitations />} />
                 <Route path="settings" element={<SiteSettings />} />
                 <Route path="mail-rules" element={<MailRules />} />
+                <Route path="users" element={<Users />} />
+                <Route path="users/:id" element={<EditUser />} />
+                <Route path="users/new" element={<NewAccount />} />
+                <Route path="prisoners/new" element={<NewPrisoner />} />
+                <Route path="facilities/new" element={<NewFacility />} />
+                <Route path="groups/new" element={<NewGroup />} />
               </Route>
             </Route>
           </Route>

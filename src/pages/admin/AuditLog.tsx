@@ -37,6 +37,8 @@ function recordLink(resource: string, id: number): string | null {
       return `/admin/groups/${id}/edit`
     case 'submission':
       return '/admin/queue?status=all'
+    case 'user':
+      return `/admin/users/${id}`
     default:
       return null
   }
