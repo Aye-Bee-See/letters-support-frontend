@@ -1,124 +1,41 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createFacility } from '../../api/admin'
-import { getMailRules, type FacilityFields } from '../../api/facilities'
+import { getMailRules } from '../../api/facilities'
+import RulePicker from '../../components/admin/RulePicker'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, MailRuleCategory, MailRuleList, PrisonAddress, RecordStatus, RoutingMethod } from '../../types'
+import type { ApiError, RecordStatus } from '../../types'
 import { ROUTING_LABELS } from '../../utils/facilities'
+import { EMPTY_FACILITY, languageHint, MAX_PRINT_LINES, problems, RECORD_STATUSES, ROUTINGS, toRecord, type FacilityFormValues } from '../../utils/facilityForm'
 import { siteAdminRefusal } from '../../utils/users'
 import { refusalText } from '../../utils/refusals'
 
 // A facility made directly (POST /prison/prison, superadmins only), rather than
-// by approving a group's proposal. The same fields as the edit page,
-// EditFacility.tsx, whose form, checks and rule picker are its own and not
-// exported, so these are built alongside them from the same parts
+// by approving a group's proposal. The same fields, checks and rule picker as
+// the edit page, EditFacility.tsx (utils/facilityForm.ts,
+// components/admin/RulePicker.tsx), laid out from the same parts
 // (AdminFormParts); a change to the fields belongs in both. Relay groups are
 // linked on the edit page once the facility exists. A new record is a draft
 // unless chosen otherwise: published makes it public at once.
-
-const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
-const RECORD_STATUSES: RecordStatus[] = ['draft', 'pending', 'published']
-const MAX_PRINT_LINES = 8
-const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
-
-interface Values {
-  prisonName: string
-  street: string
-  city: string
-  postalCode: string
-  lines: string
-  country: string
-  routing: string
-  scanService: string
-  pageLimit: string
-  photoLimit: string
-  mailLanguages: string
-  notes: string
-  recordStatus: RecordStatus
-  verified: boolean
-  verificationNotes: string
-}
-
-const EMPTY: Values = {
-  prisonName: '', street: '', city: '', postalCode: '', lines: '', country: '', routing: '', scanService: '', pageLimit: '',
-  photoLimit: '', mailLanguages: '', notes: '', recordStatus: 'draft', verified: false, verificationNotes: '',
-}
-
-const toLines = (text: string) =>
-  text
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-const toCodes = (text: string) =>
-  text
-    .toLowerCase()
-    .split(/[\s,]+/)
-    .filter(Boolean)
-
-/** What the API would refuse, said before sending (as EditFacility's checks), and an address to mail to. */
-function problems(v: Values, rules: Set<string>, list: MailRuleList | null): string[] {
-  const out: string[] = []
-  if (!v.prisonName.trim()) out.push('The facility needs a name.')
-  if (!v.city.trim() && !toLines(v.lines).length) out.push('Give the address: at least the city, or the lines to print on an envelope.')
-  if (toLines(v.lines).length > MAX_PRINT_LINES) out.push(`An envelope takes at most ${MAX_PRINT_LINES} print lines.`)
-  for (const [key, label] of [['pageLimit', 'Page limit'], ['photoLimit', 'Photo limit']] as const) {
-    const raw = v[key].trim()
-    if (raw && !(/^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) && Number(raw) >= 1))
-      out.push(`${label} must be a whole number of at least 1, or blank for no limit.`)
-  }
-  if (v.photoLimit.trim() && rules.has('no_photos')) {
-    const label = list?.rules.find((r) => r.tag === 'no_photos')?.label ?? 'No photos'
-    out.push(`A facility with “${label}” takes no photos, so it can’t have a photo limit: clear one or the other.`)
-  }
-  const codes = toCodes(v.mailLanguages)
-  const bad = codes.filter((c) => !/^[a-z]{2}$/.test(c))
-  if (bad.length) out.push(`Languages are two-letter codes, like en or es: ${bad.join(', ')} isn't one.`)
-  if (new Set(codes).size !== codes.length) out.push('A language is listed twice.')
-  for (const [a, b] of list?.conflicts ?? []) {
-    if (rules.has(a) && rules.has(b)) {
-      const label = (tag: string) => list?.rules.find((r) => r.tag === tag)?.label ?? tag
-      out.push(`“${label(a)}” and “${label(b)}” can’t both apply.`)
-    }
-  }
-  return out
-}
-
-/** The API body: only what was filled in; rules in master-list order. */
-function body(v: Values, rules: Set<string>, list: MailRuleList | null): FacilityFields & { prisonName: string; address: PrisonAddress } {
-  const address: PrisonAddress = {}
-  if (v.street.trim()) address.street = v.street.trim()
-  if (v.city.trim()) address.city = v.city.trim()
-  if (v.postalCode.trim()) address.postalCode = v.postalCode.trim()
-  if (toLines(v.lines).length) address.lines = toLines(v.lines)
-  const out: FacilityFields & { prisonName: string; address: PrisonAddress } = { prisonName: v.prisonName.trim(), address, recordStatus: v.recordStatus }
-  for (const key of ['country', 'scanService', 'notes', 'verificationNotes'] as const) if (v[key].trim()) out[key] = v[key].trim()
-  if (v.routing) out.routing = v.routing as RoutingMethod
-  for (const key of ['pageLimit', 'photoLimit'] as const) if (v[key].trim()) out[key] = Number(v[key])
-  if (toCodes(v.mailLanguages).length) out.mailLanguages = toCodes(v.mailLanguages)
-  const order = list?.rules.map((r) => r.tag) ?? []
-  if (rules.size) out.mailRules = [...rules].sort((a, b) => (order.indexOf(a) + 1 || Infinity) - (order.indexOf(b) + 1 || Infinity))
-  // verifiedBy names a group; a superadmin has none.
-  if (v.verified) out.verifiedAt = new Date().toISOString()
-  return out
-}
 
 export default function NewFacility() {
   const navigate = useNavigate()
   // Current rules only: the API refuses a retired one on a facility that doesn't already have it.
   const rules = useApi(() => getMailRules(), [])
-  const [values, setValues] = useState(EMPTY)
+  const [values, setValues] = useState(EMPTY_FACILITY)
+  const [verified, setVerified] = useState(false)
   const [ruleTags, setRuleTags] = useState<Set<string>>(() => new Set())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const list = rules.data
   const issues = problems(values, ruleTags, list)
 
-  const set = <K extends keyof Values>(key: K, value: Values[K]) => {
+  const set = <K extends keyof FacilityFormValues>(key: K, value: FacilityFormValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }))
     setError(null)
   }
-  const field = (key: Exclude<keyof Values, 'verified' | 'recordStatus'>) => ({
+  const field = (key: Exclude<keyof FacilityFormValues, 'recordStatus'>) => ({
     id: `f-${key}`,
     value: values[key],
     disabled: busy,
@@ -132,16 +49,15 @@ export default function NewFacility() {
       return next
     })
 
-  const languageHint = toCodes(values.mailLanguages)
-    .filter((c) => /^[a-z]{2}$/.test(c))
-    .map((c) => languageNames.of(c) ?? c)
-    .join(', ')
-
   async function save() {
     setBusy(true)
     setError(null)
     try {
-      const made = await createFacility(body(values, ruleTags, list))
+      const made = await createFacility({
+        ...toRecord(values, ruleTags, list),
+        // verifiedBy names a group; a superadmin has none.
+        ...(verified ? { verifiedAt: new Date().toISOString() } : {}),
+      })
       navigate(`/admin/facilities/${made.id}/edit`, { replace: true })
     } catch (err) {
       setError(siteAdminRefusal(err as ApiError))
@@ -214,7 +130,7 @@ export default function NewFacility() {
                   ))}
                 </select>
               </Field>
-              <Field label="Mail languages" htmlFor="f-mailLanguages" hint={languageHint || 'Two-letter codes, e.g. “en, es”. Blank for no restriction.'}>
+              <Field label="Mail languages" htmlFor="f-mailLanguages" hint={languageHint(values.mailLanguages) || 'Two-letter codes, e.g. “en, es”. Blank for no restriction.'}>
                 <input className="form-input" {...field('mailLanguages')} />
               </Field>
             </div>
@@ -254,7 +170,15 @@ export default function NewFacility() {
             </Field>
             <div className="form-group">
               <label className="queue-check">
-                <input type="checkbox" checked={values.verified} disabled={busy} onChange={(e) => set('verified', e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={verified}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setVerified(e.target.checked)
+                    setError(null)
+                  }}
+                />
                 I have checked these details: mark the record verified today
               </label>
             </div>
@@ -286,31 +210,5 @@ export default function NewFacility() {
         </form>
       </div>
     </>
-  )
-}
-
-const categoryLabel = (c: MailRuleCategory) => (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ')
-
-/** The master list by category, retired rules left out (as EditFacility's picker, for a facility with none yet). */
-function RulePicker(props: { list: MailRuleList; selected: Set<string>; disabled: boolean; onToggle: (tag: string) => void }) {
-  const { list, selected, disabled, onToggle } = props
-  return (
-    <div className="rule-picker">
-      {list.categories.map((category) => {
-        const inCategory = list.rules.filter((r) => r.category === category && !r.retired)
-        if (!inCategory.length) return null
-        return (
-          <fieldset key={category} className="rule-group">
-            <legend className="form-hint">{categoryLabel(category)}</legend>
-            {inCategory.map((rule) => (
-              <label key={rule.tag} className="queue-check" title={rule.description ?? undefined}>
-                <input type="checkbox" checked={selected.has(rule.tag)} disabled={disabled} onChange={() => onToggle(rule.tag)} />
-                {rule.label}
-              </label>
-            ))}
-          </fieldset>
-        )
-      })}
-    </div>
   )
 }

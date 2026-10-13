@@ -11,6 +11,9 @@ export const ROUTING_LABELS: Record<RoutingMethod, string> = {
 }
 
 /** Routing lines for the facilities table: the method, then each relay group ("Via Belarus ABC"). */
+/** A mail rule's category in words: "mail_content" → "Mail content". */
+export const categoryLabel = (c: string) => (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ')
+
 export function routingLines(prison: Pick<Prison, 'routing' | 'relay_groups'>): string[] {
   const lines = prison.routing ? [ROUTING_LABELS[prison.routing]] : []
   for (const group of prison.relay_groups ?? []) lines.push(`Via ${group.name}`)

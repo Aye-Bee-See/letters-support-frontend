@@ -8,101 +8,18 @@ import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, Prison, Prisoner, PrisonerStatus, RecordStatus } from '../../types'
+import type { ApiError, Prison, Prisoner, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, STATUS_LABELS } from '../../utils/prisoners'
+import { changes, facilityLabel, PRISONER_STATUSES, problems, RECORD_STATUSES, toForm, type PrisonerFormValues } from '../../utils/prisonerForm'
 import { date } from '../../components/invitations/wording'
 import { refusalText } from '../../utils/refusals'
 
 // Edit one prisoner record (PUT /prisoner/prisoner, superadmins only). Only the
 // fields that changed are sent, so the audit log says what was edited. A new
 // facility, or a status of "free", moves the prisoner's mail: the API re-routes
-// or holds queued letters and tells their writers, and says what it did.
-
-const PRISONER_STATUSES: PrisonerStatus[] = ['incarcerated', 'pretrial', 'free']
-const RECORD_STATUSES: RecordStatus[] = ['published', 'pending', 'draft']
-
-/** The form's values: every field as the inputs hold it. */
-interface FormValues {
-  chosenName: string
-  birthName: string
-  aliases: string
-  status: string
-  prison: string
-  country: string
-  inmateID: string
-  detainedSince: string
-  releaseDate: string
-  estimatedRelease: string
-  sentence: string
-  charges: string
-  statusNotice: string
-  bio: string
-  interests: string
-  supportWebsite: string
-  donationInfo: string
-  recordStatus: string
-  featured: boolean
-  verificationNotes: string
-}
-
-/** A date input holds YYYY-MM-DD; the API stores a timestamp. Read it in UTC, as the public pages show it. */
-function dateInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
-}
-const lines = (list: string[] | null) => (list ?? []).join('\n')
-const toList = (text: string) =>
-  text
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-
-function toForm(p: Prisoner): FormValues {
-  return {
-    chosenName: p.chosenName ?? '',
-    birthName: p.birthName ?? '',
-    aliases: lines(p.aliases),
-    status: p.status ?? '',
-    prison: p.prison !== null ? String(p.prison) : '',
-    country: p.country ?? '',
-    inmateID: p.inmateID ?? '',
-    detainedSince: dateInput(p.detainedSince),
-    releaseDate: dateInput(p.releaseDate),
-    estimatedRelease: p.estimatedRelease ?? '',
-    sentence: p.sentence ?? '',
-    charges: p.charges ?? '',
-    statusNotice: p.statusNotice ?? '',
-    bio: p.bio ?? '',
-    interests: lines(p.interests),
-    supportWebsite: p.supportWebsite ?? '',
-    donationInfo: p.donationInfo ?? '',
-    recordStatus: p.recordStatus ?? 'published',
-    featured: p.featured,
-    verificationNotes: p.verificationNotes ?? '',
-  }
-}
-
-const TEXT_FIELDS = [
-  'chosenName', 'birthName', 'country', 'inmateID', 'estimatedRelease', 'sentence', 'charges',
-  'statusNotice', 'bio', 'supportWebsite', 'donationInfo', 'verificationNotes',
-] as const
-
-/** The API body for what changed: blank text is null, lists are arrays, dates are YYYY-MM-DD. */
-function changes(before: FormValues, after: FormValues): PrisonerFields {
-  const out: Record<string, unknown> = {}
-  const text = (v: string) => v.trim() || null
-  for (const key of TEXT_FIELDS) if (before[key].trim() !== after[key].trim()) out[key] = text(after[key])
-  for (const key of ['aliases', 'interests'] as const)
-    if (lines(toList(before[key])) !== lines(toList(after[key]))) out[key] = toList(after[key])
-  for (const key of ['detainedSince', 'releaseDate'] as const) if (before[key] !== after[key]) out[key] = after[key] || null
-  if (before.status !== after.status) out.status = after.status || null
-  if (before.prison !== after.prison) out.prison = after.prison ? Number(after.prison) : null
-  if (before.recordStatus !== after.recordStatus) out.recordStatus = after.recordStatus
-  if (before.featured !== after.featured) out.featured = after.featured
-  return out as PrisonerFields
-}
+// or holds queued letters and tells their writers, and says what it did. The
+// form and its checks are shared with NewPrisoner.tsx (utils/prisonerForm.ts).
 
 export default function EditPrisoner() {
   const id = Number(useParams().id)
@@ -191,6 +108,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
 
   const diff = useMemo(() => changes(initial, values), [initial, values])
   const dirty = Object.keys(diff).length > 0 || markVerified
+  const issues = problems(values)
 
   // Leaving the tab with unsaved edits asks first.
   useEffect(() => {
@@ -200,11 +118,11 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
 
-  const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) => {
+  const set = <K extends keyof PrisonerFormValues>(key: K, value: PrisonerFormValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }))
     onEdit()
   }
-  const field = (key: Exclude<keyof FormValues, 'featured'>) => ({
+  const field = (key: Exclude<keyof PrisonerFormValues, 'featured' | 'recordStatus'>) => ({
     id: `f-${key}`,
     value: values[key],
     disabled: busy,
@@ -217,8 +135,6 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
   // another found with the picker. One that can't be fetched (deleted since) shows as its number.
   const storedFacility = useApi(() => (prisoner.prison !== null ? getFacility(prisoner.prison, false) : Promise.resolve(null)), [prisoner.prison])
   const [pickedFacility, setPickedFacility] = useState<Prison | null>(null)
-  const facilityLabel = (f: Prison) =>
-    `${f.prisonName}${f.country ? ` (${f.country})` : ''}${f.recordStatus && f.recordStatus !== 'published' ? ` [${f.recordStatus}]` : ''}`
   const currentFacility = [pickedFacility, storedFacility.data].find((f) => f && String(f.id) === values.prison)
   const facilityName = !values.prison ? 'Not listed' : currentFacility ? facilityLabel(currentFacility) : `Facility #${values.prison}`
 
@@ -267,7 +183,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
       className="admin-form"
       onSubmit={(e) => {
         e.preventDefault()
-        if (dirty && !busy) void save()
+        if (dirty && !busy && issues.length === 0) void save()
       }}
     >
       <Section title="Name">
@@ -382,7 +298,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
       <Section title="Publishing and verification">
         <div className="form-row">
           <Field label="Record status" htmlFor="f-recordStatus" hint="Only published records appear in the public directory.">
-            <select className="form-select" {...field('recordStatus')}>
+            <select id="f-recordStatus" className="form-select" value={values.recordStatus} disabled={busy} onChange={(e) => set('recordStatus', e.target.value as RecordStatus)}>
               {RECORD_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -414,6 +330,13 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
         </Field>
       </Section>
 
+      {issues.length > 0 && (
+        <div className="admin-alert admin-alert-warn form-error" role="status">
+          {issues.map((text) => (
+            <div key={text}>{text}</div>
+          ))}
+        </div>
+      )}
       {error && <div className="admin-alert admin-alert-err form-error" role="alert">{error}</div>}
 
       <div className="admin-form-footer">
@@ -424,7 +347,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
           <Link to="/admin/prisoners" className="a-btn">
             {dirty ? 'Cancel' : 'Back to list'}
           </Link>
-          <button type="submit" className="a-btn a-btn-primary" disabled={!dirty || busy}>
+          <button type="submit" className="a-btn a-btn-primary" disabled={!dirty || busy || issues.length > 0}>
             {busy ? 'Saving…' : 'Save changes'}
           </button>
         </div>
@@ -439,7 +362,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
  * one to someone who had none or taking it away; becoming "free" holds their
  * queued letters, and leaving "free" lets those go again.
  */
-function mailWarnings(initial: FormValues, diff: PrisonerFields): string[] {
+function mailWarnings(initial: PrisonerFormValues, diff: PrisonerFields): string[] {
   const out: string[] = []
   if ('prison' in diff) {
     out.push(
