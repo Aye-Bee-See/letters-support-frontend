@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getGroupHistory, updateGroup } from '../../api/groups'
 import { GROUP_UI } from '../../components/forms/uiClasses'
-import PrisonerPhotos from '../../components/group/PrisonerPhoto'
+import PrisonerPhotoPanel from '../../components/forms/PrisonerPhotoPanel'
 import RelayFacilitiesPanel from '../../components/group/RelayFacilitiesPanel'
 import SupportedPrisonersPanel from '../../components/group/SupportedPrisonersPanel'
 import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import type { ApiError, Chapter, ChapterService, HistoryEntry, NetworkRole, SocialLinkKey } from '../../types'
 import { SERVICE_LABELS } from '../../utils/groups'
+import { displayName } from '../../utils/prisoners'
 import { capitalise, changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { refusalText } from '../../utils/refusals'
 
@@ -413,6 +414,61 @@ function Numbers({ group: g, field }: { group: Chapter; field: FieldProps }) {
           <span className="settings-hint">What your group mailed before it used this site. Saved with the rest of the form.</span>
         </div>
       </div>
+    </section>
+  )
+}
+
+/**
+ * The supported prisoners, each with a Photo button that opens the photo panel
+ * (components/forms/PrisonerPhotoPanel.tsx) in the group's words: the person
+ * agreed to it, and there is no credit. A section of its own beside the
+ * Supports panel; the list is the group's record, so a prisoner linked just now
+ * appears once the record is read again.
+ */
+function PrisonerPhotos() {
+  const { group, reload } = useGatedGroup()
+  const [open, setOpen] = useState<number | null>(null)
+  const supported = group.supported_prisoners ?? []
+
+  return (
+    <section className="settings-section">
+      <h2 className="settings-section-heading">Photos</h2>
+      <p className="settings-hint">
+        A photo of a prisoner your group supports, for their public page. Any group admin may add one, once the person has agreed to it.
+      </p>
+      {supported.length === 0 ? (
+        <p className="settings-static">Link a prisoner under Supports first.</p>
+      ) : (
+        <ul className="settings-list">
+          {supported.map((p) => (
+            <li key={p.id} style={open === p.id ? { display: 'block' } : undefined}>
+              <span className="settings-list-name">{displayName(p)}</span>{' '}
+              {open !== p.id && <span className="settings-sub">{p.photo ? 'Has a photo' : 'No photo'}</span>}{' '}
+              {open !== p.id && (
+                <button type="button" className="settings-btn" onClick={() => setOpen(p.id)}>
+                  Photo
+                </button>
+              )}
+              {open === p.id && (
+                <PrisonerPhotoPanel
+                  mode="group"
+                  prisoner={p}
+                  onClose={() => {
+                    setOpen(null)
+                    reload()
+                  }}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="settings-hint">
+        Linked someone just now?{' '}
+        <button type="button" className="settings-link-button" onClick={reload}>
+          Read the list again
+        </button>
+      </p>
     </section>
   )
 }
