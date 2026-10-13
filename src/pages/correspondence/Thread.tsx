@@ -284,7 +284,7 @@ function LetterItem({
   const outbound = m.sender === 'user'
   const status = statusOf(m)
   const held = forGroup ? groupHeldText(m, forGroup.chapterId) : heldText(m, prisonerName, blocks, queued?.prisonId != null)
-  const kept = retention ? retentionLine(m, retention.days, retention.rules) : null
+  const kept = retention ? retentionLine(m, retention.days) : null
   const onKept = retention?.onChanged
   async function toggleKeep() {
     if (!onKept) return
