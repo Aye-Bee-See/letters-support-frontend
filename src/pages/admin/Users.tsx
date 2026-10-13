@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { getAllGroups } from '../../api/groups'
+import { getGroupsByIds } from '../../api/groups'
 import { getUsers, type DeletedAccount, type UserListParams } from '../../api/users'
 import ListPager from '../../components/ui/ListPager'
 import { useApi } from '../../hooks/useApi'
@@ -28,8 +28,10 @@ export default function Users() {
 
   const query: UserListParams = { q: q || undefined, role, page, page_size: PAGE_SIZE }
   const list = useApi(() => getUsers(query), [q, role, page], { keepPrevious: true })
-  // The few groups there are, once, to name each group admin's.
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // The groups this page of accounts names (each group admin's, and the one
+  // looking after each managed writer), fetched by id for their names.
+  const named = [...new Set((list.data?.items ?? []).flatMap((u) => [u.chapterId, u.managedBy]).filter((g): g is number => g !== null))].sort((a, b) => a - b)
+  const found = useApi(() => (named.length ? getGroupsByIds(named) : Promise.resolve(new Map<number, Chapter>())), [named.join(',')], { keepPrevious: true })
 
   const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
@@ -102,7 +104,7 @@ export default function Users() {
             </p>
           )}
           {list.data && list.data.total === 0 && <p className="dash-note">{filtered ? 'No accounts match.' : 'There are no accounts yet.'}</p>}
-          {list.data && list.data.items.length > 0 && <UserTable users={list.data.items} groups={groups.data} />}
+          {list.data && list.data.items.length > 0 && <UserTable users={list.data.items} groups={found.data} />}
         </div>
 
         {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
@@ -111,8 +113,8 @@ export default function Users() {
   )
 }
 
-function UserTable({ users, groups }: { users: User[]; groups: Chapter[] | null }) {
-  const groupName = (id: number) => groups?.find((g) => g.id === id)?.name ?? `Group #${id}`
+function UserTable({ users, groups }: { users: User[]; groups: Map<number, Chapter> | null }) {
+  const groupName = (id: number) => groups?.get(id)?.name ?? `Group #${id}`
   return (
     <table className="admin-table">
       <thead>

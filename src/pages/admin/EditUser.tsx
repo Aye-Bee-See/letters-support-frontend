@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { getAllGroups } from '../../api/groups'
+import { getGroups, getGroupsByIds } from '../../api/groups'
 import { resetTwoFactor } from '../../api/twoFactor'
 import { deleteUser, getUser, revokeSessions, setUserGroup, setUserRole } from '../../api/users'
 import { Field, Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useLinkAction } from '../../components/group/useLinkAction'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
@@ -37,8 +39,11 @@ function EditUser({ id }: { id: number }) {
   const location = useLocation()
   const created = (location.state as { created?: boolean } | null)?.created === true
   const user = useApi(() => getUser(id), [id], { keepPrevious: true })
-  // The few groups there are, for naming the account's and for the pickers.
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // The groups the account names (its own, the one that looked after it, the
+  // one it was claimed from), fetched by id for their names.
+  const named = [user.data?.chapterId, user.data?.managedBy, user.data?.claimedFrom].filter((g): g is number => typeof g === 'number')
+  const found = useApi(() => (named.length ? getGroupsByIds(named) : Promise.resolve(new Map<number, Chapter>())), [named.join(',')], { keepPrevious: true })
+  const groups = found.data ? [...found.data.values()] : null
   const { user: me } = useAuth()
   const [notice, setNotice] = useState<string | null>(created ? 'Account made.' : null)
 
@@ -79,14 +84,14 @@ function EditUser({ id }: { id: number }) {
         )}
         {user.data && (
           <>
-            <AccountRecord u={user.data} groups={groups.data} />
+            <AccountRecord u={user.data} groups={groups} />
             {me?.id === user.data.id ? (
               <div className="admin-alert admin-alert-warn">
                 This is your own account. Its role, sessions and deletion are another site admin’s to change; your password and two-factor sign-in are on{' '}
                 <Link to="/account/security">your account’s security page</Link>.
               </div>
             ) : (
-              <Actions key={`${user.data.id}-${user.data.updatedAt}`} u={user.data} groups={groups.data} onDone={done} onEdit={() => setNotice(null)} />
+              <Actions key={`${user.data.id}-${user.data.updatedAt}`} u={user.data} groups={groups} onDone={done} onEdit={() => setNotice(null)} />
             )}
           </>
         )}
@@ -167,20 +172,28 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [role, setRole] = useState<UserRole>(u.role)
   const [roleGroup, setRoleGroup] = useState(u.chapterId !== null ? String(u.chapterId) : '')
-  const [moveTo, setMoveTo] = useState('')
+  // Groups found with the pickers, for naming them.
+  const [picked, setPicked] = useState<Chapter[]>([])
 
   const name = accountName(u)
   const managed = managedNote(u) !== null
-  const groupName = (groupId: number) => groups?.find((g) => g.id === groupId)?.name ?? `group #${groupId}`
-  const groupOptions = (exclude: number | null) =>
-    (groups ?? [])
-      .filter((g) => g.id !== exclude)
-      .map((g) => (
-        <option key={g.id} value={g.id}>
-          {g.name}
-          {g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}
-        </option>
-      ))
+  const groupName = (groupId: number) => [...picked, ...(groups ?? [])].find((g) => g.id === groupId)?.name ?? `group #${groupId}`
+  const groupPicker = (inputId: string | undefined, label: string, placeholder: string, exclude: number | null, onSelect: (g: Chapter) => void) => (
+    <RecordPicker
+      id={inputId}
+      label={label}
+      classes={{ input: 'form-input' }}
+      placeholder={placeholder}
+      disabled={busy}
+      fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+      exclude={exclude !== null ? [exclude] : null}
+      render={(g) => `${g.name}${g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}`}
+      onSelect={(g) => {
+        setPicked((list) => [g, ...list])
+        onSelect(g)
+      }}
+    />
+  )
 
   const act = (question: string, action: () => Promise<string>) => {
     if (!window.confirm(question)) return
@@ -215,16 +228,16 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
   }
 
   // --- Group ------------------------------------------------------------------
-  function changeGroup(chapterId: number | null) {
+  function changeGroup(to: Chapter | null) {
     const question =
-      chapterId === null
+      to === null
         ? `Take ${name} out of ${groupName(u.chapterId!)}? They stop acting for it at once. If they are its group-owner admin, it has no owner until another is chosen, and it is told.`
         : u.chapterId === null
-          ? `Put ${name} in ${groupName(chapterId)}? They act for it from their next request, and read its letters once its owner hands them the group key.`
-          : `Move ${name} from ${groupName(u.chapterId)} to ${groupName(chapterId)}? They stop acting for ${groupName(u.chapterId)} at once, and read ${groupName(chapterId)}’s letters once its owner hands them its key.`
+          ? `Put ${name} in ${to.name}? They act for it from their next request, and read its letters once its owner hands them the group key.`
+          : `Move ${name} from ${groupName(u.chapterId)} to ${to.name}? They stop acting for ${groupName(u.chapterId)} at once, and read ${to.name}’s letters once its owner hands them its key.`
     act(question, async () => {
-      await setUserGroup(u.id, chapterId)
-      return chapterId === null ? `${name} is in no group now.` : `${name} is in ${groupName(chapterId)} now.`
+      await setUserGroup(u.id, to?.id ?? null)
+      return to === null ? `${name} is in no group now.` : `${name} is in ${to.name} now.`
     })
   }
 
@@ -268,10 +281,10 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
               </Field>
               {role === 'chapter' && (
                 <Field label="Group" htmlFor="f-role-group" hint="A group admin acts for one group.">
-                  <select id="f-role-group" className="form-select" value={roleGroup} disabled={busy || !groups} onChange={(e) => setRoleGroup(e.target.value)}>
-                    <option value="">{groups ? 'Choose a group…' : 'Loading groups…'}</option>
-                    {groupOptions(null)}
-                  </select>
+                  <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                    <span className="form-static">{toGroup !== null ? groupName(toGroup) : 'None chosen yet'}</span>
+                  </div>
+                  {groupPicker('f-role-group', 'Group', toGroup !== null ? 'Search groups to change it…' : 'Search groups…', toGroup, (g) => setRoleGroup(String(g.id)))}
                 </Field>
               )}
             </div>
@@ -306,13 +319,13 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
               A group admin reads their group’s letters only once its group-owner admin hands them the group key.
             </p>
             <div className="relay-add">
-              <select className="form-select" aria-label="Group to move to" value={moveTo} disabled={busy || !groups} onChange={(e) => setMoveTo(e.target.value)}>
-                <option value="">{groups ? (u.chapterId !== null ? 'Move to another group…' : 'Choose a group…') : 'Loading groups…'}</option>
-                {groupOptions(u.chapterId)}
-              </select>
-              <button type="button" className="a-btn a-btn-sm" disabled={busy || !moveTo} onClick={() => changeGroup(Number(moveTo))}>
-                {u.chapterId !== null ? 'Move' : 'Put in this group'}
-              </button>
+              {groupPicker(
+                undefined,
+                u.chapterId !== null ? 'Group to move to' : 'Group to put them in',
+                u.chapterId !== null ? 'Search groups to move them to…' : 'Search groups to put them in…',
+                u.chapterId,
+                (g) => changeGroup(g),
+              )}
               {u.chapterId !== null && (
                 <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => changeGroup(null)}>
                   Take out of the group

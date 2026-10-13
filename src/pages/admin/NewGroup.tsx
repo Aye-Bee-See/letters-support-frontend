@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createGroup } from '../../api/admin'
-import { getAllGroups, type GroupFields } from '../../api/groups'
+import { getGroups, type GroupFields } from '../../api/groups'
 import { Field, Section } from '../../components/forms/AdminFormParts'
-import { useApi } from '../../hooks/useApi'
-import type { AccountStatus, ApiError, ChapterService, NetworkRole, RecordStatus, SocialLinkKey } from '../../types'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
+import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus, SocialLinkKey } from '../../types'
 import { buildLocation, buildSocial, capitalise, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, type GroupFormValues } from '../../utils/groupForm'
 import { SERVICE_LABELS } from '../../utils/groups'
 import { siteAdminRefusal } from '../../utils/users'
@@ -54,7 +55,8 @@ function body(v: Values, services: Set<ChapterService>): GroupFields & { name: s
 
 export default function NewGroup() {
   const navigate = useNavigate()
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // The group found with the picker; `values.vouchedBy` is its id.
+  const [voucher, setVoucher] = useState<Chapter | null>(null)
   const [values, setValues] = useState(EMPTY)
   const [services, setServices] = useState<Set<ChapterService>>(() => new Set())
   const [busy, setBusy] = useState(false)
@@ -218,14 +220,28 @@ export default function NewGroup() {
                 </select>
               </Field>
               <Field label="Vouched for by" htmlFor="f-vouchedBy" hint="The group that brought this one into the network.">
-                <select className="form-select" {...field('vouchedBy')} disabled={busy || !groups.data}>
-                  <option value="">{groups.data ? 'Nobody' : 'Loading groups…'}</option>
-                  {(groups.data ?? []).map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                  <span className="form-static">{voucher && values.vouchedBy ? voucher.name : 'Nobody'}</span>
+                  {values.vouchedBy && (
+                    <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set({ vouchedBy: '' })}>
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <RecordPicker
+                  id="f-vouchedBy"
+                  label="Vouched for by"
+                  classes={{ input: 'form-input' }}
+                  placeholder="Search groups…"
+                  disabled={busy}
+                  fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+                  exclude={values.vouchedBy ? [Number(values.vouchedBy)] : null}
+                  render={(o) => o.name}
+                  onSelect={(o) => {
+                    setVoucher(o)
+                    set({ vouchedBy: String(o.id) })
+                  }}
+                />
               </Field>
             </div>
             <div className="form-row">

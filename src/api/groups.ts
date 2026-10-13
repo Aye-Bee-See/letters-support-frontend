@@ -1,7 +1,7 @@
 // The UI says "group"; the API says "chapter" (/chapter). Also here: a group's
 // blocks, its history, and its key (README "Group keys"), which the API serves
 // under /auth.
-import { del, getAllPages, getList, getOne, post, put } from './client'
+import { del, getList, getOne, post, put } from './client'
 import { forgetWriters } from './writers'
 import type {
   AccountStatus,
@@ -27,10 +27,6 @@ export interface GroupListParams extends ListParams {
 
 export const getGroups = (params?: GroupListParams) =>
   getList<Chapter>('/chapter/chapters', params)
-
-/** Every group (every page). */
-export const getAllGroups = (params?: Omit<GroupListParams, 'page' | 'page_size'>) =>
-  getAllPages<Chapter>('/chapter/chapters', params)
 
 /** full=true adds supported_prisoners and relay_prisons. */
 export const getGroup = (id: number, full = true) =>

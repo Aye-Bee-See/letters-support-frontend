@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getEncryptionReadiness } from '../../api/admin'
-import { getAllGroups } from '../../api/groups'
+import { getGroups } from '../../api/groups'
 import { createStaffAccount } from '../../api/users'
 import { Field, Section } from '../../components/forms/AdminFormParts'
+import RecordPicker from '../../components/forms/RecordPicker'
+import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError } from '../../types'
+import type { ApiError, Chapter } from '../../types'
 import { MIN_PASSWORD_LENGTH, passwordStrength } from '../../utils/password'
 import { createRefusal } from '../../utils/users'
 
@@ -49,6 +51,8 @@ function problems(v: Values): string[] {
   if (v.confirm && v.confirm !== v.password) out.push('The two passwords don’t match.')
   return out
 }
+
+const groupLabel = (g: Chapter) => `${g.name}${g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}`
 
 const ready = (v: Values) =>
   v.username.trim() !== '' && v.email.trim() !== '' && v.password !== '' && v.confirm === v.password && (v.role === 'admin' || v.group !== '')
@@ -94,7 +98,8 @@ export default function NewAccount() {
 
 function AccountForm() {
   const navigate = useNavigate()
-  const groups = useApi(() => getAllGroups({ sort: 'name' }), [])
+  // The group found with the picker; `values.group` is its id.
+  const [group, setGroup] = useState<Chapter | null>(null)
   const [values, setValues] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -162,15 +167,23 @@ function AccountForm() {
           </Field>
           {values.role === 'chapter' && (
             <Field label="Group" htmlFor="f-group" hint="They read its letters once its group-owner admin hands them the group key.">
-              <select className="form-select" required {...field('group')} disabled={busy || !groups.data}>
-                <option value="">{groups.data ? 'Choose a group…' : groups.error ? 'Couldn’t load the groups' : 'Loading groups…'}</option>
-                {(groups.data ?? []).map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                    {g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}
-                  </option>
-                ))}
-              </select>
+              <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                <span className="form-static">{group && values.group ? groupLabel(group) : 'None chosen yet'}</span>
+              </div>
+              <RecordPicker
+                id="f-group"
+                label="Group"
+                classes={{ input: 'form-input' }}
+                placeholder={values.group ? 'Search groups to change it…' : 'Search groups…'}
+                disabled={busy}
+                fetch={(q) => getGroups({ q, sort: 'name', page_size: PICKER_PAGE_SIZE })}
+                exclude={values.group ? [Number(values.group)] : null}
+                render={groupLabel}
+                onSelect={(g) => {
+                  setGroup(g)
+                  set({ group: String(g.id) })
+                }}
+              />
             </Field>
           )}
         </div>
