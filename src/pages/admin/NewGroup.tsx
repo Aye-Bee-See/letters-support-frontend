@@ -220,7 +220,7 @@ export default function NewGroup() {
                 </select>
               </Field>
               <Field label="Vouched for by" htmlFor="f-vouchedBy" hint="The group that brought this one into the network.">
-                <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                <div className="relay-add picked-row">
                   <span className="form-static">{voucher && values.vouchedBy ? voucher.name : 'Nobody'}</span>
                   {values.vouchedBy && (
                     <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set({ vouchedBy: '' })}>

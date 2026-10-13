@@ -217,7 +217,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
             htmlFor="f-prison"
             hint={storedFacility.loading && values.prison ? 'Loading the facility’s name…' : undefined}
           >
-            <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+            <div className="relay-add picked-row">
               <span className="form-static">{facilityName}</span>
               {values.prison && (
                 <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set('prison', '')}>

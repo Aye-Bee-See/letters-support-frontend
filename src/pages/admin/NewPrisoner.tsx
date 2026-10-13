@@ -97,7 +97,7 @@ export default function NewPrisoner() {
                 </select>
               </Field>
               <Field label="Facility" htmlFor="f-prison">
-                <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+                <div className="relay-add picked-row">
                   <span className="form-static">{facility && values.prison ? facilityLabel(facility) : 'Not listed'}</span>
                   {values.prison && (
                     <button type="button" className="a-btn a-btn-sm" disabled={busy} onClick={() => set('prison', '')}>

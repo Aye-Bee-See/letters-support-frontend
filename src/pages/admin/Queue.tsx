@@ -532,7 +532,7 @@ function DecisionForm({ submission: s, onCancel, onDecided }: { submission: Subm
         </div>
       )}
       {editing && (
-        <fieldset className="queue-decision-form" style={{ border: 'none' }}>
+        <fieldset className="queue-decision-form">
           <legend className="form-label">Approve with these values</legend>
           <span className="form-hint">
             What is written to the record if you approve. The group sees what was written. Lists take one item per line

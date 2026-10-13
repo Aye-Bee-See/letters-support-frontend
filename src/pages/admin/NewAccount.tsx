@@ -168,7 +168,7 @@ function AccountForm() {
           </Field>
           {values.role === 'chapter' && (
             <Field label="Group" htmlFor="f-group" hint="They read its letters once its group-owner admin hands them the group key.">
-              <div className="relay-add" style={{ marginBottom: '0.4rem' }}>
+              <div className="relay-add picked-row">
                 <span className="form-static">{group && values.group ? groupLabel(group) : 'None chosen yet'}</span>
               </div>
               <RecordPicker

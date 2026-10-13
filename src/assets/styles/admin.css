@@ -157,6 +157,7 @@ a:hover { text-decoration: underline; }
 }
 
 .sidebar-footer a:hover { color: var(--a-sidebar-t); text-decoration: none; }
+.sidebar-user { color: var(--a-sidebar-t); }
 
 /* ============================================================
    MAIN CONTENT AREA
@@ -539,6 +540,8 @@ a:hover { text-decoration: underline; }
 .admin-alert-warn { background: var(--a-warning-bg); border-color: #e8d4a0; color: var(--a-warning); }
 .admin-alert-err  { background: var(--a-alert-bg);   border-color: #e8b4b4; color: var(--a-alert); }
 .admin-alert-ok   { background: var(--a-success-bg); border-color: #a3d4a3; color: var(--a-success); }
+/* Below the sticky topbar, so a word on an action far down a long list is seen where it was taken. */
+.admin-alert-sticky { position: sticky; top: 3rem; z-index: 1; }
 
 /* ============================================================
    DIFF VIEW (for moderation queue)
@@ -582,6 +585,7 @@ a:hover { text-decoration: underline; }
 .queue-changes td:first-child { white-space: nowrap; font-weight: 600; width: 1%; }
 
 .queue-decision-form { display: flex; flex-direction: column; gap: 0.6rem; }
+fieldset.queue-decision-form { border: none; }
 .queue-check { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; }
 
 .queue-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; font-size: 0.78rem; color: var(--a-mid); margin-top: 1rem; }
@@ -697,3 +701,9 @@ a:hover { text-decoration: underline; }
 .ban-rec-actions { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .ban-rec-actions .form-input { flex: 1; min-width: 200px; }
 .ban-decision { border-top: 1px solid var(--a-border); padding-top: 0.75rem; margin: 0.25rem 0 0; }
+
+/* ============================================================
+   MAIL RULES
+   ============================================================ */
+.mail-rules-section { margin-top: 1.25rem; }
+.mail-rule-actions { display: inline-flex; gap: 0.4rem; }
