@@ -37,26 +37,31 @@ export default function TokenNotice({ classes: c, invitation, renewed, group, on
   const what = invitation.kind === 'group' ? `${invitation.inviteeName} to join the network` : `${invitation.inviteeName} to join ${group?.name ?? 'the group'}`
 
   return (
-    <div className={c.tokenNotice} role="status">
-      <div>
-        <strong>{renewed ? 'Invitation renewed' : 'Invitation created'}</strong> for {what}. This code is shown only now: copy it before closing this
-        message.
+    // Only the sentence is a live region: a screen reader announces that an
+    // invitation was made, never the code or the link, which sit below it in
+    // labelled groups, read when the inviter moves to them.
+    <div className={c.tokenNotice}>
+      <div role="status">
+        <strong>{renewed ? 'Invitation renewed' : 'Invitation created'}</strong> for {what}; the code is below. It is shown only now: copy it before
+        closing this message.
         {renewed && ' The old code no longer works.'}
       </div>
-      <div className={c.tokenRow}>
+      <div className={c.tokenRow} role="group" aria-label="Invitation code">
         <code className={c.tokenCode}>{code}</code>
         <button type="button" className={c.copyButton} onClick={() => void copyText(code, 'code')}>
           {copy === 'code' ? 'Copied' : 'Copy code'}
         </button>
       </div>
-      <div className={c.tokenRow}>
+      <div className={c.tokenRow} role="group" aria-label="Invitation link">
         <code className={c.tokenLink}>{link}</code>
         <button type="button" className={c.copyButton} onClick={() => void copyText(link, 'link')}>
           {copy === 'link' ? 'Copied' : 'Copy link'}
         </button>
       </div>
       {copy === 'failed' && (
-        <div className={c.alertWarn} role="status">This browser didn’t allow copying. Select the code or link above and copy it by hand, or write it down.</div>
+        <div className={c.alertWarn} role="alert">
+          This browser didn’t allow copying. Select the code or link above and copy it by hand, or write it down.
+        </div>
       )}
       <div className={c.hint}>
         Valid until {dateTime(invitation.expiresAt)}. Nothing is sent by email: give it to them in person or through a channel you both already trust.

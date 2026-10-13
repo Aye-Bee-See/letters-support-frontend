@@ -67,7 +67,7 @@ export default function RecoveryCodeStep({
             {joined.recoveryCode}
           </p>
           <p>
-            <button type="button" className="claim-show-pw is-static" onClick={copy}>
+            <button type="button" className="claim-show-pw is-static" aria-label={copied ? 'Recovery code copied' : 'Copy the recovery code'} onClick={copy}>
               {copied ? 'Copied' : 'Copy'}
             </button>
           </p>

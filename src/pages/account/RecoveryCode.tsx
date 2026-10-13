@@ -103,7 +103,12 @@ export default function RecoveryCode() {
                 <div className="claim-encryption-note recovery-code-note">
                   <p className="recovery-code">{step.recoveryCode}</p>
                   <p>
-                    <button type="button" className="claim-show-pw is-static" onClick={() => copy(step.recoveryCode)}>
+                    <button
+                      type="button"
+                      className="claim-show-pw is-static"
+                      aria-label={copied ? 'Recovery code copied' : 'Copy the recovery code'}
+                      onClick={() => copy(step.recoveryCode)}
+                    >
                       {copied ? 'Copied' : 'Copy'}
                     </button>
                   </p>

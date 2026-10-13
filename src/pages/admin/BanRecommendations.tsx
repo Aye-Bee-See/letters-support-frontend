@@ -72,8 +72,8 @@ export default function BanRecommendations() {
         </div>
 
         {notice && (
-          <div className={notice.kind === 'done' ? 'admin-alert admin-alert-ok' : 'admin-alert admin-alert-warn'} role="status">
-            {notice.text}
+          <div className={notice.kind === 'done' ? 'admin-alert admin-alert-ok' : 'admin-alert admin-alert-warn'}>
+            <span role="status">{notice.text}</span>
             <button type="button" className="a-btn a-btn-sm" onClick={() => setNotice(null)}>
               OK
             </button>

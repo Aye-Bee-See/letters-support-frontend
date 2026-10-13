@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Route, Routes } from 'react-router-dom'
 import { fakeApi, later, reply } from '../../test/fakeApi'
@@ -102,6 +102,9 @@ describe('GroupGate', () => {
     visit('/inbox', { role: 'chapter', groupKey: 'not-held' })
     expect(await screen.findByText('page: inbox')).toBeTruthy()
     expect(screen.getByText(NOT_HELD)).toBeTruthy()
+    // The sentence is the live region; the link to the keys page follows it, outside.
+    expect(within(screen.getByRole('status')).queryByRole('link')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Group key' }).getAttribute('href')).toBe('/settings/keys')
     expect(screen.queryByText(NO_KEY)).toBeNull()
   })
 

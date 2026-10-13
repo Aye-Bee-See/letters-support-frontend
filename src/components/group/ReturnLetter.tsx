@@ -240,8 +240,8 @@ function ProposeCorrection({
 
   if (sent)
     return (
-      <div className="letter-action letter-action-form" role="status">
-        <p>
+      <div className="letter-action letter-action-form">
+        <p role="status">
           <strong>Sent to a site admin.</strong> The directory changes only if they approve it; you’re told when they decide.
         </p>
         <div className="letter-action-buttons">
