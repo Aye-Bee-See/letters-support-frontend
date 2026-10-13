@@ -42,7 +42,8 @@ img { display: block; max-width: 100%; }
 
 /* One focus ring for every focusable thing, links, fields, buttons and the
    role="button"/"radio" divs alike. Fields keep their #888 border on :focus
-   as well; nothing sets outline: none. White where the ground is black. */
+   as well; nothing sets outline: none but the focused heading below, and
+   only for a mouse. White where the ground is black. */
 :focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
@@ -56,6 +57,9 @@ img { display: block; max-width: 100%; }
 }
 /* A table row's ring sits inside it, where the table can't clip it. */
 tr:focus-visible { outline-offset: -2px; }
+/* The heading that takes focus after a navigation (layout/ScrollToTop): no
+   ring when a mouse click put it there, the keyboard's ring as ever. */
+h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
 
 /* ============================================================
    LAYOUT

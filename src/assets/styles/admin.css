@@ -44,6 +44,8 @@ a:hover { text-decoration: underline; }
   outline-offset: 2px;
 }
 .admin-sidebar :focus-visible { outline-color: var(--a-sidebar-a); outline-offset: -2px; }
+/* As in style.css: the heading focused after a navigation shows no ring for a mouse click. */
+h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
 
 /* ============================================================
    LAYOUT — sidebar + main
