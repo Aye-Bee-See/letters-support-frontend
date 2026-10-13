@@ -152,13 +152,25 @@ h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
   color: var(--a-sidebar-m);
 }
 
-.sidebar-footer a {
+.sidebar-footer a,
+.sidebar-signout {
   color: var(--a-sidebar-m);
   display: block;
   margin-top: 0.3rem;
 }
 
-.sidebar-footer a:hover { color: var(--a-sidebar-t); text-decoration: none; }
+/* Sign out is a button (it signs out, it goes nowhere), drawn as the links above it. */
+.sidebar-signout {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-footer a:hover,
+.sidebar-signout:hover { color: var(--a-sidebar-t); text-decoration: none; }
 .sidebar-user { color: var(--a-sidebar-t); }
 
 /* ============================================================
@@ -218,7 +230,8 @@ h1[tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
   .sidebar-nav a { padding: 0.4rem 1rem; border-left: none; border-bottom: 2px solid transparent; }
   .sidebar-nav a.active { border-bottom-color: #fff; }
   .sidebar-footer { padding: 0.75rem 1rem; }
-  .sidebar-footer a { display: inline-block; margin: 0.3rem 1rem 0 0; }
+  .sidebar-footer a,
+  .sidebar-signout { display: inline-block; margin: 0.3rem 1rem 0 0; }
 
   .admin-topbar { flex-wrap: wrap; padding: 0.75rem 1rem; }
   .admin-content { padding: 1rem; }

@@ -52,41 +52,45 @@ export default function AdminLayout() {
           </Link>
         </div>
 
-        <div className="sidebar-section">
-          <div className="sidebar-section-label">Overview</div>
-          <ul className="sidebar-nav">
-            <li><NavLink to="/admin" end>Dashboard</NavLink></li>
-            <li><NavLink to="/admin/queue">Moderation Queue<CountBadge count={pending} /></NavLink></li>
-            <li><NavLink to="/admin/bans">Block recommendations<CountBadge count={summary.data?.pendingBanRecommendations ?? 0} /></NavLink></li>
-          </ul>
-        </div>
+        <nav aria-label="Admin">
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">Overview</div>
+            <ul className="sidebar-nav">
+              <li><NavLink to="/admin" end>Dashboard</NavLink></li>
+              <li><NavLink to="/admin/queue">Moderation Queue<CountBadge count={pending} /></NavLink></li>
+              <li><NavLink to="/admin/bans">Block recommendations<CountBadge count={summary.data?.pendingBanRecommendations ?? 0} /></NavLink></li>
+            </ul>
+          </div>
 
-        <div className="sidebar-section">
-          <div className="sidebar-section-label">Directory</div>
-          <ul className="sidebar-nav">
-            <li><NavLink to="/admin/prisoners">Prisoners</NavLink></li>
-            <li><NavLink to="/admin/facilities">Facilities</NavLink></li>
-            <li><NavLink to="/admin/groups">Groups</NavLink></li>
-            <li><NavLink to="/admin/mail-rules">Mail rules</NavLink></li>
-          </ul>
-        </div>
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">Directory</div>
+            <ul className="sidebar-nav">
+              <li><NavLink to="/admin/prisoners">Prisoners</NavLink></li>
+              <li><NavLink to="/admin/facilities">Facilities</NavLink></li>
+              <li><NavLink to="/admin/groups">Groups</NavLink></li>
+              <li><NavLink to="/admin/mail-rules">Mail rules</NavLink></li>
+            </ul>
+          </div>
 
-        <div className="sidebar-section">
-          <div className="sidebar-section-label">Administration</div>
-          <ul className="sidebar-nav">
-            <li><NavLink to="/admin/users">Accounts</NavLink></li>
-            <li><NavLink to="/admin/invite">Invite a group</NavLink></li>
-            <li><NavLink to="/admin/audit">Audit log</NavLink></li>
-            <li><NavLink to="/admin/settings">Site settings</NavLink></li>
-          </ul>
-        </div>
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">Administration</div>
+            <ul className="sidebar-nav">
+              <li><NavLink to="/admin/users">Accounts</NavLink></li>
+              <li><NavLink to="/admin/invite">Invite a group</NavLink></li>
+              <li><NavLink to="/admin/audit">Audit log</NavLink></li>
+              <li><NavLink to="/admin/settings">Site settings</NavLink></li>
+            </ul>
+          </div>
+        </nav>
 
         <div className="sidebar-footer">
           Signed in as <strong className="sidebar-user">{user?.username}</strong>
           <br />
           <Link to="/account/security">Two-factor sign-in</Link>
           <Link to="/">View public site</Link>
-          <a href="#" onClick={(e) => { e.preventDefault(); signOut() }}>Sign out</a>
+          <button type="button" className="sidebar-signout" onClick={signOut}>
+            Sign out
+          </button>
         </div>
       </aside>
 
