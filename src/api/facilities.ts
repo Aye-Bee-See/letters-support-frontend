@@ -35,6 +35,24 @@ export const getFacility = (id: number, full = true) =>
  */
 export const getMailRules = (retired = false) => getOne<MailRuleList>('/prison/mail-rules', retired ? { retired: true } : undefined)
 
+let mailRulesCache: { account: number; rows: Promise<MailRuleList> } | null = null
+
+/**
+ * The current mail rules (getMailRules), fetched once per signed-in account and
+ * kept for the tab's life: a group admin's correction form needs them on every
+ * facility page, and they change only when a site admin edits the list. A
+ * failed fetch isn't kept.
+ */
+export function getCachedMailRules(account: number): Promise<MailRuleList> {
+  if (mailRulesCache?.account === account) return mailRulesCache.rows
+  const entry = { account, rows: getMailRules() }
+  mailRulesCache = entry
+  entry.rows.catch(() => {
+    if (mailRulesCache === entry) mailRulesCache = null
+  })
+  return entry.rows
+}
+
 // Directory writes are superadmin-only (22 Sept); group admins propose edits
 // through corrections.ts. Relay links are the exception: a group admin links
 // and unlinks their own active group (below). Unlike a prisoner's, a facility's
