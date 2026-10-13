@@ -38,7 +38,7 @@ export default function RecoveryCode() {
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  useLeaveGuard(step.name === 'code' && !saved, 'Your new recovery code is shown only now, and the old one no longer works. Leave without saving it?')
+  useLeaveGuard(step.name === 'code' && !saved, 'Your new recovery code is shown only now, and the old one no longer works. Leave without saving it?', { back: true })
 
   async function save(prepared: PreparedRecoveryCode) {
     setStep({ name: 'working' })

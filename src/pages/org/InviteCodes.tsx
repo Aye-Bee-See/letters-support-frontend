@@ -43,7 +43,7 @@ export default function InviteCodes() {
   const [notice, setNotice] = useState<string | null>(null)
 
   // Leaving with the codes on screen loses them for good, by a link in the app as much as by closing the tab: ask first.
-  useLeaveGuard(issued !== null, 'The invite codes on this page are shown only now. Leave without copying or printing them?')
+  useLeaveGuard(issued !== null, 'The invite codes on this page are shown only now. Leave without copying or printing them?', { back: true })
 
   return (
     <div className="settings-wrap">

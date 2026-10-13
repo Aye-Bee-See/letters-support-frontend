@@ -31,7 +31,7 @@ export default function Handoff() {
   // `caughtUp`: the earlier letters sealed to a writer given their first keys on the way (README "Latecomers", API #194).
   const [issued, setIssued] = useState<{ token: string; expiresAt: string; caughtUp: CaughtUp } | null>(null)
   // Leaving loses the token on screen for good: ask first, for an in-app link as for closing the tab.
-  useLeaveGuard(issued !== null, 'The claim token on this page is shown only now. Leave without copying it?')
+  useLeaveGuard(issued !== null, 'The claim token on this page is shown only now. Leave without copying it?', { back: true })
   const [busy, setBusy] = useState<'issue' | 'revoke' | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
 
