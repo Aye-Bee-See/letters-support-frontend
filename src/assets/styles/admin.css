@@ -603,14 +603,6 @@ a:hover { text-decoration: underline; }
   margin-left: 0.45rem;
 }
 .list-stale { color: var(--a-alert); }
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
 
 /* ============================================================
    EDIT FORMS (prisoner, and later facility and group)

@@ -147,6 +147,8 @@
   margin-top: 0.2rem;
 }
 
+.pw-strength-label.is-error { color: var(--alert); }
+
 .claim-error {
   font-family: var(--sans);
   font-size: 0.72rem;

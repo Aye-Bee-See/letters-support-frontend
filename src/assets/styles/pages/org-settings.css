@@ -587,3 +587,6 @@ select.settings-input { appearance: auto; }
   .settings-actions { white-space: normal; }
   .settings-actions .settings-btn + .settings-btn { margin-left: 0; margin-top: 0.3rem; }
 }
+
+/* The pager under a list (components/ui/Pager, GROUP_PAGER). */
+.settings-pager { margin-top: 1rem; }

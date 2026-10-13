@@ -100,7 +100,7 @@ export default function Groups() {
         </div>
       </div>
 
-      <div className="groups-grid" style={{ padding: '2.5rem var(--gutter)', maxWidth: 'var(--col)', margin: '0 auto' }}>
+      <div className="groups-grid">
         <LoadState state={list} what="groups" />
         {list.data && total === 0 && <p>{q || filtered ? 'No group matches this search.' : 'No groups are listed yet.'}</p>}
         {groups.map((g) => (
@@ -119,7 +119,7 @@ export default function Groups() {
         ))}
       </div>
       {list.data && (
-        <div style={{ maxWidth: 'var(--col)', margin: '-1.5rem auto 2.5rem', padding: '0 var(--gutter)' }}>
+        <div className="groups-pager">
           <Pager classes={PUBLIC_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />
         </div>
       )}

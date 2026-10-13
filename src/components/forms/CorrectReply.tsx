@@ -60,7 +60,7 @@ export default function CorrectReply({
   }
 
   return (
-    <div style={{ marginTop: '0.75rem' }}>
+    <div className="letter-body-after">
       {editing && (
         <>
           <textarea
@@ -69,7 +69,7 @@ export default function CorrectReply({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
           />
-          <p style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <p className="reply-correct-actions is-editing">
             <button type="button" className="btn btn-primary btn-sm" disabled={busy || draft === text} onClick={save}>
               {busy ? 'Saving…' : 'Save the transcription'}
             </button>
@@ -100,7 +100,7 @@ export default function CorrectReply({
         </p>
       )}
       {!editing && !confirming && (
-        <p style={{ display: 'flex', gap: '0.5rem' }}>
+        <p className="reply-correct-actions">
           {contentKey && (
             <button
               type="button"
@@ -119,7 +119,7 @@ export default function CorrectReply({
         </p>
       )}
       {error && (
-        <p className="letter-body-scan-note" style={{ color: 'var(--alert)' }}>
+        <p className="letter-body-scan-note is-error">
           {error}
         </p>
       )}

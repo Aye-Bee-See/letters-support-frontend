@@ -123,7 +123,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
 
   if (!open) {
     return (
-      <div style={{ marginTop: '2rem' }}>
+      <div className="corr-open">
         <button type="button" className="btn btn-sm" onClick={() => setOpen(true)}>
           Submit a correction
         </button>
@@ -199,9 +199,8 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
             <span className="corr-label-opt">— if changed</span>
           </label>
           <select
-            className="corr-input"
+            className="corr-input corr-select"
             id="corrRouting"
-            style={{ cursor: 'pointer' }}
             value={routing}
             onChange={(e) => setRouting(e.target.value as RoutingMethod | '')}
           >
@@ -241,7 +240,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
             const inCategory = rules.data!.rules.filter((r) => r.category === category)
             if (!inCategory.length) return null
             return (
-              <div key={category} style={{ marginTop: '0.6rem' }}>
+              <div key={category} className="corr-rule-group">
                 <p className="corr-hint">{categoryLabel(category)}</p>
                 <div className="services-grid">
                   {inCategory.map((rule) => (
@@ -271,7 +270,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
             onChange={(e) => setEvidence(e.target.value)}
           />
           {/* 22 Sept: evidence is optional and encouraged (the prototype said required). */}
-          <p className="corr-hint" style={{ marginTop: '0.4rem' }}>
+          <p className="corr-hint corr-evidence-hint">
             Optional, but encouraged. Submissions with a source are much easier to approve.
           </p>
         </div>
@@ -283,7 +282,7 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
 
         {nothingChanged && <p className="corr-hint">Nothing has been changed yet.</p>}
         {error && (
-          <p className="corr-hint" style={{ color: 'var(--alert)' }}>
+          <p className="corr-hint is-error">
             {error.errors.length ? error.errors.join(' ') : refusalText(error)}
           </p>
         )}

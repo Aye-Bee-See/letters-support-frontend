@@ -1,28 +1,26 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
-// The public directory pages' search box and filter dropdowns, styled inline
-// here, in one place. Their pager is components/ui/Pager with PUBLIC_PAGER.
-
-const FIELD_STYLE: CSSProperties = {
-  fontFamily: 'var(--sans)',
-  fontSize: '0.78rem',
-  padding: '0.3rem 0.6rem',
-  border: '1px solid var(--border)',
-  background: 'var(--white)',
-  color: 'var(--text)',
-}
+// The public directory pages' search box and filter dropdowns (style.css,
+// .directory-field), each with a label for screen readers only: the filter
+// bar shows none. Their pager is components/ui/Pager with PUBLIC_PAGER.
 
 /** The search box at the start of the filter bar. */
 export function DirectorySearch({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const id = useId()
   return (
-    <input
-      type="search"
-      aria-label={label}
-      placeholder={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={{ ...FIELD_STYLE, minWidth: '13rem' }}
-    />
+    <>
+      <label className="visually-hidden" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        className="directory-field directory-search"
+        type="search"
+        placeholder={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </>
   )
 }
 
@@ -41,10 +39,16 @@ export function FilterSelect({
   onChange: (value: string | undefined) => void
   children: ReactNode
 }) {
+  const id = useId()
   return (
-    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value || undefined)} style={FIELD_STYLE}>
-      <option value="">{any}</option>
-      {children}
-    </select>
+    <>
+      <label className="visually-hidden" htmlFor={id}>
+        {label}
+      </label>
+      <select id={id} className="directory-field" value={value} onChange={(e) => onChange(e.target.value || undefined)}>
+        <option value="">{any}</option>
+        {children}
+      </select>
+    </>
   )
 }

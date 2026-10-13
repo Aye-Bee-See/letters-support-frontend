@@ -136,7 +136,7 @@ export default function NewLetter() {
         <main className="letter-main">
           <h1 className="letter-page-title">New letter to prisoner</h1>
 
-          <div className="facility-guidance" style={{ alignItems: 'stretch' }}>
+          <div className="facility-guidance">
             {prisoner && facilityState.error ? (
               <div className="facility-guidance-empty" role="alert">
                 Couldn’t load {displayName(prisoner)}’s facility and its mail rules ({refusalText(facilityState.error)}).{' '}
@@ -173,7 +173,7 @@ export default function NewLetter() {
           </div>
 
           {draft.paper ? (
-            <p className="letter-meta-bar" style={{ padding: '1rem 0' }}>
+            <p className="letter-meta-bar is-paper">
               {isGroup
                 ? `Nothing to type: a letter written by hand, that ${group?.name ?? 'the group'} mails. It is logged here so a reply can find its way back to ${writeAs?.kind === 'anonymous' ? 'your group' : (writerName ?? 'its writer')}.`
                 : `Nothing to type: you are handing this letter to ${group?.name ?? 'the group'} on paper. It is logged here so a reply can find its way back to you.`}
@@ -189,7 +189,7 @@ export default function NewLetter() {
               />
               <div className="letter-meta-bar">
                 <span>{draft.text.length.toLocaleString()} characters</span>
-                <span style={draft.overPageLimit ? { color: 'var(--alert)' } : undefined}>
+                <span className={draft.overPageLimit ? 'is-error' : undefined}>
                   ~{draft.pages} {draft.pages === 1 ? 'page' : 'pages'}
                   {facility?.pageLimit ? ` (limit ${facility.pageLimit})` : ''}
                 </span>
@@ -198,7 +198,7 @@ export default function NewLetter() {
           )}
 
           {/* 22 Sept: "on paper" — a handwritten letter handed to the group; starts as printed. */}
-          <div className="claim-check-row" style={{ marginTop: '0.75rem' }}>
+          <div className="claim-check-row paper-row">
             <input type="checkbox" id="onPaper" checked={draft.paper} onChange={(e) => draft.setPaper(e.target.checked)} />
             <label className="claim-check-label" htmlFor="onPaper">
               {isGroup ? 'This letter is written by hand, on paper' : "I'm handing this letter to the group on paper"}
@@ -224,14 +224,14 @@ export default function NewLetter() {
           </div>
 
           {freed && prisoner && (
-            <div className="claim-encryption-note security-required" style={{ marginTop: '1rem' }}>
+            <div className="claim-encryption-note security-required freed-note">
               <p>
                 <strong>{displayName(prisoner)} has been released.</strong> A letter mailed to {facility?.prisonName ?? 'their last facility'} may
                 never reach someone who has left it. Letters that were waiting when they were released are held for the group to decide; a new
                 one goes into the queue like any other.
                 {prisoner.statusNotice && ` The directory says: “${prisoner.statusNotice}”`}
               </p>
-              <div className="claim-check-row" style={{ marginTop: '0.6rem' }}>
+              <div className="claim-check-row freed-confirm">
                 <input
                   type="checkbox"
                   id="freedConfirm"
@@ -266,7 +266,7 @@ export default function NewLetter() {
                 />
               )}
               {draft.error && (
-                <p style={{ color: 'var(--alert)' }}>
+                <p className="is-error">
                   <strong>Not sent.</strong> {draft.error}
                   {draft.earlierVersion && (
                     <>
@@ -427,7 +427,7 @@ export default function NewLetter() {
                     {facility && (
                       <>
                         <dt>Mailing address</dt>
-                        <dd style={{ fontFamily: 'var(--mono)', fontSize: '0.67rem', lineHeight: 1.5 }}>{addressLine(facility.address)}</dd>
+                        <dd className="addr-info-address">{addressLine(facility.address)}</dd>
                       </>
                     )}
                     <dt>Mailed by</dt>

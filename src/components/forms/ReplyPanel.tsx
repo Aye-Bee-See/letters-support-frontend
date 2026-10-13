@@ -148,14 +148,14 @@ export default function ReplyPanel({
             />
             <div className="reply-meta-bar">
               <span>{draft.text.length.toLocaleString()} characters</span>
-              <span style={draft.overPageLimit ? { color: 'var(--alert)' } : undefined}>
+              <span className={draft.overPageLimit ? 'is-error' : undefined}>
                 ~{draft.pages} {draft.pages === 1 ? 'page' : 'pages'}
                 {facility.data?.pageLimit ? ` (limit ${facility.data.pageLimit})` : ''}
               </span>
             </div>
           </>
         )}
-        <div className="claim-check-row" style={{ marginTop: '0.5rem' }}>
+        <div className="claim-check-row reply-paper-row">
           <input type="checkbox" id="replyOnPaper" checked={draft.paper} onChange={(e) => draft.setPaper(e.target.checked)} />
           <label className="claim-check-label" htmlFor="replyOnPaper">
             I'm handing this letter to the group on paper
@@ -177,7 +177,7 @@ export default function ReplyPanel({
           />
         )}
         {draft.error && (
-          <p className="reply-notes-hint" style={{ color: 'var(--alert)' }}>
+          <p className="reply-notes-hint is-error">
             <strong>Not sent.</strong> {draft.error}
           </p>
         )}

@@ -652,3 +652,25 @@
   .thread-sidebar { position: static; border-top: 2px solid var(--border); }
   .reply-upload-wrap { width: 40%; }
 }
+
+/* ============================================================
+   NOTES AND ACTIONS AROUND A LETTER'S BODY
+   (Thread.tsx, QueuedLetterActions, CorrectReply, ReplyPanel)
+   ============================================================ */
+.letter-body-before { margin-bottom: 0.75rem; }
+.letter-body-after { margin-top: 0.75rem; }
+.letter-body-scan-note.is-error { color: var(--alert); }
+.letter-scan-image { max-width: 100%; margin-top: 0.5rem; }
+
+.letter-relay-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.letter-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.letter-edit-label { display: block; margin-top: 0.5rem; }
+.letter-edit-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+.reply-correct-actions { display: flex; gap: 0.5rem; }
+.reply-correct-actions.is-editing { margin-top: 0.5rem; }
+
+.reply-upload-attached.is-visible { display: flex; }
+.reply-meta-bar .is-error { color: var(--alert); }
+.reply-paper-row { margin-top: 0.5rem; }
+.reply-notes-hint.is-error { color: var(--alert); }

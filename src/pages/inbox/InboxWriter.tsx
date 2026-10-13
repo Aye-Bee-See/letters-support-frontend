@@ -46,10 +46,10 @@ function tagsByChat(unread: Notification[]): Map<number, string[]> {
 /** The tags on a row: worrying ones in the thread's amber, the rest as its green "Mailed" pill. */
 function NewsTags({ tags }: { tags: string[] }) {
   return (
-    <div style={{ marginTop: '0.25rem' }}>
+    <div className="convo-tags">
       {tags.map((tag) => (
-        // thread.css's status pills, spaced inline.
-        <span key={tag} className={`letter-collapsed-status ${isWorryingTag(tag) ? 'status-pending' : 'status-mailed'}`} style={{ marginRight: '0.6rem' }}>
+        // thread.css's status pills, spaced by inbox.css's .convo-tag.
+        <span key={tag} className={`letter-collapsed-status convo-tag ${isWorryingTag(tag) ? 'status-pending' : 'status-mailed'}`}>
           {tag}
         </span>
       ))}
@@ -86,8 +86,8 @@ function WhatsNew({ unread, chats, onMarkedRead }: { unread: Notification[]; cha
           {busy ? 'Marking…' : 'Mark all as read'}
         </button>
       </div>
-      <div className="inbox-card" style={{ padding: '0.25rem 1.25rem' }}>
-        <ul className="activity-list" style={{ margin: 0 }}>
+      <div className="inbox-card news-card">
+        <ul className="activity-list">
           {shown.map((n) => {
             const name = n.chat != null ? names.get(n.chat) : undefined
             const text = wordEvent(n, { forWriter: true, prisonerName: name })
@@ -103,7 +103,7 @@ function WhatsNew({ unread, chats, onMarkedRead }: { unread: Notification[]; cha
           <p className="sidebar-info">And {unread.length - shown.length} more: open a conversation to read what happened in it.</p>
         )}
         {error && (
-          <p className="sidebar-info" role="alert" style={{ color: 'var(--alert)' }}>
+          <p className="sidebar-info is-error" role="alert">
             Couldn’t mark them read. Try again.
           </p>
         )}

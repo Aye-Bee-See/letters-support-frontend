@@ -153,7 +153,7 @@ export default function Facilities() {
         </div>
       </div>
 
-      <div className="prisons-table-wrap" style={{ maxWidth: 'var(--col)', margin: '0 auto', padding: '2.5rem var(--gutter)' }}>
+      <div className="prisons-table-wrap">
         <LoadState state={list} what="facilities" />
         {list.data && total === 0 && <p>{q || filtered ? 'No facility matches this search.' : 'There are no facilities in the directory yet.'}</p>}
         {list.data && rows.length > 0 && (
@@ -180,7 +180,7 @@ export default function Facilities() {
                         <Link to={`/facilities/${f.id}`}>{f.prisonName}</Link>
                       </div>
                       {address && (
-                        <div style={{ fontFamily: 'var(--mono)', fontSize: '0.7rem', color: 'var(--mid)', marginTop: '0.2rem' }}>
+                        <div className="address-line prisons-table-address">
                           {address}
                         </div>
                       )}
@@ -193,13 +193,13 @@ export default function Facilities() {
                         </div>
                       ))}
                     </td>
-                    <td style={{ fontSize: '0.8rem', lineHeight: 1.5 }}>
+                    <td className="prisons-table-rules">
                       {restrictions.length ? restrictions.join(' · ') : 'None on record'}
                     </td>
                     <td>
                       {f.verifiedAt && <div className="verified-date">{shortDate(f.verifiedAt)}</div>}
                       <StaleWarning verifiedAt={f.verifiedAt} />
-                      {verifier && <div style={{ fontSize: '0.68rem', color: 'var(--mid)' }}>{verifier}</div>}
+                      {verifier && <div className="verified-by">{verifier}</div>}
                     </td>
                   </tr>
                 )

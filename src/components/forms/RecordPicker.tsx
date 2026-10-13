@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { toApiError } from '../../api/client'
 import type { ListResult } from '../../types'
 import {
@@ -19,7 +19,9 @@ import {
 // Picking calls `onSelect` and empties the box: the page shows the choice.
 //
 // Styled by `classes` (the new-letter tiles pass pages/new-letter.css's), or
-// inline otherwise, as neither admin.css nor org-settings.css has a dropdown.
+// by style.css's .record-picker-* otherwise (PLAIN_PICKER), as neither
+// admin.css nor org-settings.css has a dropdown. The highlighted option is
+// [aria-selected="true"] in either.
 
 type Source<T> =
   | {
@@ -54,31 +56,16 @@ type Props<T extends { id: number }> = Source<T> & {
   classes?: PickerClasses
 }
 
-const DROPDOWN_STYLE: CSSProperties = {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  top: '100%',
-  zIndex: 50,
-  background: 'var(--white)',
-  border: '1px solid var(--border)',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  maxHeight: '18rem',
-  overflowY: 'auto',
-  textAlign: 'left',
+/** style.css's dropdown, for the parts a caller gives no classes for (the admin and group pages give the input's only). */
+const PLAIN_PICKER: PickerClasses = {
+  dropdown: 'record-picker-dropdown',
+  dropdownOpen: 'record-picker-dropdown is-open',
+  option: 'record-picker-option',
 }
-const OPTION_STYLE: CSSProperties = {
-  padding: '0.45rem 0.7rem',
-  fontFamily: 'var(--sans)',
-  fontSize: '0.85rem',
-  lineHeight: 1.35,
-  cursor: 'pointer',
-  borderBottom: '1px solid var(--off-white)',
-}
-const STATUS_STYLE: CSSProperties = { ...OPTION_STYLE, cursor: 'default', color: 'var(--mid)' }
 
 export default function RecordPicker<T extends { id: number }>(props: Props<T>) {
-  const { label, id: inputId, placeholder, render, exclude, onSelect, disabled = false, classes } = props
+  const { label, id: inputId, placeholder, render, exclude, onSelect, disabled = false } = props
+  const classes = { ...PLAIN_PICKER, ...props.classes }
   const local = props.options !== undefined
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -176,16 +163,13 @@ export default function RecordPicker<T extends { id: number }>(props: Props<T>) 
     }
   }
 
-  const dropdownClass = classes?.dropdown ? (open ? (classes.dropdownOpen ?? classes.dropdown) : classes.dropdown) : undefined
-  const dropdownStyle = classes?.dropdown ? undefined : { ...DROPDOWN_STYLE, display: open ? 'block' : 'none' }
-  const optionStyle = classes?.option ? undefined : OPTION_STYLE
+  const dropdownClass = open ? (classes.dropdownOpen ?? classes.dropdown) : classes.dropdown
 
   return (
-    <div ref={box} style={{ position: 'relative', flex: '1 1 14rem', minWidth: 0 }}>
+    <div ref={box} className="record-picker">
       <input
         id={inputId}
-        className={classes?.input}
-        style={{ width: '100%' }}
+        className={classes.input ? `${classes.input} record-picker-input` : 'record-picker-input'}
         type="search"
         autoComplete="off"
         role="combobox"
@@ -205,17 +189,16 @@ export default function RecordPicker<T extends { id: number }>(props: Props<T>) 
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
       />
-      <div className={dropdownClass} style={dropdownStyle}>
+      <div className={dropdownClass}>
         <div ref={list} role="listbox" id={listId} aria-label={label}>
           {rows.map((row, i) => (
             <div
               key={row.id}
               id={optionId(i)}
-              className={classes?.option}
+              className={classes.option}
               role="option"
+              // The highlight for the arrow keys and the pointer (style.css, .record-picker [aria-selected="true"]).
               aria-selected={i === current}
-              // The highlight for the arrow keys and the pointer; inline, as no style sheet has one.
-              style={i === current ? { ...optionStyle, background: 'var(--off-white)' } : optionStyle}
               // Keep focus in the input, so the list doesn't close before the click lands.
               onMouseDown={(e) => e.preventDefault()}
               onMouseEnter={() => setActive(i)}
@@ -226,7 +209,7 @@ export default function RecordPicker<T extends { id: number }>(props: Props<T>) 
           ))}
         </div>
         {status && (
-          <div className={classes?.option} style={classes?.option ? { color: 'var(--mid)', cursor: 'default' } : STATUS_STYLE} role="status">
+          <div className={`${classes.option} record-picker-status`} role="status">
             {status}
           </div>
         )}

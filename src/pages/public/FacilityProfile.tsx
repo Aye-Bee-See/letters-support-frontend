@@ -60,7 +60,7 @@ export default function FacilityProfile() {
   const scanLines = (f.scanService ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
 
   return (
-    <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <div className="wrap">
       <title>{`${f.prisonName} · letters.support`}</title>
       <div className="facility-layout">
         <main className="facility-main">
@@ -83,7 +83,7 @@ export default function FacilityProfile() {
             <div className="facility-breadcrumb">
               <Link to="/facilities">Facilities</Link>
               <span>/</span>
-              <span style={{ color: 'var(--text)' }}>{f.prisonName}</span>
+              <span className="breadcrumb-current">{f.prisonName}</span>
             </div>
             <h1 className="facility-name">{f.prisonName}</h1>
             {f.country && <p className="facility-country">{f.country}</p>}
@@ -203,7 +203,7 @@ export default function FacilityProfile() {
                 <>
                   {monthYear(f.verifiedAt)}
                   <br />
-                  <span style={{ fontFamily: 'var(--sans)', fontSize: '0.68rem' }}>
+                  <span className="fac-verified-ago">
                     {months === 0 ? 'this month' : `${months} ${months === 1 ? 'month' : 'months'} ago`}
                   </span>
                 </>

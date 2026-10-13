@@ -85,7 +85,7 @@ export default function PrisonerProfile() {
                 {address && (
                   <>
                     <br />
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: '0.7rem', color: 'var(--mid)' }}>{address}</span>
+                    <span className="address-line">{address}</span>
                   </>
                 )}
               </dd>
@@ -132,17 +132,17 @@ export default function PrisonerProfile() {
               {/* Only with a facility on record: without one there is nowhere to mail a letter. */}
               {/* README "Moved and freed": mail may never reach someone who has left; New Letter asks before sending. The status notice is above the name. */}
               {isWriter && p.prison && p.status === 'free' && (
-                <p className="verified-note" style={{ marginBottom: '0.5rem' }}>
+                <p className="verified-note profile-write">
                   <strong>{name} has been released.</strong> A letter mailed to {prison?.prisonName ?? 'their last facility'} may never reach them.
                 </p>
               )}
               {isWriter && p.prison && (
-                <Link to={`/letters/new?prisoner=${p.id}`} className="btn btn-sm btn-primary" style={{ marginBottom: '0.5rem' }}>
+                <Link to={`/letters/new?prisoner=${p.id}`} className="btn btn-sm btn-primary profile-write">
                   Write a letter
                 </Link>
               )}
               {isWriter && !p.prison && (
-                <p className="verified-note" style={{ marginBottom: '0.5rem' }}>
+                <p className="verified-note profile-write">
                   No facility is on record for {name} at the moment, so letters can’t be sent through this site.
                 </p>
               )}
@@ -186,7 +186,7 @@ export default function PrisonerProfile() {
                 <h2 className="profile-section-title">About</h2>
                 <div className="profile-bio">
                   {bio.map((para, i) => (
-                    <p key={i} style={i > 0 ? { marginTop: '1rem' } : undefined}>
+                    <p key={i}>
                       {para}
                     </p>
                   ))}
@@ -215,7 +215,7 @@ export default function PrisonerProfile() {
             {p.supportWebsite && (
               <>
                 <h2 className="profile-section-title">Support</h2>
-                <p style={{ marginBottom: '0.6rem' }}>
+                <p className="profile-support">
                   <a href={p.supportWebsite} target="_blank" rel="noopener noreferrer" className="support-website-link">
                     🔗 {shortUrl(p.supportWebsite)}
                   </a>

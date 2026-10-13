@@ -7,8 +7,6 @@
 // pager (components/ui/Pager) has its own three sets at the end, the public
 // directory pages being the third.
 
-import type { CSSProperties } from 'react'
-
 export interface UiClasses {
   /** A panel holding one titled section (a link panel, the invite form). */
   panel: string
@@ -158,25 +156,15 @@ export const GROUP_UI: UiClasses = {
 /** The pager under a list (components/ui/Pager): its row, its buttons and its "Page 2 of 5". */
 export interface PagerClasses {
   nav?: string
-  navStyle?: CSSProperties
   button: string
-  /** Added to a disabled button (Previous on the first page, Next on the last). */
-  disabledStyle?: CSSProperties
   text?: string
-  textStyle?: CSSProperties
 }
 
 /** The admin lists (admin.css). */
 export const ADMIN_PAGER: PagerClasses = { nav: 'queue-pager', button: 'a-btn a-btn-sm' }
 
-/** The public directory pages: style.css's .filter-chip and .results-count, the rest inline. */
-export const PUBLIC_PAGER: PagerClasses = {
-  navStyle: { display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'center', padding: '1.5rem 0 0' },
-  button: 'filter-chip',
-  disabledStyle: { opacity: 0.4, cursor: 'default' },
-  text: 'results-count',
-  textStyle: { marginLeft: 0 },
-}
+/** The public directory pages: style.css's .filter-chip and .results-count in a .directory-pager. */
+export const PUBLIC_PAGER: PagerClasses = { nav: 'directory-pager', button: 'filter-chip', text: 'results-count' }
 
 /** A group admin's settings pages (pages/org-settings.css). */
-export const GROUP_PAGER: PagerClasses = { nav: 'settings-add-row', navStyle: { marginTop: '1rem' }, button: 'settings-btn', text: 'settings-sub' }
+export const GROUP_PAGER: PagerClasses = { nav: 'settings-add-row settings-pager', button: 'settings-btn', text: 'settings-sub' }

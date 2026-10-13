@@ -433,3 +433,12 @@
   /* Tighten hero on mobile */
   .inbox-hero { padding: 1.25rem 0 0.75rem; }
 }
+
+/* A row's tags in the writer's inbox (InboxWriter.tsx): thread.css's status pills, spaced. */
+.convo-tags { margin-top: 0.25rem; }
+.convo-tag { margin-right: 0.6rem; }
+
+/* The "What's new" card: its list fills it. */
+.inbox-card.news-card { padding: 0.25rem 1.25rem; }
+.news-card .activity-list { margin: 0; }
+.sidebar-info.is-error { color: var(--alert); }

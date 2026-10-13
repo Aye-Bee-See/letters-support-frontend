@@ -41,6 +41,9 @@
   border-top: 1px solid var(--off-white);
 }
 
+/* The sidebar's way to write, and what stands in its way. */
+.profile-write { margin-bottom: 0.5rem; }
+
 /* Interests section in main column */
 .interests-cloud {
   display: flex;
@@ -61,6 +64,7 @@
   gap: 0.35rem;
 }
 .support-website-link:hover { text-decoration: underline; }
+.profile-support { margin-bottom: 0.6rem; }
 
 /* Donation / commissary info */
 .donation-text {
