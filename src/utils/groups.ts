@@ -14,6 +14,16 @@ export const SERVICE_LABELS: Record<ChapterService, string> = {
   book_programs: 'book programs',
 }
 
+/**
+ * A service key in words, or the key itself when this client doesn't know it
+ * (the API may add a service before the web does). `capital` starts it with a
+ * capital letter, for a list or a checkbox label.
+ */
+export function serviceLabel(service: string, capital = false): string {
+  const label = (SERVICE_LABELS as Partial<Record<string, string>>)[service] ?? service
+  return capital ? label.charAt(0).toUpperCase() + label.slice(1) : label
+}
+
 /** "Portland, OR — United States" */
 export function groupLocation(g: Pick<Chapter, 'subregion' | 'country'>): string {
   return [g.subregion, g.country].filter(Boolean).join(' — ')

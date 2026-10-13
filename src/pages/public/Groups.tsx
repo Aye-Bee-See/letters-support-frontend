@@ -10,7 +10,7 @@ import ServiceTag from '../../components/ui/ServiceTag'
 import { useApi } from '../../hooks/useApi'
 import { listSearch, useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { ChapterService } from '../../types'
-import { groupLocation, SERVICE_LABELS } from '../../utils/groups'
+import { groupLocation, SERVICE_LABELS, serviceLabel } from '../../utils/groups'
 
 const PAGE_SIZE = 24
 const SERVICES = Object.keys(SERVICE_LABELS) as ChapterService[]
@@ -88,7 +88,7 @@ export default function Groups() {
           <FilterSelect label="Service" any="Any service" value={service ?? ''} onChange={(v) => update({ service: v })}>
             {SERVICES.map((s) => (
               <option key={s} value={s}>
-                {SERVICE_LABELS[s].charAt(0).toUpperCase() + SERVICE_LABELS[s].slice(1)}
+                {serviceLabel(s, true)}
               </option>
             ))}
           </FilterSelect>

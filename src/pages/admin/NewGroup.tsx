@@ -7,7 +7,7 @@ import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus, SocialLinkKey } from '../../types'
 import { buildLocation, buildSocial, capitalise, problems, RECORD_STATUSES, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, type GroupFormValues } from '../../utils/groupForm'
-import { SERVICE_LABELS } from '../../utils/groups'
+import { serviceLabel } from '../../utils/groups'
 import { siteAdminRefusal } from '../../utils/refusals'
 
 // A group made directly (POST /chapter/chapter, superadmins only), rather than
@@ -177,7 +177,7 @@ export default function NewGroup() {
                 {SERVICES.map((s) => (
                   <label key={s} className="queue-check">
                     <input type="checkbox" checked={services.has(s)} disabled={busy} onChange={() => toggleService(s)} />
-                    {capitalise(SERVICE_LABELS[s])}
+                    {serviceLabel(s, true)}
                   </label>
                 ))}
               </div>
