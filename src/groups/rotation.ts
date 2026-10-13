@@ -88,3 +88,20 @@ export async function checkResealed(
     await wipe(original, resealed)
   }
 }
+
+/**
+ * What to say when the rotation's POST got no answer (status 0): the server
+ * may have committed it. `after` is the group's key as GET /auth/keys has it
+ * once read again (null if that failed too), `freshPublicKey` the key this
+ * rotation made: the group's key being that one is how the page knows it went
+ * through, and its version is what the page reports.
+ */
+export function lostRotationNote(
+  after: { chapterPublicKey: string | null; keyVersion: number } | null,
+  freshPublicKey: string,
+): { ok: boolean; text: string } {
+  const lead = 'The server didn’t answer. If the rotation went through, your browser has picked up the new key; otherwise try again.'
+  if (!after) return { ok: false, text: `${lead} The group’s key couldn’t be read again either, so reload this page to see which happened before trying again.` }
+  if (after.chapterPublicKey === freshPublicKey) return { ok: true, text: `${lead} It went through: the group’s key is now version ${after.keyVersion}.` }
+  return { ok: false, text: `${lead} It didn’t go through: the group’s key is still version ${after.keyVersion}, and nothing was changed.` }
+}

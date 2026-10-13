@@ -6,8 +6,8 @@ import { getUnreadNotifications, markNotificationsRead } from '../../api/notific
 import { MembersWaitingNotice } from '../../components/group'
 import LoadState from '../../components/ui/LoadState'
 import { generateKeypair, sealPrivateKeyTo, type Keypair } from '../../crypto'
-import { adminName, errorText, EVERY_HOLDER, fingerprintsOf, handKeyTo, isStaleKey, type OrgKey } from '../../groups/keys'
-import { checkResealed, reseal } from '../../groups/rotation'
+import { adminName, errorText, EVERY_HOLDER, fetchGroupKey, fingerprintsOf, handKeyTo, isStaleKey, type OrgKey } from '../../groups/keys'
+import { checkResealed, lostRotationNote, reseal } from '../../groups/rotation'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useAuth } from '../../hooks/useAuth'
 import { useGatedGroup, type GroupState } from '../../hooks/useGroup'
@@ -694,6 +694,16 @@ function Rotate({
           return
         } catch (err) {
           const e = toApiError(err)
+          if (e.status === 0) {
+            // The answer was lost, not necessarily the rotation: the server may
+            // have committed it. Read the group key again (what refreshKey does,
+            // keeping the record for its version) and say which happened.
+            const after = await fetchGroupKey(keypair).catch(() => null)
+            if (after?.orgKey) groupKeySet(after.groupKeypair, after.orgKey)
+            setNote(lostRotationNote(after?.orgKey ?? null, fresh.publicKey))
+            onDone(false)
+            return
+          }
           if (e.status === 409 && e.name === 'RotationIncompleteError') why = 'A letter arrived, or a writer claimed their account, while rotating.'
           else if (e.status === 409 && e.name === 'KeyVersionError') {
             why = 'The group key changed while rotating.'
