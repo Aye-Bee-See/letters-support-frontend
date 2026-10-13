@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { deleteGroup, getAllGroups, getGroup, updateGroup, type GroupFields } from '../../api/groups'
 import { getTwoFactorPolicy, setGroupTwoFactor } from '../../api/twoFactor'
+import RecordHistory from '../../components/admin/RecordHistory'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { ADMIN_UI } from '../../components/forms/uiClasses'
 import RelayFacilitiesPanel from '../../components/group/RelayFacilitiesPanel'
@@ -112,6 +113,7 @@ export default function EditGroup() {
               linkTo={(p) => `/admin/prisoners/${p.id}/edit`}
             />
             <GroupTwoFactor key={`2fa-${group.data.id}`} group={group.data} />
+            <RecordHistory resource="chapter" id={group.data.id} version={group.data.updatedAt} />
           </>
         )}
       </div>

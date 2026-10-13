@@ -65,6 +65,7 @@ const EditPrisoner = lazy(() => import('./pages/admin/EditPrisoner'))
 const FacilitiesList = lazy(() => import('./pages/admin/FacilitiesList'))
 const GroupsList = lazy(() => import('./pages/admin/GroupsList'))
 const Invitations = lazy(() => import('./pages/admin/Invitations'))
+const MailRules = lazy(() => import('./pages/admin/MailRules'))
 const Queue = lazy(() => import('./pages/admin/Queue'))
 const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'))
 
@@ -163,6 +164,7 @@ export default function App() {
                 <Route path="audit" element={<AuditLog />} />
                 <Route path="invite" element={<Invitations />} />
                 <Route path="settings" element={<SiteSettings />} />
+                <Route path="mail-rules" element={<MailRules />} />
               </Route>
             </Route>
           </Route>
