@@ -215,6 +215,17 @@
   background: var(--off-white);
 }
 
+/* --- The batch sheet: a cover line per letter, on screen only --- */
+.print-batch-cover {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--mid);
+  margin: 0 0 0.4rem;
+}
+.print-batch-held { color: var(--alert); }
+.print-batch-skipped { margin: 0.4rem 0 0 1.1rem; padding: 0; }
+.print-batch .group-message { margin-left: 0; }
+
 /* --- One letter: the action forms -------------------------- */
 .letter-action { margin-bottom: 1rem; }
 .letter-action .btn { color: var(--text); border-color: var(--border); width: 100%; text-align: center; }
@@ -251,7 +262,7 @@
 .letter-history { list-style: none; margin: 0; padding: 0; font-size: 0.75rem; line-height: 1.6; color: var(--mid); }
 
 /* ============================================================
-   PRINT: only the sheet. PrintLetter puts `printing-letter` on
+   PRINT: only the sheet. PrintLetter and PrintBatch put `printing-letter` on
    <body> while it is open, so no other page is affected. The sheet
    holds the letter text, the footer and the enclosed images; every
    note on screen around it carries no-print.
@@ -291,6 +302,9 @@
   }
 
   body.printing-letter .print-sheet-image { page-break-before: always; max-height: 100vh; }
+
+  /* The batch sheet (PrintBatch): each letter starts a new page. */
+  body.printing-letter .print-batch-item + .print-batch-item { break-before: page; page-break-before: always; }
 
   /* The sheet's margins (2cm) are set by PrintLetter while it is open: an
      @page rule cannot be scoped to body.printing-letter here. */
