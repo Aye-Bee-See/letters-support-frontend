@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
 import { getGroupsByIds } from '../../api/groups'
 import { getUsers, type DeletedAccount, type UserListParams } from '../../api/users'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Chapter, User } from '../../types'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { isRole, ROLE_LABELS, ROLES } from '../../utils/users'
 import { refusalText } from '../../utils/refusals'
 
@@ -42,6 +43,7 @@ export default function Users() {
 
   return (
     <>
+      <title>Accounts · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Accounts</span>
         <span className="topbar-right">
@@ -108,7 +110,7 @@ export default function Users() {
           {list.data && list.data.items.length > 0 && <UserTable users={list.data.items} groups={found.data} />}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )
@@ -154,7 +156,7 @@ function UserTable({ users, groups }: { users: User[]; groups: Map<number, Chapt
                 <span className="list-sub">—</span>
               )}
             </td>
-            <td className="dash-nowrap">{date(u.createdAt)}</td>
+            <td className="dash-nowrap">{shortDate(u.createdAt)}</td>
           </tr>
         ))}
       </tbody>

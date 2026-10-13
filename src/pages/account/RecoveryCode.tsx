@@ -86,6 +86,7 @@ export default function RecoveryCode() {
 
   return (
     <div className="claim-page">
+      <title>Recovery code · letters.support</title>
       <div style={{ width: '100%', maxWidth: '460px' }}>
         <div className="claim-box">
           {step.name === 'code' ? (

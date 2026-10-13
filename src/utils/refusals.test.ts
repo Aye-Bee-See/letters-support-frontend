@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ApiError } from '../types'
 import { blockRefusal } from './blocks'
 import { statusRefusal } from './groupLetters'
-import { commonRefusal, isGroupNotActive, otherRefusal, refusalText } from './refusals'
+import { commonRefusal, isGroupNotActive, otherRefusal, refusalText, siteAdminRefusal } from './refusals'
 import { describeWriterError } from '../groups/writers'
 import { linkRefusal } from '../components/group/useLinkAction'
 import { invitationRefusal } from '../components/invitations/wording'
@@ -10,6 +10,13 @@ import { invitationRefusal } from '../components/invitations/wording'
 const SENTENCE = 'The API’s own sentence, not stable.'
 const refusal = (over: Partial<ApiError>): ApiError => ({ status: 400, name: null, condition: null, errors: [], message: SENTENCE, ...over })
 const inactive = refusal({ status: 403, name: 'AuthorizationError' })
+
+describe('siteAdminRefusal', () => {
+  it('words a 403 by role, never as an inactive group, and the rest as everywhere', () => {
+    expect(siteAdminRefusal(inactive)).toMatch(/only a site admin/)
+    expect(siteAdminRefusal(refusal({ errors: ['Routing must be one of direct.'] }))).toBe('Routing must be one of direct.')
+  })
+})
 
 describe('commonRefusal', () => {
   it('words the server not reached, and a session that ended', () => {

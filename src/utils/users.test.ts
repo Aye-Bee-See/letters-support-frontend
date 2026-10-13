@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError } from '../types'
-import { accountRefusal, createRefusal, deleteRefusal, isRole, managedNote, ROLE_LABELS, siteAdminRefusal } from './users'
+import { accountRefusal, createRefusal, deleteRefusal, isRole, managedNote, ROLE_LABELS } from './users'
 
 const SENTENCE = 'The API’s own sentence, not stable.'
 const refusal = (over: Partial<ApiError>): ApiError => ({ status: 400, name: null, condition: null, errors: [], message: SENTENCE, ...over })
@@ -68,12 +68,5 @@ describe('createRefusal', () => {
   it('says a 403 is about being a site admin, and shows a 400’s first sentence', () => {
     expect(createRefusal(refusal({ status: 403, name: 'AuthorizationError' }))).toMatch(/only a site admin can make staff accounts/)
     expect(createRefusal(refusal({ errors: ['username must be unique'] }))).toBe('username must be unique')
-  })
-})
-
-describe('siteAdminRefusal', () => {
-  it('words a 403 by role, and the rest as everywhere', () => {
-    expect(siteAdminRefusal(refusal({ status: 403, name: 'AuthorizationError' }))).toMatch(/only a site admin/)
-    expect(siteAdminRefusal(refusal({ errors: ['Routing must be one of direct.'] }))).toBe('Routing must be one of direct.')
   })
 })

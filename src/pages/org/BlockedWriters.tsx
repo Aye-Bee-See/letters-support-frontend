@@ -6,7 +6,8 @@ import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, BanRecommendation, BanRecommendationStatus, GroupBlock } from '../../types'
-import { blockRefusal, letterCount, longDate, personLabel } from '../../utils/blocks'
+import { blockRefusal, letterCount, personLabel } from '../../utils/blocks'
+import { longDate } from '../../utils/dates'
 import { writerLabel } from '../../utils/groupLetters'
 import '../../assets/styles/pages/blocked-writers.css'
 
@@ -35,6 +36,7 @@ export default function BlockedWriters() {
 
   return (
     <div className="settings-wrap">
+      <title>Blocked writers · letters.support</title>
       <div className="settings-inner">
         <Link to="/settings" className="settings-back">
           ← Group settings

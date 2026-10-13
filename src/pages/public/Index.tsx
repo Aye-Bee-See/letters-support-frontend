@@ -5,6 +5,7 @@ import LoadState from '../../components/ui/LoadState'
 import PrisonerTile from '../../components/ui/PrisonerTile'
 import { useApi } from '../../hooks/useApi'
 import type { AbcfFeedItem } from '../../types'
+import { utcDate } from '../../utils/dates'
 
 const ABCF_URL = 'https://www.abcf.net/'
 const TILE_COUNT = 6
@@ -18,12 +19,7 @@ async function getFrontPagePrisoners() {
 }
 
 /** The item's date in words, or null when the feed gave none or one that does not parse. */
-function feedDate(iso: string | null): string | null {
-  if (!iso) return null
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-}
+const feedDate = (iso: string | null) => utcDate(iso)
 
 /** A key per item: its URL, or URL and position when two items share one. */
 function keysFor(items: AbcfFeedItem[]): string[] {

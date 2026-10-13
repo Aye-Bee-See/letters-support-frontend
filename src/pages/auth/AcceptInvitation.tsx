@@ -10,6 +10,7 @@ import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import type { ApiError, ChapterService, NetworkRole } from '../../types'
 import { refusalText } from '../../utils/refusals'
 import { SERVICE_LABELS } from '../../utils/groups'
+import { dateTime } from '../../utils/dates'
 
 // Accepting an invitation (README "Invitations"): a new group joining the
 // network, or a person joining a group. The same journey as Join (code, form,
@@ -34,8 +35,7 @@ const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
  * When the invitation stops working: a moment (14 days after it was made), not a
  * calendar day, so it's shown in the reader's own time zone, named, with the year.
  */
-const expiry = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+const expiry = (iso: string) => dateTime(iso, { zone: true })
 
 /** What to say about an invitation that can't be used, from the API's status and condition. */
 function codeProblem(error: ApiError): { title: string; body: string } {
@@ -83,6 +83,7 @@ export default function AcceptInvitation() {
 
   return (
     <div className="claim-page">
+      <title>Accept an invitation · letters.support</title>
       <div style={{ width: '100%', maxWidth: '460px' }}>
         <div className="claim-box">
           {step.name === 'enter-code' && (

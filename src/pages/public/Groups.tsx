@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { getGroups } from '../../api/groups'
-import { DirectoryPager, DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
+import { PUBLIC_PAGER } from '../../components/forms/uiClasses'
+import { DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
+import Pager from '../../components/ui/Pager'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import ServiceTag from '../../components/ui/ServiceTag'
@@ -54,6 +56,7 @@ export default function Groups() {
 
   return (
     <>
+      <title>Support Groups · letters.support</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Network</p>
@@ -117,7 +120,7 @@ export default function Groups() {
       </div>
       {list.data && (
         <div style={{ maxWidth: 'var(--col)', margin: '-1.5rem auto 2.5rem', padding: '0 var(--gutter)' }}>
-          <DirectoryPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />
+          <Pager classes={PUBLIC_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />
         </div>
       )}
     </>

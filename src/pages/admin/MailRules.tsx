@@ -71,6 +71,7 @@ export default function MailRules() {
 
   return (
     <>
+      <title>Mail rules · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Mail rules</span>
         <span className="topbar-right">{data && `${rules.length - retired} in use${retired ? `, ${retired} retired` : ''}`}</span>

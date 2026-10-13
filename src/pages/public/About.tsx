@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 export default function About() {
   return (
     <div className="static-page">
+      <title>About · letters.support</title>
       <div className="static-inner">
         <p className="static-eyebrow">About this site</p>
         <h1 className="static-title">letters.support</h1>

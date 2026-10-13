@@ -79,6 +79,7 @@ export default function Claim() {
 
   return (
     <div className="claim-page">
+      <title>Claim your account · letters.support</title>
       <div style={{ width: '100%', maxWidth: '420px' }}>
         <div className="claim-box">
           {step.name === 'enter-code' && (

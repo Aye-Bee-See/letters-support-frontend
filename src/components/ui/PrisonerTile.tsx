@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { apiUrl } from '../../api/client'
 import type { Prisoner, PrisonSummary } from '../../types'
-import { displayName, estimatedRelease, heldAt, otherNames, shortDate, yearOf } from '../../utils/prisoners'
+import { calendarDate } from '../../utils/dates'
+import { displayName, estimatedRelease, heldAt, otherNames, yearOf } from '../../utils/prisoners'
 import StatusNotice from './StatusNotice'
 import TagCloud from './TagCloud'
 
@@ -20,7 +21,7 @@ interface Props {
 export default function PrisonerTile({ prisoner, since = 'year', compact = false, showRelease = true }: Props) {
   const name = displayName(prisoner)
   const facility = heldAt(prisoner.prison_details as PrisonSummary | null | undefined)
-  const detained = since === 'date' ? shortDate(prisoner.detainedSince) : yearOf(prisoner.detainedSince)
+  const detained = since === 'date' ? calendarDate(prisoner.detainedSince) : yearOf(prisoner.detainedSince)
 
   return (
     <Link to={`/prisoners/${prisoner.id}`} className="prisoner-tile">

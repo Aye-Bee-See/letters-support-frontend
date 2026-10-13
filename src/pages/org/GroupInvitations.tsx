@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getGroupsByIds } from '../../api/groups'
 import { getInvitations } from '../../api/invitations'
-import { GROUP_UI } from '../../components/forms/uiClasses'
+import { GROUP_PAGER, GROUP_UI } from '../../components/forms/uiClasses'
 import InvitationTable from '../../components/invitations/InvitationTable'
 import InviteForm from '../../components/invitations/InviteForm'
 import TokenNotice from '../../components/invitations/TokenNotice'
+import Pager from '../../components/ui/Pager'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { GROUP_KIND_LABELS } from '../../components/invitations/wording'
 import { useApi } from '../../hooks/useApi'
@@ -55,6 +56,7 @@ export default function GroupInvitations() {
 
   return (
     <div className="settings-wrap">
+      <title>Invitations · letters.support</title>
       <div className="settings-inner settings-inner-wide">
         <Link to="/settings" className="settings-back">
           ← Group settings
@@ -114,19 +116,7 @@ export default function GroupInvitations() {
               />
             </div>
           )}
-          {list.data && pages > 1 && (
-            <div className="settings-add-row" style={{ marginTop: '1rem' }}>
-              <button type="button" className="settings-btn" disabled={page <= 1} onClick={() => update({ page: page > 2 ? String(page - 1) : undefined })}>
-                ← Previous
-              </button>
-              <span className="settings-sub">
-                Page {Math.min(page, pages)} of {pages}
-              </span>
-              <button type="button" className="settings-btn" disabled={page >= pages} onClick={() => update({ page: String(page + 1) })}>
-                Next →
-              </button>
-            </div>
-          )}
+          {list.data && <Pager classes={GROUP_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
           <p className="settings-hint" style={{ marginTop: '1rem' }}>
             A code works until the date shown. Renew gives a new code and stops the old one; Withdraw stops it for good. Your email and note are for your
             group only: the person invited never sees them.

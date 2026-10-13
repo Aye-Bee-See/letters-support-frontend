@@ -2,7 +2,9 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { getFacilities, getFacilityFilters, getMailRules, type FacilityListParams } from '../../api/facilities'
 import { getGroupsByIds } from '../../api/groups'
-import { DirectoryPager, DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
+import { PUBLIC_PAGER } from '../../components/forms/uiClasses'
+import { DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
+import Pager from '../../components/ui/Pager'
 import FilterChip from '../../components/ui/FilterChip'
 import LoadState from '../../components/ui/LoadState'
 import StaleWarning from '../../components/ui/StaleWarning'
@@ -10,7 +12,7 @@ import { useApi } from '../../hooks/useApi'
 import { listSearch, useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { RoutingMethod } from '../../types'
 import { addressLine, restrictionPhrases, ROUTING_LABELS, routingLines } from '../../utils/facilities'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 
 const PAGE_SIZE = 25
 const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
@@ -91,6 +93,7 @@ export default function Facilities() {
 
   return (
     <>
+      <title>Facilities &amp; Mail Rules · letters.support</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Directory</p>
@@ -194,7 +197,7 @@ export default function Facilities() {
                       {restrictions.length ? restrictions.join(' · ') : 'None on record'}
                     </td>
                     <td>
-                      {f.verifiedAt && <div className="verified-date">{date(f.verifiedAt)}</div>}
+                      {f.verifiedAt && <div className="verified-date">{shortDate(f.verifiedAt)}</div>}
                       <StaleWarning verifiedAt={f.verifiedAt} />
                       {verifier && <div style={{ fontSize: '0.68rem', color: 'var(--mid)' }}>{verifier}</div>}
                     </td>
@@ -204,7 +207,7 @@ export default function Facilities() {
             </tbody>
           </table>
         )}
-        {list.data && <DirectoryPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={PUBLIC_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

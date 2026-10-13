@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { getFacilities, getFacilityFilters, type FacilityListParams } from '../../api/facilities'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { Prison, RecordStatus, RoutingMethod } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
-import { date } from '../../components/invitations/wording'
+import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
 // Every facility record, drafts and pending included (superadmins are staff).
@@ -71,6 +72,7 @@ export default function FacilitiesList() {
 
   return (
     <>
+      <title>Facilities · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Facilities</span>
         <span className="topbar-right">
@@ -173,7 +175,7 @@ export default function FacilitiesList() {
           )}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )
@@ -215,7 +217,7 @@ function FacilityTable({ facilities, hasRelay }: { facilities: Prison[]; hasRela
               </td>
               <td>{f.recordStatus && <span className={`badge ${RECORD_BADGES[f.recordStatus]}`}>{f.recordStatus}</span>}</td>
               <td className={stale ? 'list-stale' : undefined} title={stale ? 'Needs re-verifying: never verified, or more than six months ago' : undefined}>
-                {f.verifiedAt ? date(f.verifiedAt) : 'Never'}
+                {f.verifiedAt ? shortDate(f.verifiedAt) : 'Never'}
                 {stale && <span className="visually-hidden"> (needs re-verifying)</span>}
               </td>
               <td className="actions">

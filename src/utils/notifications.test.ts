@@ -41,6 +41,13 @@ describe('wordEvent (README "The feed")', () => {
     expect(wordEvent(entry('prisoner.status', { status: 'free', held: 1 }))).toContain('1 letter is on hold')
   })
 
+  it('words the rest of the events, one line each', () => {
+    expect(wordEvent(entry('letter.reply'))).toBe('A reply from a prisoner was recorded')
+    expect(wordEvent(entry('submission.decided', { status: 'rejected' }))).toBe('A change you proposed to the directory was turned down')
+    expect(wordEvent(entry('writer.block', { action: 'lifted' }))).toBe('A group is mailing your letters again')
+    expect(wordEvent(entry('ban.recommended', { writer: 12 }))).toBe('A group recommends blocking a writer from the whole site')
+  })
+
   it('still says something for an event it does not know', () => {
     expect(wordEvent(entry('something.new'))).toBe('Something changed')
   })
@@ -68,6 +75,8 @@ describe('wordEvent for a writer (README "The feed")', () => {
 
   it('words a reply and a block', () => {
     expect(wordEvent(entry('letter.reply'), writer)).toBe('Jane Doe wrote back')
+    expect(wordEvent(entry('letter.reply'), { forWriter: true })).toBe('A reply to your letter arrived')
+    expect(wordEvent(entry('writer.block', { action: 'lifted' }), { forWriter: true })).toBe('A group is mailing your letters again')
     expect(wordEvent(entry('writer.block', { action: 'blocked', chapter: { id: 3, name: 'PDX ABC' }, reason: 'x' }), writer)).toBe(
       'PDX ABC has stopped mailing your letters',
     )

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { getMyBlocks } from '../../api/auth'
 import LoadState from '../../components/ui/LoadState'
 import { useApi } from '../../hooks/useApi'
-import { longDate } from '../../utils/blocks'
+import { longDate } from '../../utils/dates'
 
 // Groups not mailing the writer's letters (README "Blocking a writer", GET
 // /auth/blocks): the group, the reason it gave and when. Only what the writer
@@ -52,23 +52,5 @@ export default function Blocks() {
         </Link>
       </div>
     </div>
-  )
-}
-
-/**
- * A line for the writer's inbox when at least one group isn't mailing their
- * letters, linking to the page above. Nothing otherwise, or if it can't load.
- */
-export function BlocksNotice() {
-  const blocks = useApi(getMyBlocks, [])
-  const list = blocks.data ?? []
-  if (list.length === 0) return null
-  return (
-    <p className="sidebar-info" style={{ marginBottom: '1.25rem' }}>
-      <strong>
-        {list.length === 1 ? `${list[0].chapter.name ?? 'A group'} isn’t mailing your letters.` : `${list.length} groups aren’t mailing your letters.`}
-      </strong>{' '}
-      <Link to="/account/blocks">See why</Link>.
-    </p>
   )
 }

@@ -12,6 +12,7 @@ import { useGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useManagedWriter } from '../../hooks/useManagedWriter'
 import type { Writer } from '../../types'
+import { dateTime } from '../../utils/dates'
 
 // Markup and classes from solidarity-site/handoff.html (pages/handoff.css).
 // Handing a managed writer their account (README "Managed writers", "Managed
@@ -19,9 +20,6 @@ import type { Writer } from '../../types'
 // with the group key, locks it under a new claim token, and sends only the
 // token's hash and the locked key (POST /auth/writer/token). The token is shown
 // here once and never again: the server never learns it.
-
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 /** The claim page with the token in it (src/pages/auth/Claim.tsx reads `token`). */
 const claimLink = (token: string) => `${window.location.origin}/claim?token=${encodeURIComponent(token)}`
@@ -41,6 +39,7 @@ export default function Handoff() {
   if (!writer) {
     return (
       <div className="handoff-wrap">
+        <title>Hand off account · letters.support</title>
         <div className="handoff-inner">
           <Link to="/inbox?tab=writers" className="handoff-back">
             ← Your writers
@@ -117,6 +116,7 @@ export default function Handoff() {
 
   return (
     <div className="handoff-wrap">
+      <title>Hand off account · letters.support</title>
       <div className="handoff-inner">
         <Link to="/inbox?tab=writers" className="handoff-back">
           ← Your writers

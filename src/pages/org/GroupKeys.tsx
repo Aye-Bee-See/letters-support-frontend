@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useGatedGroup, type GroupState } from '../../hooks/useGroup'
 import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import type { ApiError, GroupMemberKeyState, MemberKeyRoster, NotificationEvent } from '../../types'
+import { longDate } from '../../utils/dates'
 
 // The group key (README "End-to-end mode" → "Group keys", "Rotating a group
 // key", "Latecomers"; web issue #26): who holds it, setting it up, handing it
@@ -25,8 +26,6 @@ import type { ApiError, GroupMemberKeyState, MemberKeyRoster, NotificationEvent 
 
 /** Feed events that change who holds the key or owns it (README "The feed"). */
 const KEY_EVENTS: NotificationEvent[] = ['group.key', 'group.owner', 'group.waiting']
-
-const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
 type Note = { ok: boolean; text: string } | null
 
@@ -112,6 +111,7 @@ export default function GroupKeys() {
 
   return (
     <div className="settings-wrap">
+      <title>Group key · letters.support</title>
       <div className="settings-inner">
         <Link to="/settings" className="settings-back">
           ← Group settings
@@ -125,7 +125,7 @@ export default function GroupKeys() {
         <section className="settings-section">
           <h2 className="settings-section-heading">Your group's key</h2>
           {!data && (
-            <LoadState state={{ data: null, error: roster.error, loading: roster.loading, reload: () => void reloadAll() }} what="group key" />
+            <LoadState state={{ data: null, error: roster.error, loading: roster.loading, reload: () => void reloadAll() }} what="group key" notFound="Your group’s key couldn’t be found." />
           )}
           {data && <KeySummary roster={data} group={group} ownerName={owner ? adminName(owner) : null} />}
           {data && data.publicKey && <NoteLine note={noteFor('setup')} />}
@@ -209,7 +209,7 @@ function KeySummary({ roster, group, ownerName }: { roster: MemberKeyRoster; gro
         <span className="settings-label">Key</span>
         <span>
           Version {roster.keyVersion}
-          {roster.keyRotatedAt ? `, last rotated ${date(roster.keyRotatedAt)}` : ', never rotated'}.
+          {roster.keyRotatedAt ? `, last rotated ${longDate(roster.keyRotatedAt)}` : ', never rotated'}.
         </span>
       </div>
       <div className="settings-field">

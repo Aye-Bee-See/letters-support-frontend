@@ -9,6 +9,7 @@ import { refusalText } from '../../utils/refusals'
 import { threadPrisonerName } from '../../utils/letters'
 import { displayName } from '../../utils/prisoners'
 import { checkReference, describeReferenceError, formatReference, normalizeReference, REFERENCE_EXAMPLE } from '../../utils/replyReference'
+import { longDate } from '../../utils/dates'
 
 // /replies/new: a group admin records a prisoner's reply that came to the
 // group's PO box (README "Reply reference": filing a reply). Step 1 finds
@@ -27,8 +28,6 @@ const STATUS_WORDS: Record<LetterStatus, string> = {
   returned: 'returned',
   declined: 'not sent',
 }
-
-const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
 /** The reply panel's writer, from the lookup's or the search's: named for a sentence. */
 const panelWriter = (w: { id: number; penName: string | null; name: string | null; anonymous: boolean }) => ({
@@ -333,6 +332,7 @@ export default function RecordReply() {
 
   return (
     <div className="app-wrap">
+      <title>Record a reply · letters.support</title>
       <div className="app-layout">
         <main className="thread-main">
           <div className="thread-header">

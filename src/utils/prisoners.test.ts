@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayName, estimatedRelease, heldAt, longDate, otherNames, shortDate, yearOf } from './prisoners'
+import { displayName, estimatedRelease, heldAt, otherNames, yearOf } from './prisoners'
 
 describe('displayName', () => {
   it('prefers the chosen name, then the birth name', () => {
@@ -25,19 +25,8 @@ describe('otherNames', () => {
   })
 })
 
-describe('dates', () => {
-  it('formats in UTC, so the day never shifts with the viewer’s time zone', () => {
-    expect(longDate('2021-07-14T23:30:00Z')).toBe('14 July 2021')
-    expect(shortDate('2021-07-14T00:30:00Z')).toBe('14 Jul 2021')
-  })
-
+describe('yearOf', () => {
   it('returns null for a missing or unreadable date', () => {
-    expect(shortDate('2010-01-01')).toBe('2010')
-    expect(longDate('2010-01-01T00:00:00.000Z')).toBe('2010')
-    expect(shortDate('2010')).toBe('2010')
-    expect(shortDate('2010-01-02')).toBe('2 Jan 2010')
-    expect(longDate(null)).toBeNull()
-    expect(shortDate('not a date')).toBeNull()
     expect(yearOf(undefined)).toBeNull()
     expect(yearOf('nope')).toBeNull()
   })

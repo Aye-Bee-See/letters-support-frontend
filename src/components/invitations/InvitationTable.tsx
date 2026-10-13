@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { renewInvitation, withdrawInvitation } from '../../api/invitations'
 import type { ApiError, Chapter, Invitation, InvitationKind } from '../../types'
 import type { UiClasses } from '../forms/uiClasses'
-import { date, invitationRefusal, REPLACE_CODE_QUESTION, stateBadge } from './wording'
+import { shortDate } from '../../utils/dates'
+import { invitationRefusal, REPLACE_CODE_QUESTION, stateBadge } from './wording'
 
 // The invitations sent, with Renew (PUT /invitation/invitation: a new token,
 // the old one stops working) and Withdraw (DELETE) for pending ones (README
@@ -88,13 +89,13 @@ export default function InvitationTable({ classes: c, invitations, groupById, ki
                   <span className={stateBadge(c, state)}>{state}</span>
                 </td>
                 <td className={c.nowrap}>
-                  <div className={c.listSub}>Sent {date(i.createdAt)}</div>
+                  <div className={c.listSub}>Sent {shortDate(i.createdAt)}</div>
                   {i.acceptedAt ? (
-                    <div className={c.listSub}>Accepted {date(i.acceptedAt)}</div>
+                    <div className={c.listSub}>Accepted {shortDate(i.acceptedAt)}</div>
                   ) : (
                     i.status === 'pending' && (
                       <div className={state === 'expired' ? `${c.listSub} ${c.stale}` : c.listSub}>
-                        {state === 'expired' ? 'Expired' : 'Expires'} {date(i.expiresAt)}
+                        {state === 'expired' ? 'Expired' : 'Expires'} {shortDate(i.expiresAt)}
                       </div>
                     )
                   )}

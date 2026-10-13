@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getGroups, updateGroup, type GroupListParams } from '../../api/groups'
-import ListPager from '../../components/ui/ListPager'
+import { ADMIN_PAGER } from '../../components/forms/uiClasses'
+import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
 import { useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { AccountStatus, ApiError, Chapter, NetworkRole, RecordStatus } from '../../types'
@@ -56,6 +57,7 @@ export default function GroupsList() {
 
   return (
     <>
+      <title>Groups · Admin · letters.support</title>
       <div className="admin-topbar">
         <span className="topbar-title">Groups</span>
         <span className="topbar-right">
@@ -139,7 +141,7 @@ export default function GroupsList() {
           {list.data && list.data.items.length > 0 && <GroupTable groups={list.data.items} onChanged={list.reload} />}
         </div>
 
-        {list.data && <ListPager page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
+        {list.data && <Pager classes={ADMIN_PAGER} page={page} pages={pages} onPage={(n) => update({ page: n > 1 ? String(n) : undefined })} />}
       </div>
     </>
   )

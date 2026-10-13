@@ -135,6 +135,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <title>Sign in · letters.support</title>
       <div>
         <div className="login-box">
           <h1 className="login-heading">Sign in</h1>
