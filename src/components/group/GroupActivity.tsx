@@ -4,6 +4,7 @@ import { getNotifications, getUnreadNotifications, markNotificationsRead } from 
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useApi } from '../../hooks/useApi'
 import { useGroup } from '../../hooks/useGroup'
+import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import type { Notification } from '../../types'
 import { inboxDate } from '../../utils/letters'
 import { wordEvent } from '../../utils/notifications'
@@ -23,7 +24,8 @@ import { wordEvent } from '../../utils/notifications'
 // again nor shows them as new; this visit keeps them bold, as they were when
 // the page opened. A key refresh that fails leaves its entry unread, for the
 // next visit to try again. Nothing else reads `letter.queued` (the print queue
-// counts the queue itself), so it is marked read here like the rest.
+// counts the queue itself), so every unread one is marked here, not only those
+// shown. The header's count then drops to what the API answers.
 
 const SHOWN = 8
 
@@ -51,14 +53,16 @@ export default function GroupActivity() {
     const keyEntries = fresh.filter((n) => n.event === 'group.key').map((n) => n.id)
     const ownerEntries = fresh.filter((n) => n.event === 'group.owner').map((n) => n.id)
     const shown = (feed.data ?? []).filter((n) => !n.readAt).map((n) => n.id)
+    const queued = fresh.filter((n) => n.event === 'letter.queued').map((n) => n.id)
     void (async () => {
       // Quiet: on a failure the session keeps the key it has, and the next visit tries again.
       const keyOk = keyEntries.length === 0 || (await refreshKey().then(() => true, () => false))
       // A new key reloads the record already (GroupProvider); otherwise ownership may still have moved.
       if (keyEntries.length === 0 && ownerEntries.length > 0) reloadGroup()
-      const ids = new Set([...shown, ...ownerEntries, ...keyEntries])
+      const ids = new Set([...shown, ...queued, ...ownerEntries, ...keyEntries])
       if (!keyOk) keyEntries.forEach((id) => ids.delete(id))
-      if (ids.size > 0) await markNotificationsRead([...ids]).catch(() => null)
+      const result = ids.size > 0 ? await markNotificationsRead([...ids]).catch(() => null) : null
+      if (result) announceUnreadCount(result.unread)
     })()
   }, [settled, feed.data, unread.data, refreshKey, reloadGroup])
   if (feed.loading) return <p className="sidebar-info">Loading…</p>

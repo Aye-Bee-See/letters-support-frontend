@@ -11,6 +11,7 @@ import { checkResealed, reseal } from '../../groups/rotation'
 import { useGroupKeyRefresh } from '../../groups/useGroupKeyRefresh'
 import { useAuth } from '../../hooks/useAuth'
 import { useGatedGroup, type GroupState } from '../../hooks/useGroup'
+import { announceUnreadCount } from '../../hooks/useUnreadCount'
 import type { ApiError, GroupMemberKeyState, MemberKeyRoster, NotificationEvent } from '../../types'
 
 // The group key (README "End-to-end mode" → "Group keys", "Rotating a group
@@ -96,7 +97,8 @@ export default function GroupKeys() {
       const keyOk = keyEntries.length === 0 || (await refreshKey().then(() => true, () => false))
       await reloadAll()
       const ids = (keyOk ? entries : entries.filter((n) => n.event !== 'group.key')).map((n) => n.id)
-      if (ids.length > 0) await markNotificationsRead(ids).catch(() => null)
+      const result = ids.length > 0 ? await markNotificationsRead(ids).catch(() => null) : null
+      if (result) announceUnreadCount(result.unread)
     })()
     // Once, on opening the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
