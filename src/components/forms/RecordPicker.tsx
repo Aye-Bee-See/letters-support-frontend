@@ -46,6 +46,8 @@ type Props<T extends { id: number }> = Source<T> & {
   label: string
   /** The input's id, for a <label htmlFor>. */
   id?: string
+  /** A hint's id, passed to the input (a Field sets it: linkHint.ts). */
+  'aria-describedby'?: string
   placeholder?: string
   /** One row's content in the list. */
   render: (row: T) => ReactNode
@@ -174,6 +176,7 @@ export default function RecordPicker<T extends { id: number }>(props: Props<T>) 
         autoComplete="off"
         role="combobox"
         aria-label={inputId ? undefined : label}
+        aria-describedby={props['aria-describedby']}
         aria-autocomplete="list"
         aria-expanded={open}
         aria-controls={listId}

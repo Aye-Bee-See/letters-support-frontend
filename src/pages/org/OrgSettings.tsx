@@ -365,8 +365,12 @@ function TextField({
       <label className="settings-label" htmlFor={`s-${k}`}>
         {label} {optional && <span className="settings-label-optional">optional</span>}
       </label>
-      <input className="settings-input" type={type} required={required} {...field(k)} />
-      {hint && <span className="settings-hint">{hint}</span>}
+      <input className="settings-input" type={type} required={required} aria-describedby={hint ? `s-${k}-hint` : undefined} {...field(k)} />
+      {hint && (
+        <span className="settings-hint" id={`s-${k}-hint`}>
+          {hint}
+        </span>
+      )}
     </div>
   )
 }
