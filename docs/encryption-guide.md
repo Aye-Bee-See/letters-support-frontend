@@ -2,7 +2,7 @@
 
 A guided tour of the end-to-end encryption code: what each file does, how the pieces fit, and why they are built the way they are. It grows as the crypto phase is built; the **Status** section at the end says what exists so far.
 
-**Status of this guide:** walks through the crypto core (Step 3); sign-in, joining, claiming and recovery (Step 4); and reading and sending letters (Step 5). The group-admin work merged on 6 October (#38: group keys, rotation, managed writers, recording replies) is built and listed under **Status**, but not yet walked through file by file here. Round three of the web audit (8 October) is in: Argon2id in a Web Worker, files encrypted as bytes, content keys wiped when a page leaves, and the rule for a replayed letter's file. Last updated 8 October 2026.
+**Status of this guide:** walks through the crypto core (Step 3); sign-in, joining, claiming and recovery (Step 4); and reading and sending letters (Step 5). Everything built since is listed under **Status** and in the file map, but not walked through file by file: the group-admin work (#38: group keys, rotation, managed writers, recording replies), the web audit's rounds two and three (Argon2id in a Web Worker, files encrypted as bytes, content keys wiped when a page leaves, the rule for a replayed letter's file), accepting an invitation, changing the password, a new recovery code, and the password split for staff accounts a site admin makes. Last updated 12 October 2026.
 
 Sources this code follows, in order of authority:
 
@@ -65,6 +65,9 @@ src/auth/              flows that join the API calls and the crypto
   join.ts              joining with an invite code: account and keys in one request
   claim.ts             claiming a group-made account: the same keypair, re-locked
   recover.ts           recovery with a recovery code: challenge, then re-lock
+  acceptInvitation.ts  accepting an invitation: account and keys in one request, as joining does
+  account.ts           the signed-in account's own keys: change the password, make a new recovery code
+  staffAccount.ts      a staff account a site admin makes: the password split, no keys (server mode)
 src/components/forms/
   AccountFields.tsx    username, pen name, password fields (Join, Claim)
   NewPasswordFields.tsx a new password with the strength meter, and its confirmation
@@ -72,6 +75,7 @@ src/components/forms/
 src/letters/           letter flows that join the API calls and the crypto
   open.ts              opening a letter's envelope, body, relay note and attachments
   send.ts              encrypting and sending a letter (with idempotency and key-version retry)
+  record.ts            recording a prisoner's reply: a fresh content key, sealed to the writer and the group
 src/context/
   AuthContext.tsx      holds the session and unlocked keys, in memory only
 src/pages/auth/
@@ -361,6 +365,9 @@ Tested against the local API: a typed letter with a note and a file, the same le
 | Managed writers: keys sealed to the group, claim tokens, writing as a writer, missing envelopes after sign-in | Built (#38, `group-writers`): hand-off makes the claim token (`Handoff.tsx`); housekeeping after sign-in keys keyless writers and adds missing envelopes (`src/groups/housekeeping.ts`) |
 | Key-derivation bounds: costs below the agreed ones or above `KDF_MAX` refused before deriving | Built (round two, web audit item 3) |
 | Two-factor sign-in: the wrap key, not the password, kept through the second step | Built (#48) |
+| Changing the password: the current one opens the private key, which is locked again under the new one with a new salt; only the new auth key and the locked copy are sent, and every other session ends | Built (#48): `/account/password`, `changePassword` in `src/auth/account.ts` |
+| A new recovery code for a signed-in account: the current password opens the private key, which is locked under a fresh code; the old code stops working | Built (#48): `/account/recovery-code`, `prepareRecoveryCode` in `src/auth/account.ts` |
+| Staff accounts a site admin makes: the first password split in the browser (new salt, auth key sent), no keys made, so the person's own first sign-in on an app makes them; server mode only | Built (#54): `/admin/users/new`, `src/auth/staffAccount.ts` |
 | Argon2id in a Web Worker, two runs side by side when joining, claiming or recovering, heap freed when idle | Built (round three, `round-three-crypto`) |
 | Files encrypted and decrypted as bytes, not base64 | Built (round three) |
 | Content keys wiped when the thread or either print page leaves or reloads (the batch sheet wipes each letter's key once its text and images are open); a wiped key refused | Built (round three) |
