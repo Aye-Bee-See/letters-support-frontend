@@ -24,8 +24,7 @@ export default function Footer() {
           <div className="footer-nav-col">
             <span className="footer-nav-heading">Network</span>
             <Link to="/about">About this site</Link>
-            {/* TODO: the site's contact address is not decided yet (the domain is not registered). */}
-            <a href="#">Contact admins</a>
+            <Link to="/about">Contact admins</Link>
           </div>
         </nav>
       </div>
