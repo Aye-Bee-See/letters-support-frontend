@@ -287,6 +287,12 @@ function ByName({ onTarget }: { onTarget: (target: Target | null) => void }) {
           )}
           {threads.data && threads.data.length > 0 && (
             <table className="convo-table">
+              <thead>
+                <tr>
+                  <th>Prisoner</th>
+                  <th />
+                </tr>
+              </thead>
               <tbody>
                 {threads.data.map((chat) => (
                   <tr key={chat.id} className="convo-row">

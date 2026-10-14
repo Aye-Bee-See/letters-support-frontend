@@ -61,8 +61,9 @@ export default function PenNameField({
           onChange(e.target.value, false)
         }}
         onBlur={check}
+        aria-describedby={`${idPrefix}PenNameHint`}
       />
-      <span className={refused ? 'pw-strength-label is-error' : 'pw-strength-label'}>
+      <span id={`${idPrefix}PenNameHint`} className={refused ? 'pw-strength-label is-error' : 'pw-strength-label'}>
         {note ?? hint}
       </span>
     </div>

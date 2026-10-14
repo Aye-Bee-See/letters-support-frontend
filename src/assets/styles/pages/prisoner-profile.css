@@ -194,5 +194,4 @@
 
   /* Print URL after links */
   body:has(.profile-layout) a[href]::after { content: " (" attr(href) ")"; font-size: 8pt; color: #666; }
-  body:has(.profile-layout) .print-btn::after { content: none; }
 }

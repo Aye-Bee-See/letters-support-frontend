@@ -509,13 +509,18 @@ function Conflicts({ list }: { list: MailRuleList }) {
         <p className="dash-note">None.</p>
       ) : (
         <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Rule</th>
+              <th>Can’t be with</th>
+            </tr>
+          </thead>
           <tbody>
             {list.conflicts.map(([a, b]) => (
               <tr key={`${a}-${b}`}>
                 <td>
                   {label(a) ?? a} <code className="dash-code">{a}</code>
                 </td>
-                <td>and</td>
                 <td>
                   {label(b) ?? b} <code className="dash-code">{b}</code>
                 </td>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { hintId, linkHint } from './linkHint'
 import type { UiClasses } from './uiClasses'
 
 // AdminFormParts' Section and Field, with the class names passed in, for the
@@ -21,8 +22,12 @@ export function Field({ classes: c, label, htmlFor, hint, children }: { classes:
       <label className={c.label} htmlFor={htmlFor}>
         {label}
       </label>
-      {children}
-      {hint && <span className={c.hint}>{hint}</span>}
+      {linkHint(children, htmlFor, hint)}
+      {hint && (
+        <span className={c.hint} id={hintId(htmlFor)}>
+          {hint}
+        </span>
+      )}
     </div>
   )
 }

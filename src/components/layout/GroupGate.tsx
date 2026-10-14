@@ -35,19 +35,27 @@ function Closed({ title, children }: { title: string; children: ReactNode }) {
 function KeyNotice({ keyState }: { keyState: 'no-key' | 'not-held' }) {
   return (
     <div className="wrap">
-      <div className="stale-banner" role="status">
-        <span className="stale-banner-icon">⚠</span>
+      {/* The sentence is the live region; the link follows it, outside. */}
+      <div className="stale-banner">
+        <span className="stale-banner-icon" aria-hidden="true">
+          ⚠
+        </span>
         <span className="stale-banner-text">
           {keyState === 'no-key' ? (
             <>
-              <strong>Your group has no group key yet.</strong> Until a group admin sets one up, letters can't be
-              printed or written through your group, and nobody can read them here.{' '}
+              <span role="status">
+                <strong>Your group has no group key yet.</strong> Until a group admin sets one up, letters can't be
+                printed or written through your group, and nobody can read them here.
+              </span>{' '}
               <Link to="/settings/keys">Set up the group key</Link>
             </>
           ) : (
             <>
-              <strong>You don't hold your group's key yet.</strong> Until the group-owner admin hands it to you, you
-              can't read your group's letters or write for its writers. <Link to="/settings/keys">Group key</Link>
+              <span role="status">
+                <strong>You don't hold your group's key yet.</strong> Until the group-owner admin hands it to you, you
+                can't read your group's letters or write for its writers.
+              </span>{' '}
+              <Link to="/settings/keys">Group key</Link>
             </>
           )}
         </span>

@@ -74,16 +74,27 @@ export default function MembersWaitingNotice({ onHanded, reloadKey = 0 }: Props)
   if (!canHand || (waiting.length === 0 && !note)) return null
 
   return (
-    <div className="stale-banner" role="status">
-      <span className="stale-banner-icon">{note?.ok ? '✓' : '⚠'}</span>
+    // The live region is the sentence; the button comes after it, outside, so
+    // a screen reader isn't read a control as news, nor its "Handing it over…".
+    <div className="stale-banner">
+      <span className="stale-banner-icon" aria-hidden="true">
+        {note?.ok ? '✓' : '⚠'}
+      </span>
       <span className="stale-banner-text">
-        {note && <>{note.text} </>}
+        <span role="status">
+          {note && <>{note.text} </>}
+          {waiting.length > 0 && (
+            <>
+              <strong>
+                {waiting.length === 1 ? `${adminName(waiting[0])} is waiting for the key.` : `${waiting.length} group admins are waiting for the key.`}
+              </strong>{' '}
+              They have keys of their own, and can't read the group's letters until you hand it to them.
+            </>
+          )}
+        </span>
         {waiting.length > 0 && (
           <>
-            <strong>
-              {waiting.length === 1 ? `${adminName(waiting[0])} is waiting for the key.` : `${waiting.length} group admins are waiting for the key.`}
-            </strong>{' '}
-            They have keys of their own, and can't read the group's letters until you hand it to them.{' '}
+            {' '}
             <button type="button" className="btn btn-primary btn-sm" disabled={busy || !groupKeypair} onClick={() => void handToAll()}>
               {busy ? 'Handing it over…' : waiting.length === 1 ? 'Hand them the key' : `Hand it to all ${waiting.length}`}
             </button>

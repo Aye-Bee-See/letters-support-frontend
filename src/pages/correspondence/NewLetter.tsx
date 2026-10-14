@@ -366,7 +366,7 @@ export default function NewLetter() {
                   <div className="addr-selected is-visible">
                     <div className="addr-selected-header">
                       <span className="addr-selected-name">{writeAs.kind === 'anonymous' ? 'Anonymously' : writerName}</span>
-                      <button type="button" className="addr-remove-btn" title="Choose another writer" onClick={() => chooseWriter(null)}>
+                      <button type="button" className="addr-remove-btn" title="Choose another writer" aria-label="Choose another writer" onClick={() => chooseWriter(null)}>
                         ✕
                       </button>
                     </div>
@@ -417,7 +417,7 @@ export default function NewLetter() {
                 <div className="addr-selected is-visible">
                   <div className="addr-selected-header">
                     <span className="addr-selected-name">{displayName(prisoner)}</span>
-                    <button type="button" className="addr-remove-btn" title="Choose someone else" onClick={() => choosePrisoner(null)}>
+                    <button type="button" className="addr-remove-btn" title="Choose someone else" aria-label="Choose someone else" onClick={() => choosePrisoner(null)}>
                       ✕
                     </button>
                   </div>

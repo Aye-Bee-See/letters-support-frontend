@@ -48,6 +48,7 @@ export default function Header() {
         </button>
         <nav
           ref={navRef}
+          aria-label="Main"
           className={open ? 'site-nav is-open' : 'site-nav'}
           id="site-nav"
           // Close when a link or button in the menu is tapped.

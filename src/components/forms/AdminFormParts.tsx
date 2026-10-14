@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { hintId, linkHint } from './linkHint'
 
 // Building blocks for the admin edit forms (prisoner, facility), styled by admin.css.
 
@@ -18,8 +19,12 @@ export function Field({ label, htmlFor, hint, children }: { label: string; htmlF
       <label className="form-label" htmlFor={htmlFor}>
         {label}
       </label>
-      {children}
-      {hint && <span className="form-hint">{hint}</span>}
+      {linkHint(children, htmlFor, hint)}
+      {hint && (
+        <span className="form-hint" id={hintId(htmlFor)}>
+          {hint}
+        </span>
+      )}
     </div>
   )
 }

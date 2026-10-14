@@ -8,8 +8,8 @@ export default function NoteField({ id, value, onChange, hint }: { id: string; v
   return (
     <>
       <label htmlFor={id}>Note to the writer (optional)</label>
-      <textarea id={id} value={value} maxLength={NOTE_LIMIT} onChange={(e) => onChange(e.target.value)} />
-      <p className="letter-action-hint">
+      <textarea id={id} aria-describedby={`${id}-hint`} value={value} maxLength={NOTE_LIMIT} onChange={(e) => onChange(e.target.value)} />
+      <p className="letter-action-hint" id={`${id}-hint`}>
         {value.length}/{NOTE_LIMIT}. The writer reads this note, and it is <strong>not encrypted</strong>: {hint}
       </p>
     </>

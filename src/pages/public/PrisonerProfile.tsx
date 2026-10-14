@@ -146,16 +146,9 @@ export default function PrisonerProfile() {
                   No facility is on record for {name} at the moment, so letters can’t be sent through this site.
                 </p>
               )}
-              <a
-                href="#"
-                className="print-btn"
-                onClick={(e) => {
-                  e.preventDefault()
-                  window.print()
-                }}
-              >
-                ⎙ Print info sheet
-              </a>
+              <button type="button" className="print-btn" onClick={() => window.print()}>
+                <span aria-hidden="true">⎙</span> Print info sheet
+              </button>
             </div>
 
             <p className="verified-note">
