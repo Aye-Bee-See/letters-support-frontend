@@ -9,9 +9,9 @@ import SupportedPrisonersPanel from '../../components/group/SupportedPrisonersPa
 import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import type { ApiError, Chapter, ChapterService, NetworkRole, SocialLinkKey } from '../../types'
-import { SERVICE_LABELS } from '../../utils/groups'
+import { serviceLabel } from '../../utils/groups'
 import { displayName } from '../../utils/prisoners'
-import { capitalise, changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
+import { changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { refusalText } from '../../utils/refusals'
 
 // A group admin's own group. The record through
@@ -281,7 +281,7 @@ function GroupForm({ group: g, onSaved, onEdit }: FormProps) {
               {SERVICES.map((s) => (
                 <label key={s} className="service-check">
                   <input type="checkbox" checked={services.has(s)} disabled={busy} onChange={() => toggleService(s)} />
-                  {capitalise(SERVICE_LABELS[s])}
+                  {serviceLabel(s, true)}
                 </label>
               ))}
             </div>

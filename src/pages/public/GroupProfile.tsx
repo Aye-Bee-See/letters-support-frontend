@@ -7,7 +7,7 @@ import ServiceTag from '../../components/ui/ServiceTag'
 import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { SocialLinkKey } from '../../types'
-import { SERVICE_LABELS } from '../../utils/groups'
+import { serviceLabel } from '../../utils/groups'
 
 const SOCIAL: [SocialLinkKey, string, string][] = [
   ['instagram', '📷', 'Instagram'],
@@ -167,7 +167,7 @@ export default function GroupProfile() {
                   {g.services.map((s, i) => (
                     <Fragment key={s}>
                       {i > 0 && <br />}
-                      {SERVICE_LABELS[s].charAt(0).toUpperCase() + SERVICE_LABELS[s].slice(1)}
+                      {serviceLabel(s, true)}
                     </Fragment>
                   ))}
                 </div>

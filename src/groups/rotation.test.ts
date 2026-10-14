@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decryptLetter, encryptLetter, generateKeypair, openEnvelope, sealPrivateKeyTo, unlockGroupKey, type Keypair } from '../crypto'
 import type { RotationMaterial } from '../types'
-import { checkResealed, reseal, RotationError } from './rotation'
+import { checkResealed, lostRotationNote, reseal, RotationError } from './rotation'
 
 // What GET /auth/chapter-rotation would return for a group holding one letter
 // and one managed writer, with three group admins: the owner (1), a holder (2),
@@ -111,5 +111,26 @@ describe('checkResealed', () => {
     const newGroup = await generateKeypair()
     const input = await reseal(material, oldGroup, newGroup, [1])
     expect(await checkResealed(material, { ...input, envelopes: [] }, oldGroup, newGroup)).toBe(false)
+  })
+})
+
+describe('lostRotationNote', () => {
+  it('says the rotation went through when the group key read again is the new one', () => {
+    const note = lostRotationNote({ chapterPublicKey: 'NEW', keyVersion: 4 }, 'NEW')
+    expect(note.ok).toBe(true)
+    expect(note.text).toMatch(/^The server didn’t answer\. If the rotation went through, your browser has picked up the new key; otherwise try again\./)
+    expect(note.text).toContain('It went through: the group’s key is now version 4.')
+  })
+
+  it('says it did not when the group key is still the old one', () => {
+    const note = lostRotationNote({ chapterPublicKey: 'OLD', keyVersion: 3 }, 'NEW')
+    expect(note.ok).toBe(false)
+    expect(note.text).toContain('It didn’t go through: the group’s key is still version 3')
+  })
+
+  it('asks for a reload when the key could not be read again', () => {
+    const note = lostRotationNote(null, 'NEW')
+    expect(note.ok).toBe(false)
+    expect(note.text).toContain('reload this page')
   })
 })

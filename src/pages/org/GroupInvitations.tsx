@@ -49,7 +49,7 @@ export default function GroupInvitations() {
   // The token to hand over, after a create or renew: shown until dismissed.
   const [issued, setIssued] = useState<{ invitation: Invitation; renewed: boolean } | null>(null)
   // Leaving loses the code on screen for good: ask first, for an in-app link as for closing the tab.
-  useLeaveGuard(issued !== null, 'The invitation code on this page is shown only now. Leave without copying it?')
+  useLeaveGuard(issued !== null, 'The invitation code on this page is shown only now. Leave without copying it?', { back: true })
 
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))

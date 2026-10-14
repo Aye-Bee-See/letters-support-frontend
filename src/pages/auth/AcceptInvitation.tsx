@@ -9,7 +9,7 @@ import { accountValuesReady, emptyAccountValues } from '../../components/forms/a
 import RecoveryCodeStep from '../../components/forms/RecoveryCodeStep'
 import type { ApiError, ChapterService, NetworkRole } from '../../types'
 import { refusalText } from '../../utils/refusals'
-import { SERVICE_LABELS } from '../../utils/groups'
+import { SERVICE_LABELS, serviceLabel } from '../../utils/groups'
 import { dateTime } from '../../utils/dates'
 
 // Accepting an invitation (README "Invitations"): a new group joining the
@@ -30,7 +30,6 @@ const ROLES: Record<NetworkRole, string> = {
   both: 'We collect letters, and print and mail them',
 }
 const SERVICES = Object.keys(SERVICE_LABELS) as ChapterService[]
-const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 /**
  * When the invitation stops working: a moment (14 days after it was made), not a
  * calendar day, so it's shown in the reader's own time zone, named, with the year.
@@ -354,7 +353,7 @@ function AcceptForm({
                       setG({ services: group.services.has(s) ? new Set([...group.services].filter((x) => x !== s)) : new Set([...group.services, s]) })
                     }
                   />
-                  <span className="claim-check-label">{capitalise(SERVICE_LABELS[s])}</span>
+                  <span className="claim-check-label">{serviceLabel(s, true)}</span>
                 </label>
               ))}
             </fieldset>

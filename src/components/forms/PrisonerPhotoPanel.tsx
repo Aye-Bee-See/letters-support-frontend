@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiUrl } from '../../api/client'
 import { getPrisoner, PHOTO_TYPES } from '../../api/prisoners'
 import { useApi } from '../../hooks/useApi'
 import { usePhotoFile } from '../../hooks/usePhotoFile'
+import { usePhotoSrc } from '../../hooks/usePhotoSrc'
 import type { Prisoner, PrisonerPhoto } from '../../types'
 import { PHOTO_MAX_MB, type PhotoRole } from '../../utils/photos'
 import { displayName } from '../../utils/prisoners'
@@ -26,6 +26,9 @@ import { ADMIN_UI, GROUP_UI, type UiClasses } from './uiClasses'
 // upload doesn't reload the record and drop unsaved edits in a form beside it;
 // a group admin's panel reads the record afresh, as the group's copy of it may
 // be older than its photo.
+//
+// The photo of a record that isn't published is staff only, and an <img>
+// carries no token: usePhotoSrc fetches that one through the API client.
 
 /** The page's class set, plus the row of buttons, the photo shown and the one chosen, and (a group's) the panel itself. */
 const CLASSES: Record<PhotoRole, UiClasses & { actions: string; photo: string; preview: string; photoPanel: string }> = {
@@ -58,6 +61,9 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
   // What this panel last did, while the record it was read from is still the one shown.
   const [photo, setPhoto] = useState<{ from: PrisonerPhoto | null; now: PrisonerPhoto | null } | null>(null)
   const current = photo && photo.from === loaded ? photo.now : loaded
+  // recordStatus is staff only: a record without one is one the public sees.
+  const staffOnly = record?.recordStatus !== undefined && record.recordStatus !== 'published'
+  const shown = usePhotoSrc(current?.url ?? null, staffOnly)
 
   const f = usePhotoFile(prisoner.id, mode)
   const [credit, setCredit] = useState('')
@@ -89,9 +95,9 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
     f.setDone(
       mode === 'group'
         ? `The photo is up, and shows on ${name}’s public page now.`
-        : replacing
-          ? 'Photo replaced. The new one is public now.'
-          : 'Photo added. It is public now.',
+        : `${replacing ? 'Photo replaced.' : 'Photo added.'} ${
+            staffOnly ? 'Only staff can see it until the record is published.' : replacing ? 'The new one is public now.' : 'It is public now.'
+          }`,
     )
     onChanged?.()
   }
@@ -125,7 +131,11 @@ export default function PrisonerPhotoPanel({ mode, prisoner, onChanged, onClose 
         <div className={c.field}>
           <span className={c.label}>Photo now</span>
           {current ? (
-            <img src={apiUrl(current.url)} alt={`${name}, as shown on their public page`} className={c.photo} />
+            shown.src ? (
+              <img src={shown.src} alt={`${name}, as shown on their public page`} className={c.photo} />
+            ) : (
+              <span className={c.static}>{shown.failed ? 'The photo couldn’t be loaded.' : 'Loading the photo…'}</span>
+            )
           ) : (
             <span className={c.static}>No photo.</span>
           )}

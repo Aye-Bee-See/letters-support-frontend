@@ -12,7 +12,7 @@ import SupportedPrisonersPanel from '../../components/group/SupportedPrisonersPa
 import { useLinkAction } from '../../components/group/useLinkAction'
 import { useApi } from '../../hooks/useApi'
 import type { AccountStatus, ApiError, Chapter, ChapterService, NetworkRole, RecordStatus } from '../../types'
-import { SERVICE_LABELS } from '../../utils/groups'
+import { serviceLabel } from '../../utils/groups'
 import { capitalise, changes, problems, RECORD_STATUSES, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { refusalText } from '../../utils/refusals'
 
@@ -288,7 +288,7 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
             {SERVICES.map((s) => (
               <label key={s} className="queue-check">
                 <input type="checkbox" checked={services.has(s)} disabled={busy} onChange={() => toggleService(s)} />
-                {capitalise(SERVICE_LABELS[s])}
+                {serviceLabel(s, true)}
               </label>
             ))}
           </div>

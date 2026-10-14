@@ -1,17 +1,16 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { issueClaimToken, revokeClaimToken } from '../../api/writers'
+import { forgetWriters, getCachedWriters, issueClaimToken, revokeClaimToken } from '../../api/writers'
 import { toApiError } from '../../api/client'
 import type { CaughtUp } from '../../api/groups'
 import LoadState from '../../components/ui/LoadState'
-import { createClaimToken, unlockManagedWriterKey, type Keypair } from '../../crypto'
-import { describeWriterError, giveWriterKeys, isAnonymousWriter } from '../../groups/writers'
+import { createClaimToken } from '../../crypto'
+import { describeWriterError, handoffKeypair, isAnonymousWriter } from '../../groups/writers'
 import { writerInSentence } from '../../utils/groupLetters'
 import { useAuth } from '../../hooks/useAuth'
 import { useGroup } from '../../hooks/useGroup'
 import { useLeaveGuard } from '../../hooks/useLeaveGuard'
 import { useManagedWriter } from '../../hooks/useManagedWriter'
-import type { Writer } from '../../types'
 import { dateTime } from '../../utils/dates'
 
 // Markup and classes from solidarity-site/handoff.html (pages/handoff.css).
@@ -26,13 +25,13 @@ const claimLink = (token: string) => `${window.location.origin}/claim?token=${en
 
 export default function Handoff() {
   const id = Number(useParams().id) || null
-  const { groupKeypair } = useAuth()
+  const { user, groupKeypair } = useAuth()
   const { chapterId, keyState, keyVersion } = useGroup()
   const { writer, missing, loading, error, reload } = useManagedWriter(id)
   // `caughtUp`: the earlier letters sealed to a writer given their first keys on the way (README "Latecomers", API #194).
   const [issued, setIssued] = useState<{ token: string; expiresAt: string; caughtUp: CaughtUp } | null>(null)
   // Leaving loses the token on screen for good: ask first, for an in-app link as for closing the tab.
-  useLeaveGuard(issued !== null, 'The claim token on this page is shown only now. Leave without copying it?')
+  useLeaveGuard(issued !== null, 'The claim token on this page is shown only now. Leave without copying it?', { back: true })
   const [busy, setBusy] = useState<'issue' | 'revoke' | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
 
@@ -61,18 +60,11 @@ export default function Handoff() {
   const anonymous = isAnonymousWriter(writer)
   const ready = keyState === 'ready' && groupKeypair !== null && chapterId !== null
 
-  /**
-   * The writer's keypair: opened from the group's sealed copy, or made now for a
-   * writer who has none, with what the server then sealed to them (`caughtUp`).
-   */
-  async function writerKeypair(w: Writer, group: Keypair, groupId: number): Promise<{ keypair: Keypair; caughtUp: CaughtUp }> {
-    if (!w.publicKey) return giveWriterKeys(w.id, groupId, { publicKey: group.publicKey, keyVersion })
-    if (!w.orgWrappedPrivateKey) throw new Error('Your group doesn’t hold a copy of this writer’s key, so it can’t be handed on.')
-    try {
-      return { keypair: await unlockManagedWriterKey({ orgWrappedPrivateKey: w.orgWrappedPrivateKey, publicKey: w.publicKey }, group), caughtUp: null }
-    } catch {
-      throw new Error('This writer’s key is locked with a newer group key than the one open here. Sign in again, then hand off.')
-    }
+  /** The writer as GET /auth/writers has them now, not as the page read them. */
+  async function rereadWriter() {
+    if (!user || !writer) return null
+    forgetWriters()
+    return (await getCachedWriters(user.id)).find((w) => w.id === writer.id) ?? null
   }
 
   async function issue() {
@@ -80,7 +72,8 @@ export default function Handoff() {
     setBusy('issue')
     setProblem(null)
     try {
-      const { keypair, caughtUp } = await writerKeypair(writer, groupKeypair, chapterId)
+      // A keyless writer the housekeeping keyed since the page loaded: their new key is opened instead (handoffKeypair).
+      const { keypair, caughtUp } = await handoffKeypair(writer, groupKeypair, chapterId, keyVersion, rereadWriter)
       const material = await createClaimToken(keypair.privateKey)
       const answer = await issueClaimToken(writer.id, material.fields)
       setIssued({ token: material.token, expiresAt: answer.expiresAt, caughtUp })
@@ -159,6 +152,11 @@ export default function Handoff() {
               </ul>
             </div>
 
+            {/* Says a token was made; the token itself is outside it, so a screen reader doesn't read the secret aloud. */}
+            <p className="visually-hidden" role="status">
+              {issued ? `Claim token made for ${name}. It is shown below, once: copy it before you leave this page.` : ''}
+            </p>
+
             {!writer.publicKey && !issued && (
               <div className="pending-banner" role="status">
                 <span>
@@ -232,6 +230,7 @@ export default function Handoff() {
 function TokenShown({ token, expiresAt, name, onDone }: { token: string; expiresAt: string; name: string; onDone: () => void }) {
   const [copy, setCopy] = useState<'idle' | 'token' | 'link' | 'failed'>('idle')
   const link = claimLink(token)
+  const id = useId()
 
   async function copyText(text: string, what: 'token' | 'link') {
     try {
@@ -246,22 +245,32 @@ function TokenShown({ token, expiresAt, name, onDone }: { token: string; expires
   }
 
   return (
-    <div className="token-display is-visible" role="status">
+    <div className="token-display is-visible">
       <div className="token-warning">
         <strong>This token is shown only now.</strong> Copy it or write it down before you leave this page: your group can't
         see it again, only make a new one.
       </div>
-      <div className="token-box">
-        <span className="token-value">{token}</span>
-        <button type="button" className={copy === 'token' ? 'token-copy-btn copied' : 'token-copy-btn'} onClick={() => void copyText(token, 'token')}>
-          {copy === 'token' ? 'Copied' : 'Copy'}
-        </button>
+      <div className="token-field" role="group" aria-labelledby={`${id}-token`}>
+        <span className="token-meta-label" id={`${id}-token`}>
+          Claim token
+        </span>
+        <div className="token-box">
+          <span className="token-value">{token}</span>
+          <button type="button" className={copy === 'token' ? 'token-copy-btn copied' : 'token-copy-btn'} onClick={() => void copyText(token, 'token')}>
+            {copy === 'token' ? 'Copied' : 'Copy'}
+          </button>
+        </div>
       </div>
-      <div className="token-link-row">
-        <span className="token-link-value">{link}</span>
-        <button type="button" className={copy === 'link' ? 'token-copy-btn copied' : 'token-copy-btn'} onClick={() => void copyText(link, 'link')}>
-          {copy === 'link' ? 'Copied' : 'Copy link'}
-        </button>
+      <div className="token-field" role="group" aria-labelledby={`${id}-link`}>
+        <span className="token-meta-label" id={`${id}-link`}>
+          Claim link
+        </span>
+        <div className="token-link-row">
+          <span className="token-link-value">{link}</span>
+          <button type="button" className={copy === 'link' ? 'token-copy-btn copied' : 'token-copy-btn'} onClick={() => void copyText(link, 'link')}>
+            {copy === 'link' ? 'Copied' : 'Copy link'}
+          </button>
+        </div>
       </div>
       {copy === 'failed' && (
         <div className="token-warning">This browser didn't allow copying. Select the token or the link above and copy it by hand, or write it down.</div>

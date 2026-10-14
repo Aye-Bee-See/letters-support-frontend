@@ -1,8 +1,9 @@
 import { useState, type SubmitEvent } from 'react'
 import { submitCorrection } from '../../api/corrections'
-import { getMailRules } from '../../api/facilities'
+import { getCachedMailRules } from '../../api/facilities'
 import { toApiError } from '../../api/client'
 import { useApi } from '../../hooks/useApi'
+import { useAuth } from '../../hooks/useAuth'
 import type { ApiError, Prison, PrisonAddress, RoutingMethod } from '../../types'
 import { categoryLabel } from '../../utils/facilities'
 import { refusalText } from '../../utils/refusals'
@@ -22,13 +23,16 @@ const sameSet = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].
  * service follow the prototype. Address and mail rules are structured inputs
  * instead of free text, so every change maps to a real field of the facility.
  * Markup reuses the prototype's corr-* classes, and org-settings' services-grid /
- * service-check for the rule checkboxes.
+ * service-check for the rule checkboxes. Closed to begin with, behind a
+ * "Propose a correction" button: the rule list is fetched only once it is
+ * opened, and then kept for the session (getCachedMailRules).
  */
 export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
-  const rules = useApi(getMailRules, [])
+  const account = useAuth().user?.id ?? null
+  const [open, setOpen] = useState(false)
+  const rules = useApi(() => (open && account !== null ? getCachedMailRules(account) : Promise.resolve(null)), [open, account])
   const current = prison.address ?? {}
 
-  const [open, setOpen] = useState(true)
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
@@ -124,8 +128,8 @@ export default function FacilityCorrectionForm({ prison }: { prison: Prison }) {
   if (!open) {
     return (
       <div className="corr-open">
-        <button type="button" className="btn btn-sm" onClick={() => setOpen(true)}>
-          Submit a correction
+        <button type="button" className="btn btn-sm btn-on-light" onClick={() => setOpen(true)}>
+          Propose a correction
         </button>
       </div>
     )

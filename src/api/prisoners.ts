@@ -100,6 +100,16 @@ export async function uploadPrisonerPhoto(prisoner: number, file: Blob & { name?
   return response.data.data
 }
 
+/**
+ * GET /prisoner/photo through the client, with the session's token: the
+ * picture of a record only staff may see (draft or pending), which the API
+ * answers a tokenless <img> with a 404. `url` is the photo's own, as given.
+ */
+export async function getPrisonerPhotoBlob(url: string): Promise<Blob> {
+  const response = await client.get<Blob>(url, { responseType: 'blob' })
+  return response.data
+}
+
 /** DELETE /prisoner/photo: takes the photo off the record and deletes the file. The same people as adding one. */
 export const removePrisonerPhoto = (prisoner: number) => del<unknown>('/prisoner/photo', { prisoner })
 
