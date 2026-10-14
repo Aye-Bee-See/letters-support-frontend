@@ -74,13 +74,31 @@ export const ROUTING_TAGS: Record<RoutingMethod, string> = {
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
 
+/** A language's English name from its ISO 639-1 code, or the code when the browser has none. */
+export const languageName = (code: string) => languageNames.of(code) ?? code
+
+/**
+ * Languages offered by the facility lists' language filter (the public page
+ * and the admin list), as ISO 639-1 codes. The API has no list of the
+ * languages facilities name (GET /prison/filters carries countries and
+ * routings only), so this is a fixed one.
+ */
+export const FILTER_LANGUAGES = ['ar', 'be', 'de', 'el', 'en', 'es', 'fa', 'fr', 'he', 'it', 'ka', 'ku', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh']
+
+/** The `language` parameter when it is shaped like a code (README "GET /prison/prisons"), else none. */
+export const languageParam = (value: string | null): string | undefined => (value && /^[a-z]{2}$/.test(value) ? value : undefined)
+
+/** The language filter's options by name: the fixed list, and a code from a link that isn't on it. */
+export const languageOptions = (current?: string): string[] =>
+  [...new Set([...FILTER_LANGUAGES, ...(current ? [current] : [])])].sort((a, b) => languageName(a).localeCompare(languageName(b)))
+
 /** Short restriction phrases for the facilities table: "No polaroids · Max 10 pages · English or Spanish only". */
 export function restrictionPhrases(prison: Pick<Prison, 'mail_rule_details' | 'pageLimit' | 'photoLimit' | 'mailLanguages'>): string[] {
   const phrases = (prison.mail_rule_details ?? []).map((rule) => rule.label)
   if (prison.pageLimit) phrases.push(`Max ${prison.pageLimit} ${prison.pageLimit === 1 ? 'page' : 'pages'}`)
   if (prison.photoLimit) phrases.push(`Max ${prison.photoLimit} ${prison.photoLimit === 1 ? 'photo' : 'photos'}`)
   if (prison.mailLanguages?.length) {
-    phrases.push(`${prison.mailLanguages.map((code) => languageNames.of(code) ?? code).join(' or ')} only`)
+    phrases.push(`${prison.mailLanguages.map(languageName).join(' or ')} only`)
   }
   return phrases
 }
@@ -94,7 +112,7 @@ export function mailRuleLines(prison: Pick<Prison, 'mail_rule_details' | 'pageLi
   if (prison.pageLimit) lines.push(`At most ${prison.pageLimit} single-sided ${prison.pageLimit === 1 ? 'page' : 'pages'} per letter`)
   if (prison.photoLimit) lines.push(`At most ${prison.photoLimit} ${prison.photoLimit === 1 ? 'photo' : 'photos'} per envelope`)
   if (prison.mailLanguages?.length) {
-    const names = prison.mailLanguages.map((code) => languageNames.of(code) ?? code)
+    const names = prison.mailLanguages.map(languageName)
     lines.push(`Letters must be written in ${names.join(' or ')}`)
   }
   return lines

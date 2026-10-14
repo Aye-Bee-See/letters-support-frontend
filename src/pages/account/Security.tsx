@@ -133,6 +133,20 @@ export default function Security() {
         )}
         {!twoFactorSetupRequired && <SignOutEverywhere />}
         {!twoFactorSetupRequired && (
+          <div className="claim-box security-box">
+            <div className="claim-state is-active">
+              <div className="claim-header">
+                <h2 className="claim-title">Delete your account</h2>
+              </div>
+              <div className="claim-body">
+                <p className="claim-org-note">
+                  <Link to="/account/delete">Delete your account</Link>, with every letter and reply in it. It can’t be undone.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {!twoFactorSetupRequired && (
           <Link to={home} className="claim-back">
             ← Back
           </Link>

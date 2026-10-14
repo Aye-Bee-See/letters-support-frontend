@@ -1,4 +1,5 @@
-import client, { getOne, post, PUBLIC, put } from './client'
+import client, { del, getOne, post, PUBLIC, put } from './client'
+import type { DeletedAccount } from './users'
 import type { PasswordKeyFields, RecoveryKeyFields } from '../crypto'
 import type { ApiEnvelope, KdfParams, KeyBundle, LoginParams, LoginResult, TwoFactorChallenge, User, WriterBlock } from '../types'
 
@@ -78,6 +79,18 @@ export const setSplitPassword = (id: number, creds: { authKey: string } & Passwo
     kdfSalt: creds.kdfSalt,
     kdfParams: creds.kdfParams,
   })
+
+/**
+ * DELETE /auth/user { id, password }: the caller's own account, with every
+ * letter, reply, thread and key of it (README "DELETE /auth/user"). `password`
+ * is the auth key, as at sign-in: the API checks it against the stored hash, so
+ * a split account sends the derived key, never the password. A wrong one is a
+ * `403` and deletes nothing (failed tries are limited, `429`); `409
+ * AccountDeleteError` while something stands in the way (`group_owner`,
+ * `last_key_holder`, `only_admin`, `anonymous`). Every token of the account
+ * stops working with the request.
+ */
+export const deleteMyAccount = (id: number, authKey: string) => del<DeletedAccount>('/auth/user', { id, password: authKey })
 
 /**
  * The groups not mailing the signed-in writer's letters, newest first, with the

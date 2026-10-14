@@ -11,20 +11,11 @@ import StaleWarning from '../../components/ui/StaleWarning'
 import { useApi } from '../../hooks/useApi'
 import { listSearch, useListParams, useSearchBox } from '../../hooks/useListParams'
 import type { RoutingMethod } from '../../types'
-import { addressLine, restrictionPhrases, ROUTING_LABELS, routingLines } from '../../utils/facilities'
+import { addressLine, languageName, languageOptions, languageParam, restrictionPhrases, ROUTING_LABELS, routingLines } from '../../utils/facilities'
 import { shortDate } from '../../utils/dates'
 
 const PAGE_SIZE = 25
 const ROUTINGS = Object.keys(ROUTING_LABELS) as RoutingMethod[]
-
-/**
- * Languages offered in the language filter, as ISO 639-1 codes. The API has
- * no list of the languages facilities name, so this is a fixed one; a code
- * from a link that isn't on it is offered too.
- */
-const LANGUAGES = ['ar', 'be', 'de', 'el', 'en', 'es', 'fa', 'fr', 'he', 'it', 'ka', 'ku', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh']
-const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
-const languageName = (code: string) => languageNames.of(code) ?? code
 
 /** One page of matching facilities, plus names for the groups that verified them (one small request each). */
 async function loadFacilities(params: FacilityListParams) {
@@ -48,8 +39,7 @@ export default function Facilities() {
   const routingParam = params.get('routing')
   const routing = ROUTINGS.find((r) => r === routingParam)
   const relay = params.get('relay') === 'true'
-  const languageParam = params.get('language') ?? ''
-  const language = /^[a-z]{2}$/.test(languageParam) ? languageParam : undefined
+  const language = languageParam(params.get('language'))
   const mailRule = params.get('mailRule') || undefined
 
   const filters = useApi(getFacilityFilters, [])
@@ -79,10 +69,8 @@ export default function Facilities() {
     const present = new Set((filters.data?.routing ?? []).map((r) => r.value))
     return ROUTINGS.filter((r) => present.has(r))
   }, [filters.data])
-  const languages = useMemo(
-    () => [...new Set([...LANGUAGES, ...(language ? [language] : [])])].sort((a, b) => languageName(a).localeCompare(languageName(b))),
-    [language],
-  )
+  // The fixed list (utils/facilities.ts), and a code from a link that isn't on it.
+  const languages = useMemo(() => languageOptions(language), [language])
 
   const rows = list.data?.page.items ?? []
   const total = list.data?.page.total ?? 0
