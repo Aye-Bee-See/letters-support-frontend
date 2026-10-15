@@ -375,7 +375,7 @@ function mailWarnings(initial: PrisonerFormValues, diff: PrisonerFields): string
           'Saving changes their facility: queued letters go ahead where their group also mails to the new facility; the rest are re-routed or held until the writer sends them again. Their writers are told.',
     )
   }
-  if (diff.status === 'free') out.push('Saving marks them released: letters not yet mailed are held, and their writers are told.')
+  if (diff.status === 'free') out.push('Saving marks them released: letters not yet mailed are held, and so are new ones written from now on; their writers are told.')
   else if (initial.status === 'free' && 'status' in diff)
     out.push('Saving undoes their release: letters held because they were released can go ahead again.')
   return out

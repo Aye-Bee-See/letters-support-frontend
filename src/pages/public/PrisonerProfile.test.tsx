@@ -60,4 +60,17 @@ describe('PrisonerProfile', () => {
     await userEvent.setup().click(button)
     expect(print).toHaveBeenCalledOnce()
   })
+
+  // API #210: a letter written to someone already free is held from the start.
+  it('tells a writer a new letter to someone released is held', async () => {
+    fakeApi.on('GET', '/prisoner/prisoner', { ...prisoner, prison: 3, status: 'free', prison_details: { id: 3, prisonName: 'North Unit' } })
+    renderApp(
+      <Routes>
+        <Route path="/prisoners/:id" element={<PrisonerProfile />} />
+      </Routes>,
+      { at: '/prisoners/5', session: { role: 'user' } },
+    )
+    expect(await screen.findByText(/A letter mailed to North Unit may never reach them, so a new one is held for the group to decide\./)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Write a letter' })).toBeTruthy()
+  })
 })

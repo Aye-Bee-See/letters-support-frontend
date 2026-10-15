@@ -69,7 +69,9 @@ export default function NewLetter() {
   /** In the directory, but held at no facility on record: there is nowhere to mail a letter. */
   const noFacility = prisoner !== null && !prisoner.prison
   // README "Moved and freed": mail to a prison someone has left may never reach
-  // them. The writer confirms before sending, once for each such prisoner.
+  // them, so a letter to someone already free is created held as
+  // `prisoner_free` (API #210; a paper letter, printed from the start, is not).
+  // The writer confirms before sending, once for each such prisoner.
   const freed = prisoner?.status === 'free'
   const [freedConfirmedFor, setFreedConfirmedFor] = useState<number | null>(null)
   const freedConfirmed = !freed || freedConfirmedFor === prisoner?.id
@@ -227,8 +229,10 @@ export default function NewLetter() {
             <div className="claim-encryption-note security-required freed-note">
               <p>
                 <strong>{displayName(prisoner)} has been released.</strong> A letter mailed to {facility?.prisonName ?? 'their last facility'} may
-                never reach someone who has left it. Letters that were waiting when they were released are held for the group to decide; a new
-                one goes into the queue like any other.
+                never reach someone who has left it, so{' '}
+                {draft.paper
+                  ? 'think twice before handing it over. A letter on paper isn’t held: the group has it in hand already.'
+                  : 'this one is held when you send it, like the letters that were waiting when they were released. The group decides whether to mail it anyway, and you can delete it meanwhile.'}
                 {prisoner.statusNotice && ` The directory says: “${prisoner.statusNotice}”`}
               </p>
               <div className="claim-check-row freed-confirm">
