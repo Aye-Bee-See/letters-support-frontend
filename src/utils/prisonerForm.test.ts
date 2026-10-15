@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Prisoner } from '../types'
-import { changes, EMPTY_PRISONER, problems, toForm, toRecord } from './prisonerForm'
+import { changes, confirmAddress, EMPTY_PRISONER, problems, toForm, toRecord } from './prisonerForm'
 
 const prisoner = {
   id: 7,
@@ -79,5 +79,12 @@ describe('toForm and changes', () => {
   it('ignores whitespace-only edits', () => {
     const before = toForm(prisoner)
     expect(changes(before, { ...before, birthName: 'Anna Ivanova  ', aliases: ' Anya \n' })).toEqual({})
+  })
+})
+
+describe('confirmAddress', () => {
+  it('sends the facility and inmate number again as they stand, and nothing else (API #219)', () => {
+    expect(confirmAddress(prisoner)).toEqual({ prison: 3, inmateID: null })
+    expect(confirmAddress({ prison: null, inmateID: 'A-1' })).toEqual({ prison: null, inmateID: 'A-1' })
   })
 })

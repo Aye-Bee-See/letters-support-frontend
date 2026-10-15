@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getFacilities, getFacility } from '../../api/facilities'
-import { deletePrisoner, getPrisoner, updatePrisoner, type PrisonerFields, type PrisonerMailChange } from '../../api/prisoners'
+import { deletePrisoner, getPrisoner, getPrisoners, updatePrisoner, type PrisonerFields, type PrisonerMailChange } from '../../api/prisoners'
 import RecordHistory from '../../components/admin/RecordHistory'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import PrisonerPhotoPanel from '../../components/forms/PrisonerPhotoPanel'
@@ -11,7 +11,7 @@ import { useApi } from '../../hooks/useApi'
 import type { ApiError, Prison, Prisoner, RecordStatus } from '../../types'
 import { isStale } from '../../utils/facilities'
 import { displayName, STATUS_LABELS } from '../../utils/prisoners'
-import { changes, facilityLabel, PRISONER_STATUSES, problems, RECORD_STATUSES, toForm, type PrisonerFormValues } from '../../utils/prisonerForm'
+import { changes, confirmAddress, facilityLabel, PRISONER_STATUSES, problems, RECORD_STATUSES, toForm, type PrisonerFormValues } from '../../utils/prisonerForm'
 import { shortDate } from '../../utils/dates'
 import { refusalText } from '../../utils/refusals'
 
@@ -20,11 +20,19 @@ import { refusalText } from '../../utils/refusals'
 // facility, or a status of "free", moves the prisoner's mail: the API re-routes
 // or holds queued letters and tells their writers, and says what it did. The
 // form and its checks are shared with NewPrisoner.tsx (utils/prisonerForm.ts).
+//
+// An address in doubt (README "Moved and freed", "What returns tell the
+// directory"): a letter came back transferred, released or undeliverable, and
+// the address hasn't been edited since. A record doesn't say so itself; the
+// staff list does (`addressInDoubt=true`), narrowed to the record's facility.
+// Only an edit of `prison` or `inmateID` answers it (API #219), and an unchanged
+// form sends neither, so "The address is correct" sends both again as they are.
+// `addressCheckedAt` (staff only) says when that last happened.
 
 export default function EditPrisoner() {
   const id = Number(useParams().id)
   const prisoner = useApi(() => getPrisoner(id, false), [id], { keepPrevious: true })
-  const [saved, setSaved] = useState<{ mail?: PrisonerMailChange } | null>(null)
+  const [saved, setSaved] = useState<Saved | null>(null)
   const [photoChanges, setPhotoChanges] = useState(0)
 
   const name = prisoner.data ? displayName(prisoner.data) : 'Prisoner'
@@ -54,7 +62,7 @@ export default function EditPrisoner() {
             )}
           </div>
         )}
-        {saved && <SavedNotice mail={saved.mail} />}
+        {saved && <SavedNotice {...saved} />}
         {prisoner.data && (
           // Keyed on updatedAt: after a save the form starts again from the stored record.
           <PrisonerForm
@@ -78,7 +86,14 @@ export default function EditPrisoner() {
   )
 }
 
-function SavedNotice({ mail }: { mail?: PrisonerMailChange }) {
+interface Saved {
+  mail?: PrisonerMailChange
+  /** "The address is correct" was what was saved. */
+  addressConfirmed?: boolean
+}
+
+function SavedNotice({ mail, addressConfirmed }: Saved) {
+  if (addressConfirmed) return <div className="admin-alert admin-alert-ok" role="status">Saved: the address is confirmed as it stands, and no longer in doubt.</div>
   const parts: string[] = []
   if (mail?.moved) parts.push('moved to the new facility')
   if (mail?.freed) parts.push('marked released')
@@ -94,7 +109,7 @@ function SavedNotice({ mail }: { mail?: PrisonerMailChange }) {
 
 interface FormProps {
   prisoner: Prisoner
-  onSaved: (result: { mail?: PrisonerMailChange }) => void
+  onSaved: (result: Saved) => void
   onEdit: () => void
 }
 
@@ -130,6 +145,29 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
   })
 
   const warnings = mailWarnings(initial, diff)
+
+  // Whether the address is in doubt: the staff list's filter, narrowed to this record's facility.
+  const doubt = useApi(
+    () =>
+      getPrisoners({ addressInDoubt: true, ...(prisoner.prison !== null ? { prison: prisoner.prison } : {}), page_size: 100 }).then((r) =>
+        r.items.some((p) => p.id === prisoner.id),
+      ),
+    [prisoner.id, prisoner.prison],
+  )
+
+  async function confirm() {
+    if (!window.confirm('Mark the facility and inmate ID as checked and correct? The address stops being in doubt; nothing else changes.')) return
+    onEdit()
+    setBusy(true)
+    setError(null)
+    try {
+      await updatePrisoner(prisoner.id, confirmAddress(prisoner))
+      onSaved({ addressConfirmed: true })
+    } catch (err) {
+      setError(refusalText(err as ApiError))
+      setBusy(false)
+    }
+  }
 
   // The facility's name: the stored one fetched by id (without its prisoners),
   // another found with the picker. One that can't be fetched (deleted since) shows as its number.
@@ -254,6 +292,25 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
             <input className="form-input" {...field('inmateID')} />
           </Field>
         </div>
+        {prisoner.addressCheckedAt !== undefined && (
+          <div className="form-group">
+            <span className="form-label">Address last checked</span>
+            <p className="form-static">
+              {prisoner.addressCheckedAt ? shortDate(prisoner.addressCheckedAt) : 'Never'}
+              <span className="list-sub"> · when the facility or inmate ID was last edited or confirmed</span>
+            </p>
+          </div>
+        )}
+        {doubt.data && (
+          <div className="admin-alert admin-alert-warn" role="status">
+            The address is in doubt: a letter to them came back in the last 60 days as moved, released or undeliverable, and the facility and inmate ID
+            haven’t been checked since. Correct them above and save, or, if they are right as they stand, say so.{' '}
+            <button type="button" className="a-btn a-btn-sm" disabled={busy || dirty} onClick={() => void confirm()}>
+              The address is correct
+            </button>
+            {dirty && <span className="list-sub"> Save or undo your other changes first.</span>}
+          </div>
+        )}
         <div className="form-row">
           <Field label="Detained since" htmlFor="f-detainedSince">
             <input type="date" className="form-input" {...field('detainedSince')} />

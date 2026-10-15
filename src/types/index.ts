@@ -297,6 +297,11 @@ export interface Prisoner extends Timestamps {
   featured: boolean
   verifiedBy: number | null
   verifiedAt: string | null
+  /**
+   * Staff only, read-only (API #219): when the address (`prison` or
+   * `inmateID`) was last edited or confirmed. What answers an address in doubt.
+   */
+  addressCheckedAt?: string | null
   /** Staff only. */
   verificationNotes?: string | null
   recordStatus?: RecordStatus
