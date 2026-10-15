@@ -27,8 +27,10 @@ export default function MarkLetter({ message, canPrint, onDone }: { message: Mes
       onDone(target === 'printed' ? 'Marked printed. Mark it mailed once it is in the post.' : 'Marked mailed.')
     } catch (err) {
       setError(statusRefusal(toApiError(err), [message.id], target))
-      setConfirming(false)
     } finally {
+      // Either way the question is answered: once printed, the letter's next
+      // step is "Mark mailed", and the box must not stay up offering to release it again.
+      setConfirming(false)
       setBusy(false)
     }
   }
