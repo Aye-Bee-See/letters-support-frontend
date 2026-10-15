@@ -22,9 +22,12 @@ export default function ReplyPanel({
   onSent,
   onEarlierVersion,
   onAvailableChange,
+  released,
 }: {
   prisonerId: number
-  /** The prisoner's facility with its relay groups (full=true), loaded once by the thread and shared with its group picker. */
+  /** The prisoner's name when they have been released: a letter to them is then held as it is sent (API #210). */
+  released?: string
+  /** The prisoner's facility with its relay groups (on every prison read), loaded once by the thread and shared with its group picker. */
   facility: ApiState<Prison | null>
   preferredGroup?: number
   /**
@@ -204,6 +207,10 @@ export default function ReplyPanel({
                 ))}
               </select>
               , who will print and mail it.
+            </>
+          ) : released ? (
+            <>
+              <strong>Held when sent.</strong> {released} has been released, so {group?.name ?? 'the group'} decides whether to mail it.
             </>
           ) : (
             <>

@@ -15,7 +15,7 @@ import {
   type Sender,
 } from '../letters/send'
 import { toApiError } from '../api/client'
-import type { Chapter, Message, Prison, WriterBlock } from '../types'
+import type { Message, Prison, RelayGroup, WriterBlock } from '../types'
 import { refusalText } from '../utils/refusals'
 
 /**
@@ -128,8 +128,8 @@ export function useLetterDraft(
     }
   }, [])
 
-  /** Groups that print and mail for this facility, active ones only. */
-  const groups: Chapter[] = useMemo(() => (facility?.relay_groups ?? []).filter((g) => g.accountStatus === 'active'), [facility])
+  /** Groups that print and mail for this facility, active ones only (every prison read names them, API #213). */
+  const groups: RelayGroup[] = useMemo(() => (facility?.relay_groups ?? []).filter((g) => g.accountStatus === 'active'), [facility])
   /**
    * Groups not mailing this writer's letters (API #179), by group id, with the
    * reason they gave. A writer's own only: a block is about the writer sending,

@@ -5,7 +5,7 @@ import { useApi } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import type { HistoryEntry, SubmissionResource } from '../../types'
 import { dateTime } from '../../utils/dates'
-import { actorName, HISTORY_ACTIONS } from '../../utils/history'
+import { actorName, historyAction } from '../../utils/history'
 import { commonRefusal, otherRefusal } from '../../utils/refusals'
 import { Section } from '../forms/AdminFormParts'
 
@@ -114,17 +114,16 @@ export function HistoryItem({ entry, variant }: { entry: HistoryEntry; variant: 
 /** The action in words, its field changes as from → to, and anything else it recorded. */
 function HistoryWhat({ entry }: { entry: HistoryEntry }) {
   const changes = Object.entries(entry.changes ?? {})
-  // `replaced` on a photo entry is the old file's name on disk: said, not shown.
-  const { viaSubmission, replaced, ...details } = entry.details ?? {}
-  const otherDetails = Object.entries(details)
+  // `replaced` on a photo entry is said in the action's words (historyAction), not listed.
+  const { viaSubmission, ...details } = entry.details ?? {}
+  const otherDetails = Object.entries(details).filter(([key]) => key !== 'replaced')
   const isEdit = entry.action.endsWith('.update')
   return (
     <>
       <div>
-        <strong>{HISTORY_ACTIONS[entry.action] ?? entry.action}</strong>
+        <strong>{historyAction(entry.action, entry.details)}</strong>
         {typeof viaSubmission === 'number' && <span className="list-sub"> · from proposal #{viaSubmission}</span>}
         {isEdit && changes.length === 0 && <span className="list-sub"> · saved with nothing changed</span>}
-        {Boolean(replaced) && <span className="list-sub"> · replaced an earlier photo</span>}
       </div>
       {(changes.length > 0 || otherDetails.length > 0) && (
         <dl className="audit-details">
@@ -179,7 +178,7 @@ function GroupLine({ entry, who }: { entry: HistoryEntry; who: string }) {
         {entry.action !== 'invite-code.join' && ` · ${who}`}
       </div>
       <div>
-        <span className="settings-history-what">{HISTORY_ACTIONS[entry.action] ?? entry.action}</span>
+        <span className="settings-history-what">{historyAction(entry.action, entry.details)}</span>
         {count !== null && ` (${count})`}
         {entry.action === 'chapter.update' && (fields.length > 0 ? `: ${fields.join(', ')}` : ': nothing changed')}
       </div>

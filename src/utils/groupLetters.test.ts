@@ -161,9 +161,9 @@ describe('batch refusals (README "PUT /messaging/status/batch")', () => {
     expect(statusRefusal(error({ status: 403, name: 'AuthorizationError', condition: 'not_yours', ids: [41, 42] }), ids, 'mailed')).toMatch(
       /^Letters 41 and 42 aren’t your group’s/,
     )
-    expect(statusRefusal(error({ status: 403, name: 'AuthorizationError', message: 'Your group is suspended (3).' }), ids, 'mailed')).toMatch(
-      /^Your group can’t do this right now: only an active group can/,
-    )
+    expect(
+      statusRefusal(error({ status: 403, name: 'AuthorizationError', condition: 'group_suspended', message: 'Your group is suspended (3).' }), ids, 'mailed'),
+    ).toMatch(/^Your group has been suspended/)
   })
 
   it('words not_found and changed_meanwhile, naming the letters', () => {

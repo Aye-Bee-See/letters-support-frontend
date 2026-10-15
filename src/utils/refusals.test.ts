@@ -9,7 +9,7 @@ import { invitationRefusal } from '../components/invitations/wording'
 
 const SENTENCE = 'The API’s own sentence, not stable.'
 const refusal = (over: Partial<ApiError>): ApiError => ({ status: 400, name: null, condition: null, errors: [], message: SENTENCE, ...over })
-const inactive = refusal({ status: 403, name: 'AuthorizationError' })
+const inactive = refusal({ status: 403, name: 'AuthorizationError', condition: 'group_pending' })
 
 describe('siteAdminRefusal', () => {
   it('words a 403 by role, never as an inactive group, and the rest as everywhere', () => {
@@ -24,9 +24,18 @@ describe('commonRefusal', () => {
     expect(commonRefusal(refusal({ status: 401, name: 'AuthenticationError' }))).toMatch(/^Your session has ended/)
   })
 
-  it('words the 403 of a group that isn’t active, and only that 403', () => {
+  it('words the 403 of a group that isn’t active by its condition (API #212), and only that 403', () => {
     expect(isGroupNotActive(inactive)).toBe(true)
-    expect(commonRefusal(inactive)).toMatch(/^Your group can’t do this right now: only an active group can/)
+    expect(commonRefusal(inactive)).toMatch(/^Your group is still waiting for a site admin’s approval/)
+    const noGroup = refusal({ status: 403, name: 'AuthorizationError', condition: 'no_group' })
+    expect(isGroupNotActive(noGroup)).toBe(true)
+    expect(commonRefusal(noGroup)).toMatch(/^Your account isn’t in a group yet/)
+    const suspended = refusal({ status: 403, name: 'AuthorizationError', condition: 'group_suspended' })
+    expect(isGroupNotActive(suspended)).toBe(true)
+    expect(commonRefusal(suspended)).toMatch(/^Your group has been suspended/)
+    for (const e of [inactive, noGroup, suspended]) expect(commonRefusal(e)).not.toContain(SENTENCE)
+    // A bare 403 is no longer read as an inactive group: the API names that one.
+    expect(isGroupNotActive(refusal({ status: 403, name: 'AuthorizationError' }))).toBe(false)
     // A 403 with a reason of its own is the caller's to word.
     expect(isGroupNotActive(refusal({ status: 403, name: 'AuthorizationError', condition: 'not_yours' }))).toBe(false)
     expect(commonRefusal(refusal({ status: 403, name: 'TwoFactorRequiredError', condition: 'setup_required' }))).toBeNull()
@@ -73,7 +82,7 @@ describe('the wording functions share the common cases', () => {
   ]
 
   it('word a group that isn’t active the same way', () => {
-    for (const word of all) expect(word(inactive)).toMatch(/^Your group can’t do this right now: only an active group can/)
+    for (const word of all) expect(word(inactive)).toMatch(/^Your group is still waiting for a site admin’s approval/)
   })
 
   it('never show the API’s sentence for a refusal with a name', () => {

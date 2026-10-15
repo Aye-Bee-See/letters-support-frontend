@@ -112,6 +112,13 @@ export function toRecord(v: PrisonerFormValues): PrisonerFields {
   return out as PrisonerFields
 }
 
+/**
+ * The body that says a record's address is right as it stands (API #219): its
+ * facility and inmate number sent again unchanged. Only an edit of those two
+ * answers an address in doubt, and `changes` sends neither when they are unchanged.
+ */
+export const confirmAddress = (p: Pick<Prisoner, 'prison' | 'inmateID'>): PrisonerFields => ({ prison: p.prison, inmateID: p.inmateID })
+
 /** The API body for what changed (PUT /prisoner/prisoner): blank text is null, an emptied list an empty array. */
 export function changes(before: PrisonerFormValues, after: PrisonerFormValues): PrisonerFields {
   const out: Record<string, unknown> = {}

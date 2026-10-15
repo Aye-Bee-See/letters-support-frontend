@@ -34,6 +34,18 @@ export const HISTORY_ACTIONS: Record<string, string> = {
   'invite-code.join': 'An invite code was used',
 }
 
+/**
+ * An entry's action in words. A `prisoner.photo` entry says whether it
+ * replaced an earlier photo (`replaced: true|false` since API #215; older
+ * entries hold the old file's name there instead, which is never shown).
+ */
+export function historyAction(action: string, details?: Record<string, unknown> | null): string {
+  const replaced = details?.replaced
+  if (action === 'prisoner.photo' && typeof replaced === 'boolean') return replaced ? 'Photo replaced' : 'Photo added'
+  if (action === 'prisoner.photo' && typeof replaced === 'string' && replaced) return 'Photo replaced'
+  return HISTORY_ACTIONS[action] ?? action
+}
+
 const ROLE_WORDS: Record<AccountBrief['role'], string> = { admin: 'a site admin', chapter: 'a group admin', user: 'a writer', banned: 'a banned account' }
 
 /** Someone named on a record: an entry's actor, or who made a block or a recommendation (no role given there). */

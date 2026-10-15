@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { getGroups } from '../../api/groups'
+import { getGroupFilters, getGroups } from '../../api/groups'
 import { PUBLIC_PAGER } from '../../components/forms/uiClasses'
 import { DirectorySearch, FilterSelect } from '../../components/ui/DirectoryControls'
 import Pager from '../../components/ui/Pager'
@@ -22,7 +22,9 @@ type Role = keyof typeof ROLES
 // the network are listed: the API filters `accountStatus=active` (pending and
 // suspended groups are not listed publicly), searches (`q`), filters by
 // country, role (`networkRole`) and service, combinable, and pages; all kept
-// in the URL under the API's own names. Cards link to the group profile
+// in the URL under the API's own names. The chips are the values present, from
+// GET /chapter/filters (API #213), as on the prisoner and facility pages, plus
+// one a link chose that the list doesn't have. Cards link to the group profile
 // (.group-card is styled for a link).
 export default function Groups() {
   const { params, page, update } = useListParams()
@@ -33,6 +35,7 @@ export default function Groups() {
   const role = (Object.keys(ROLES) as Role[]).find((r) => r === roleParam)
   const serviceParam = params.get('service')
   const service = SERVICES.find((s) => s === serviceParam)
+  const filters = useApi(getGroupFilters, [])
   const list = useApi(
     () =>
       getGroups({ accountStatus: 'active', q: q || undefined, country, networkRole: role, service, sort: 'name', page, page_size: PAGE_SIZE }),
@@ -41,13 +44,20 @@ export default function Groups() {
   const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
   const groups = useMemo(() => list.data?.items ?? [], [list.data])
-  // There is no filters endpoint for groups, so the country chips are the
-  // countries on this page, plus the one chosen.
   const countries = useMemo(
     () =>
-      [...new Set([...groups.map((g) => g.country), country].filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b)),
-    [groups, country],
+      [...new Set([...(filters.data?.country ?? []).map((c) => c.value), country].filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b)),
+    [filters.data, country],
   )
+  // A `both` group matches either role, so it offers both chips.
+  const roles = useMemo(() => {
+    const present = new Set((filters.data?.networkRole ?? []).map((r) => r.value))
+    return (Object.keys(ROLES) as Role[]).filter((r) => r === role || present.has(r) || present.has('both'))
+  }, [filters.data, role])
+  const services = useMemo(() => {
+    const present = new Set((filters.data?.services ?? []).map((s) => s.value))
+    return SERVICES.filter((s) => s === service || present.has(s))
+  }, [filters.data, service])
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const filtered = Boolean(country || role || service)
@@ -80,13 +90,13 @@ export default function Groups() {
               {c}
             </FilterChip>
           ))}
-          {(Object.keys(ROLES) as Role[]).map((r) => (
+          {roles.map((r) => (
             <FilterChip key={r} to={chip('networkRole', r, role === r)} active={role === r}>
               {ROLES[r]}
             </FilterChip>
           ))}
           <FilterSelect label="Service" any="Any service" value={service ?? ''} onChange={(v) => update({ service: v })}>
-            {SERVICES.map((s) => (
+            {services.map((s) => (
               <option key={s} value={s}>
                 {serviceLabel(s, true)}
               </option>

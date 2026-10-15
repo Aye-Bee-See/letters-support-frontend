@@ -30,8 +30,7 @@ export function photoRefusal(error: ApiError, role: PhotoRole): string {
     return 'The server couldn’t read this file from end to end, so it wasn’t stored. Open it and save it again (or take a screenshot of it), then choose that.'
   if (role === 'admin' && error.status === 403)
     return 'The server says this account may not change photos. Sign in again as a site admin and try once more.'
-  if (role === 'group' && error.status === 403 && error.condition === null)
-    return 'Your group can’t change photos right now: only an active group can, and yours may be waiting for approval, or suspended.'
+  // A group that can't act (no group, pending, suspended) is commonRefusal's, by its condition (API #212).
   if (role === 'group' && error.status === 404) return 'This prisoner’s record isn’t one your group can see any more.'
   return commonRefusal(error) ?? otherRefusal(error)
 }

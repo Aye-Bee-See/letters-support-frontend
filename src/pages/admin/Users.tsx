@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import { getEncryptionReadiness } from '../../api/admin'
 import { getGroupsByIds } from '../../api/groups'
 import { getUsers, type DeletedAccount, type UserListParams } from '../../api/users'
 import { ADMIN_PAGER } from '../../components/forms/uiClasses'
@@ -15,8 +16,14 @@ import { refusalText } from '../../utils/refusals'
 // role. Both live in the URL under the API's names, with the page. An account
 // record holds no letters: nothing on these pages can read one.
 //
-// Whether an account has two-factor sign-in on isn't in the record (the API
-// sends no two-factor column to anyone), so it isn't shown.
+// In end-to-end mode (GET /auth/encryption-readiness) a site admin makes no
+// accounts (README "Creating accounts with other roles"), so the button invites
+// instead; a site admin is promoted on the account's own page. Until the mode
+// is known, or in server mode, it leads to New staff account, which says the
+// same for end-to-end mode.
+//
+// Whether an account has two-factor sign-in on comes with each row read by an
+// admin (`twoFactorEnabled`, API #215), shown beside the role.
 
 const PAGE_SIZE = 25
 
@@ -36,6 +43,7 @@ export default function Users() {
   const found = useApi(() => (named.length ? getGroupsByIds(named) : Promise.resolve(new Map<number, Chapter>())), [named.join(',')], { keepPrevious: true })
 
   const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
+  const e2e = useApi(getEncryptionReadiness, []).data?.mode === 'e2e'
 
   const filtered = Boolean(q || role)
   const total = list.data?.total ?? 0
@@ -48,9 +56,15 @@ export default function Users() {
         <span className="topbar-title">Accounts</span>
         <span className="topbar-right">
           {list.data && `${total} ${filtered ? 'matching' : 'in all'}`}{' '}
-          <Link to="/admin/users/new" className="a-btn a-btn-primary a-btn-sm">
-            New account
-          </Link>
+          {e2e ? (
+            <Link to="/admin/invite" className="a-btn a-btn-primary a-btn-sm">
+              Invite
+            </Link>
+          ) : (
+            <Link to="/admin/users/new" className="a-btn a-btn-primary a-btn-sm">
+              New account
+            </Link>
+          )}
         </span>
       </div>
 
@@ -63,6 +77,7 @@ export default function Users() {
         )}
         <p className="dash-note">
           Writers, group admins and site admins. An account holds no letters: nothing here can read one, and changing an account never opens its letters.
+          {e2e && ' Group admins join by invitation; to make someone a site admin, open their account and change its role.'}
         </p>
 
         <div className="admin-table-toolbar list-toolbar">
@@ -143,6 +158,14 @@ function UserTable({ users, groups }: { users: User[]; groups: Map<number, Chapt
             <td>{u.penName ?? <span className="list-sub">—</span>}</td>
             <td>
               {u.role === 'banned' ? <span className="badge badge-pending">banned</span> : ROLE_LABELS[u.role]}
+              {u.twoFactorEnabled && (
+                <>
+                  {' '}
+                  <span className="badge badge-published" title="Two-factor sign-in is on">
+                    2FA on
+                  </span>
+                </>
+              )}
               {u.managedBy !== null && !u.claimedAt && <div className="list-sub">{u.anonymousForChapter !== null ? 'group’s anonymous account' : 'managed by a group'}</div>}
             </td>
             <td>

@@ -20,12 +20,17 @@ import { accountName, accountRefusal, deleteRefusal, managedNote, ROLE_LABELS, R
 //     which ends every session at once;
 //   - put a group admin in a group or take them out (PUT /auth/user { chapterId });
 //   - end every session (POST /auth/revoke), without banning;
-//   - reset two-factor sign-in, for a lost phone (DELETE /auth/two-factor/user);
+//   - reset two-factor sign-in, for a lost phone (DELETE /auth/two-factor/user),
+//     offered only where it is on (`twoFactorEnabled`, API #215; an older API
+//     that doesn't say gets the offer, and its 409 `not_enabled` is worded);
 //   - delete the account and everything written or received through it
 //     (DELETE /auth/user), confirmed by typing the username.
 // An account record holds no letters, and nothing here reads one. Your own
-// account isn't changed here: a role change or a revocation would end the
-// session you are using.
+// account isn't changed here: a new role or a revocation would shut you out of
+// the page you are on. The API refuses only a change that would leave no site
+// admin (409 RoleChangeError `last_admin`, API #208), so another site admin may
+// still change yours; that refusal is worded in utils/users.ts in case a
+// change here meets it (two site admins demoting each other at once).
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -88,8 +93,10 @@ function EditUser({ id }: { id: number }) {
             <AccountRecord u={user.data} groups={groups} />
             {me?.id === user.data.id ? (
               <div className="admin-alert admin-alert-warn" role="status">
-                This is your own account. Its role, sessions and deletion are another site admin’s to change; your password and two-factor sign-in are on{' '}
-                <Link to="/account/security">your account’s security page</Link>.
+                This is your own account, so its role and sessions aren’t changed here: a new role, or ending its sessions, would shut you out of the page you are
+                on. Another site admin can change them for you, unless you are the only one: the site always keeps a site admin, so make another first. Your
+                password and two-factor sign-in are on <Link to="/account/security">your account’s security page</Link>, and deleting it on{' '}
+                <Link to="/account/delete">its own page</Link>.
               </div>
             ) : (
               <Actions key={`${user.data.id}-${user.data.updatedAt}`} u={user.data} groups={groups} onDone={done} onEdit={() => setNotice(null)} />
@@ -145,6 +152,11 @@ function AccountRecord({ u, groups }: { u: User; groups: Chapter[] | null }) {
           </Row>
           <Row label="Made">{shortDate(u.createdAt)}</Row>
         </div>
+        {u.twoFactorEnabled !== undefined && (
+          <div className="form-row">
+            <Row label="Two-factor sign-in">{u.twoFactorEnabled ? 'On' : 'Off'}</Row>
+          </div>
+        )}
         {(u.managedBy !== null || u.claimedFrom !== null) && (
           <div className="form-row">
             {u.managedBy !== null && <Row label="Looked after by">{groupLink(u.managedBy, groups)}</Row>}
@@ -359,28 +371,33 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
                 Sign out everywhere
               </button>
             </div>
-            <p className="form-hint">
-              Reset two-factor sign-in only for someone who has lost their phone and their recovery codes, once you are sure it is them: it switches it off, and
-              their recovery codes stop working. They sign in with their password, and set it up again if it is required of them.
-            </p>
-            <div className="relay-add">
-              <button
-                type="button"
-                className="a-btn a-btn-danger a-btn-sm"
-                disabled={busy}
-                onClick={() =>
-                  act(
-                    `Reset two-factor sign-in for ${name}? It is switched off and their recovery codes stop working: anyone with their password can then sign in. Do this only once you are sure it is them.`,
-                    async () => {
-                      await resetTwoFactor(u.id)
-                      return `Two-factor sign-in is off for ${name}. They sign in with their password, and set it up again if it is required of them.`
-                    },
-                  )
-                }
-              >
-                Reset two-factor sign-in
-              </button>
-            </div>
+            {u.twoFactorEnabled === false && <p className="form-hint">Two-factor sign-in isn’t on for this account, so there is nothing to reset.</p>}
+            {u.twoFactorEnabled !== false && (
+              <>
+                <p className="form-hint">
+                  Reset two-factor sign-in only for someone who has lost their phone and their recovery codes, once you are sure it is them: it switches it off, and
+                  their recovery codes stop working. They sign in with their password, and set it up again if it is required of them.
+                </p>
+                <div className="relay-add">
+                  <button
+                    type="button"
+                    className="a-btn a-btn-danger a-btn-sm"
+                    disabled={busy}
+                    onClick={() =>
+                      act(
+                        `Reset two-factor sign-in for ${name}? It is switched off and their recovery codes stop working: anyone with their password can then sign in. Do this only once you are sure it is them.`,
+                        async () => {
+                          await resetTwoFactor(u.id)
+                          return `Two-factor sign-in is off for ${name}. They sign in with their password, and set it up again if it is required of them.`
+                        },
+                      )
+                    }
+                  >
+                    Reset two-factor sign-in
+                  </button>
+                </div>
+              </>
+            )}
           </Section>
         </div>
       )}

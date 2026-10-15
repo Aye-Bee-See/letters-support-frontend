@@ -22,7 +22,7 @@ describe('invitationRefusal (README "Invitations")', () => {
   it('never words a refusal from the sentence when anything else fits', () => {
     expect(invitationRefusal(refusal({ status: 404, name: 'NotFoundError' }), 'renew')).toContain('isn’t there any more')
     expect(invitationRefusal(refusal({ status: 400, errors: ['days must be 1 to 30.'] }), 'renew')).toBe('days must be 1 to 30.')
-    expect(invitationRefusal(refusal({ status: 403, name: 'AuthorizationError' }), 'create')).toMatch(/^Your group can’t do this right now: only an active group/)
+    expect(invitationRefusal(refusal({ status: 403, name: 'AuthorizationError', condition: 'group_pending' }), 'create')).toMatch(/^Your group is still waiting/)
     expect(invitationRefusal(refusal({ status: 409, name: 'SomethingNewError' }), 'create')).not.toContain('Not stable English')
     expect(invitationRefusal(refusal({ status: 422, name: 'SomethingNewError' }), 'renew')).not.toContain('Not stable English')
   })

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { createMailRule, deleteMailRule, getFacilities, getMailRules, updateMailRule } from '../../api/facilities'
+import { createMailRule, deleteMailRule, getMailRules, updateMailRule } from '../../api/facilities'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import { useApi } from '../../hooks/useApi'
 import type { ApiError, MailRule, MailRuleCategory, MailRuleList } from '../../types'
 import { categoryLabel } from '../../utils/facilities'
-import { commonRefusal, otherRefusal } from '../../utils/refusals'
+import { plural, ruleName as named, ruleRefusal } from '../../utils/mailRules'
+import { commonRefusal } from '../../utils/refusals'
 
 // The master list of mail rules (README "Mail rules" > "Changing the master
 // list (admin)"): every facility's rules are links into it, so new wording
@@ -14,46 +15,10 @@ import { commonRefusal, otherRefusal } from '../../utils/refusals'
 // clients key translations and icons on it. A rule carries no value of its
 // own: the three that do (page limit, photo limit, languages) are typed fields
 // on each facility, listed here read-only, as are the pairs that conflict.
+// Refusals are worded in utils/mailRules.ts, the rule a duplicate repeats and
+// the facilities that carry a rule read from the refusal's `ids`.
 
 const TAG = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/
-
-/**
- * The words of a tag or label, order and plurals aside, as the API compares
- * them for its look-alike check (MailRule.lookalike): used only to name the
- * rule a 409 DuplicateRuleError is about, which the refusal's sentence does
- * but its name and condition can't.
- */
-const fingerprint = (text: string) =>
-  text
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean)
-    .map((word) => (word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word))
-    .sort()
-    .join(' ')
-
-function lookalike(rules: MailRule[], words: string[], exceptId?: number): MailRule | null {
-  const wanted = new Set(words.filter(Boolean).map(fingerprint))
-  return rules.find((r) => r.id !== exceptId && (wanted.has(fingerprint(r.tag)) || wanted.has(fingerprint(r.label)))) ?? null
-}
-
-const named = (r: MailRule) => `“${r.label}” (${r.tag})`
-
-/** Every refusal on this page, from status, name and condition (README "Errors"); never the API's sentence. */
-function ruleRefusal(error: ApiError, rules: MailRule[], words: string[], exceptId?: number): string {
-  if (error.status === 403) return 'Only a site admin can change the master list, and the server didn’t take this account as one. Sign in again and try once more.'
-  if (error.status === 409 && error.name === 'DuplicateRuleError') {
-    const existing = lookalike(rules, words, exceptId)
-    if (!existing) return 'The master list already says this in other words. Reload the page to see it, then use that rule or word this one differently.'
-    return existing.retired
-      ? `The master list already says this as ${named(existing)}, which is retired. Restore that one, or word this one differently.`
-      : `The master list already says this as ${named(existing)}. Use that one, or word this one differently.`
-  }
-  if (error.status === 409 && error.name === 'RuleTagError') return 'A rule’s tag never changes. Retire this rule and add a new one with the tag you want.'
-  return commonRefusal(error) ?? otherRefusal(error)
-}
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 export default function MailRules() {
   // Staff get the retired rules too, flagged, to restore one.
@@ -161,7 +126,7 @@ function AddRule({ list, onAdded, onEdit }: { list: MailRuleList; onAdded: (rule
       setDescription('')
       onAdded(rule)
     } catch (err) {
-      setError(ruleRefusal(err as ApiError, list.rules, [tag.trim(), label.trim()]))
+      setError(ruleRefusal(err as ApiError, list.rules))
     } finally {
       setBusy(false)
     }
@@ -288,7 +253,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
     onEdit()
   }
 
-  async function run(action: () => Promise<string>, words: string[] = []) {
+  async function run(action: () => Promise<string>) {
     setBusy(true)
     setError(null)
     onEdit()
@@ -297,9 +262,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
       setEditing(false)
       onChanged(notice)
     } catch (err) {
-      const e = err as ApiError
-      if (e.status === 409 && e.name === 'RuleInUseError') setError(await inUse(rule))
-      else setError(ruleRefusal(e, list.rules, words, rule.id))
+      setError(ruleRefusal(err as ApiError, list.rules, rule))
     } finally {
       setBusy(false)
     }
@@ -317,7 +280,7 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
     void run(async () => {
       const updated = await updateMailRule(rule.id, changes)
       return `Saved ${named(updated)}. ${updated.prisons > 0 ? `The new wording shows on the ${plural(updated.prisons, 'facility', 'facilities')} that carry it.` : 'No facility carries it yet.'}`
-    }, [l])
+    })
   }
 
   const retire = (retired: boolean) =>
@@ -439,24 +402,6 @@ function RuleRow({ rule, list, onChanged, onEdit }: { rule: MailRule; list: Mail
       )}
     </>
   )
-}
-
-/**
- * The words for a 409 RuleInUseError: how many facilities carry the rule
- * (GET /prison/prisons?mailRule=, the total of a one-row page), and that it
- * should be retired instead. The count is a second request; without it the
- * sentence still stands.
- */
-async function inUse(rule: MailRule): Promise<string> {
-  let carriers = 'Facilities carry this rule'
-  try {
-    const { total } = await getFacilities({ mailRule: rule.tag, page_size: 1 })
-    if (total > 0) carriers = `${plural(total, 'facility carries', 'facilities carry')} this rule`
-  } catch {
-    // The count is a courtesy; the refusal is worded without it.
-  }
-  const retiring = 'it stays where it is, and can’t be added to another facility.'
-  return `${carriers}, so it can’t be deleted. ${rule.retired ? `It is retired already: ${retiring}` : `Retire it instead: ${retiring}`}`
 }
 
 /** The three values a facility carries beside its rules (README "Mail rules"): set on each facility's own page. */

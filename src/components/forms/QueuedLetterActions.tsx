@@ -24,7 +24,7 @@ function ChooseGroup({
   onChanged,
 }: {
   message: Message
-  /** The prisoner's facility with its relay groups (full=true), loaded once by the thread for the reply panel and this. */
+  /** The prisoner's facility with its relay groups (on every prison read), loaded once by the thread for the reply panel and this. */
   facility: ApiState<Prison | null>
   blocks: Map<number, WriterBlock>
   onChanged: () => void

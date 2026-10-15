@@ -39,7 +39,8 @@ async function loadLetter(id: number, reader: LetterReader | null): Promise<Page
   const message = await getMessage(id, true)
   const prisonId = message.prisoner_details?.prison ?? null
   // The facility's relay groups (partners to share with) and, if the letter's own copy lacks them, its rules.
-  const facility = prisonId ? await getFacility(prisonId, true).catch(() => null) : null
+  // Without full: every prison read names its relay groups (API #213), and the prisoners held there aren't wanted.
+  const facility = prisonId ? await getFacility(prisonId, false).catch(() => null) : null
   const opened = reader ? await openLetter(message, reader) : null
   return { message, facility, opened }
 }
@@ -131,7 +132,7 @@ function Sidebar({ page, mine, rules, canRead, onDone }: { page: Page; mine: boo
   const prison = (prisoner?.prison_details ?? facility) as Prison | null
   // The facility's other active groups: the API lets those read it (README "Sending and reading letters").
   const partners = (facility?.relay_groups ?? []).filter(
-    (g) => g.id !== m.relayChapter && (g.accountStatus === undefined || g.accountStatus === 'active'),
+    (g) => g.id !== m.relayChapter && g.accountStatus === 'active',
   )
   const history = m.status_history ?? []
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actorName } from './history'
+import { actorName, historyAction } from './history'
 
 describe('actorName', () => {
   const admin = { id: 1, username: 'admin', name: 'Administrator', role: 'admin' as const }
@@ -24,5 +24,20 @@ describe('actorName', () => {
   it('names someone given without a role (who made a block) by name or username', () => {
     expect(actorName({ id: 3, username: 'chapter2', name: null }, 1)).toBe('chapter2')
     expect(actorName({ id: 3, username: 'chapter2', name: 'Sam' }, 3)).toBe('you')
+  })
+})
+
+describe('historyAction', () => {
+  it('says whether a photo replaced an earlier one (API #215), never the old file’s name', () => {
+    expect(historyAction('prisoner.photo', { credit: null, replaced: false })).toBe('Photo added')
+    expect(historyAction('prisoner.photo', { credit: null, replaced: true })).toBe('Photo replaced')
+    // Older entries recorded the old file's name instead.
+    expect(historyAction('prisoner.photo', { replaced: 'a1b2c3.jpg' })).toBe('Photo replaced')
+    expect(historyAction('prisoner.photo', null)).toBe('Photo added or replaced')
+  })
+
+  it('words the other actions from the table, and an unknown one as the API names it', () => {
+    expect(historyAction('prison.relay.add')).toBe('Relay group linked')
+    expect(historyAction('something.new')).toBe('something.new')
   })
 })

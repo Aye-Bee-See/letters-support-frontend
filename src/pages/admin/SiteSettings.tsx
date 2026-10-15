@@ -267,6 +267,7 @@ function ResetTwoFactor() {
     setMessage(null)
     try {
       await resetTwoFactor(u.id)
+      setResults((r) => r && { ...r, users: r.users.map((x) => (x.id === u.id ? { ...x, twoFactorEnabled: false } : x)) })
       setMessage({ ok: true, text: `Two-factor sign-in is off for ${u.username}. They can sign in with their password.` })
     } catch (err) {
       const e = err as ApiError
@@ -302,9 +303,14 @@ function ResetTwoFactor() {
                 {u.name && <span className="list-sub"> {u.name}</span>}
                 <span className="list-sub"> · {ROLE_LABELS[u.role] ?? u.role}</span>
               </span>
-              <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void reset(u)}>
-                Reset two-factor
-              </button>
+              {/* Only where it is on (`twoFactorEnabled`, API #215); an older API that doesn't say gets the button. */}
+              {u.twoFactorEnabled === false ? (
+                <span className="list-sub">Two-factor sign-in is off</span>
+              ) : (
+                <button type="button" className="a-btn a-btn-danger a-btn-sm" disabled={busy} onClick={() => void reset(u)}>
+                  Reset two-factor
+                </button>
+              )}
             </li>
           ))}
         </ul>

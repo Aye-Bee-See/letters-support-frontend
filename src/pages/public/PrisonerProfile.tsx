@@ -133,7 +133,7 @@ export default function PrisonerProfile() {
               {/* README "Moved and freed": mail may never reach someone who has left; New Letter asks before sending. The status notice is above the name. */}
               {isWriter && p.prison && p.status === 'free' && (
                 <p className="verified-note profile-write">
-                  <strong>{name} has been released.</strong> A letter mailed to {prison?.prisonName ?? 'their last facility'} may never reach them.
+                  <strong>{name} has been released.</strong> A letter mailed to {prison?.prisonName ?? 'their last facility'} may never reach them, so a new one is held for the group to decide.
                 </p>
               )}
               {isWriter && p.prison && (

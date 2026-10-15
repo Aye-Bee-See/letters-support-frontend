@@ -12,7 +12,7 @@ import type { ApiError, Chapter, ChapterService, NetworkRole, SocialLinkKey } fr
 import { serviceLabel } from '../../utils/groups'
 import { displayName } from '../../utils/prisoners'
 import { changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
-import { refusalText } from '../../utils/refusals'
+import { isGroupNotActive, refusalText } from '../../utils/refusals'
 
 // A group admin's own group. The record through
 // PUT /chapter/chapter, which a group admin may send for their own active group
@@ -197,7 +197,7 @@ function GroupForm({ group: g, onSaved, onEdit }: FormProps) {
       setError(
         e.errors?.length
           ? e.errors.join(' ')
-          : e.status === 403
+          : e.status === 403 && !isGroupNotActive(e)
             ? 'Your group can’t change its record right now: only an active group edits its own record.'
             : e.status === 404
               ? 'Your group’s record isn’t there any more.'

@@ -187,6 +187,11 @@ export interface User extends Timestamps {
   managerNote?: string | null
   retentionDays: number | null
   publicKey: string | null
+  /**
+   * Admins only (GET /auth/users, GET /auth/user, API #215): two-factor sign-in
+   * is set up and on. Absent for anyone else, and from an older API.
+   */
+  twoFactorEnabled?: boolean
 }
 
 export interface MailRule {
@@ -241,8 +246,16 @@ export interface Prison extends Timestamps {
   recordStatus?: RecordStatus
   /** full=true */
   prisoners?: Prisoner[]
-  relay_groups?: Chapter[]
+  /**
+   * The groups that print and mail for this facility, on every prison read
+   * (API #213): light without full=true, the whole group record with it. Only
+   * an `active` group routes a letter. Absent from an older API without full.
+   */
+  relay_groups?: RelayGroup[]
 }
+
+/** A facility's relay group as every prison read carries it (README "The `full` parameter"). */
+export type RelayGroup = Pick<Chapter, 'id' | 'name' | 'accountStatus'>
 
 /** The small prison summary embedded in prisoner and chat rows. */
 export type PrisonSummary = Pick<Prison, 'id' | 'prisonName' | 'country'> & Partial<Pick<Prison, 'routing'>>
@@ -284,6 +297,11 @@ export interface Prisoner extends Timestamps {
   featured: boolean
   verifiedBy: number | null
   verifiedAt: string | null
+  /**
+   * Staff only, read-only (API #219): when the address (`prison` or
+   * `inmateID`) was last edited or confirmed. What answers an address in doubt.
+   */
+  addressCheckedAt?: string | null
   /** Staff only. */
   verificationNotes?: string | null
   recordStatus?: RecordStatus

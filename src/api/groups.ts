@@ -7,6 +7,7 @@ import type {
   AccountStatus,
   Chapter,
   ChapterService,
+  FilterValues,
   GroupBlock,
   HistoryEntry,
   ListParams,
@@ -27,6 +28,14 @@ export interface GroupListParams extends ListParams {
 
 export const getGroups = (params?: GroupListParams) =>
   getList<Chapter>('/chapter/chapters', params)
+
+/**
+ * GET /chapter/filters (API #213): the countries, network roles and services
+ * present, with counts, for the groups list's chips; `accountStatus` too, for
+ * staff only. Counted over the groups the caller could list.
+ */
+export const getGroupFilters = () =>
+  getOne<FilterValues<'country' | 'networkRole' | 'services'> & Partial<FilterValues<'accountStatus'>>>('/chapter/filters')
 
 /** full=true adds supported_prisoners and relay_prisons. */
 export const getGroup = (id: number, full = true) =>

@@ -11,7 +11,7 @@ export interface PrisonerListParams extends ListParams {
   stale?: true
   /** Staff only: draft, pending or published. Ignored for everyone else. */
   recordStatus?: RecordStatus
-  /** Staff only: mail came back as transferred, released or undeliverable, and the record is unedited since. */
+  /** Staff only: mail came back as transferred, released or undeliverable, and the address (`prison`, `inmateID`) is unedited since. */
   addressInDoubt?: true
 }
 
