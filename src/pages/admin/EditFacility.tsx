@@ -8,7 +8,7 @@ import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
 import { PICKER_PAGE_SIZE } from '../../components/forms/recordPickerState'
 import { useApi } from '../../hooks/useApi'
-import type { ApiError, Chapter, MailRuleList, Prison, RecordStatus } from '../../types'
+import type { ApiError, MailRuleList, Prison, RecordStatus, RelayGroup } from '../../types'
 import { isStale, ROUTING_LABELS } from '../../utils/facilities'
 import { changes, languageHint, MAX_PRINT_LINES, problems, RECORD_STATUSES, ROUTINGS, toForm, type FacilityFormValues } from '../../utils/facilityForm'
 import { shortDate } from '../../utils/dates'
@@ -24,7 +24,8 @@ import { refusalText } from '../../utils/refusals'
 
 export default function EditFacility() {
   const id = Number(useParams().id)
-  const facility = useApi(() => getFacility(id, true), [id], { keepPrevious: true })
+  // Without full: the relay groups come on every read (API #213), and the page lists no prisoners.
+  const facility = useApi(() => getFacility(id, false), [id], { keepPrevious: true })
   // Staff get retired rules too: a facility may still carry one.
   const rules = useApi(() => getMailRules(true), [])
   const [saved, setSaved] = useState(false)
@@ -302,16 +303,16 @@ function FacilityForm({ facility: f, rules: list, rulesError, onSaved, onEdit }:
  * which would reset the form above.
  */
 function RelayGroups({ facility: f }: { facility: Prison }) {
-  const [linked, setLinked] = useState<Chapter[]>(() => f.relay_groups ?? [])
-  const [choice, setChoice] = useState<Chapter | null>(null)
+  const [linked, setLinked] = useState<RelayGroup[]>(() => f.relay_groups ?? [])
+  const [choice, setChoice] = useState<RelayGroup | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   /** A group as the picker and the chosen line name it: any but an active one is marked. */
-  const nameOf = (g: Chapter) => `${g.name}${g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}`
+  const nameOf = (g: RelayGroup) => `${g.name}${g.accountStatus !== 'active' ? ` (${g.accountStatus})` : ''}`
   const active = linked.filter((g) => g.accountStatus === 'active')
 
-  async function run(action: () => Promise<Chapter[]>) {
+  async function run(action: () => Promise<RelayGroup[]>) {
     setBusy(true)
     setError(null)
     try {
@@ -335,7 +336,7 @@ function RelayGroups({ facility: f }: { facility: Prison }) {
           <p className="form-static">None linked.</p>
         ) : (
           <ul className="relay-list">
-            {linked.map((g: Chapter) => (
+            {linked.map((g) => (
               <li key={g.id}>
                 <Link to={`/groups/${g.id}`}>{g.name}</Link>
                 {g.accountStatus !== 'active' && <span className="list-sub"> ({g.accountStatus})</span>}

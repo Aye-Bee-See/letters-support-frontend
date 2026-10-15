@@ -25,7 +25,11 @@ export const getFacilities = (params?: FacilityListParams) =>
 /** The countries and routing methods present, with counts, for the index's chips. */
 export const getFacilityFilters = () => getOne<FilterValues<'country' | 'routing'>>('/prison/filters')
 
-/** full=true adds prisoners and relay_groups. */
+/**
+ * full=true adds prisoners, and the whole record of each relay group. Without
+ * it every read still names its relay groups (`id`, `name`, `accountStatus`,
+ * API #213), which is all routing a letter needs: pass `false` for that.
+ */
 export const getFacility = (id: number, full = true) =>
   getOne<Prison>('/prison/prison', { id, full })
 

@@ -10,13 +10,17 @@ export const ROUTING_LABELS: Record<RoutingMethod, string> = {
   relay_only: 'Relay group only',
 }
 
-/** Routing lines for the facilities table: the method, then each relay group ("Via Belarus ABC"). */
 /** A mail rule's category in words: "mail_content" → "Mail content". */
 export const categoryLabel = (c: string) => (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ')
 
+/**
+ * Routing lines for the facilities table: the method, then each active relay
+ * group ("Via Belarus ABC"). Every prison read names its relay groups (API
+ * #213); a pending or suspended one mails nothing, so it isn't named.
+ */
 export function routingLines(prison: Pick<Prison, 'routing' | 'relay_groups'>): string[] {
   const lines = prison.routing ? [ROUTING_LABELS[prison.routing]] : []
-  for (const group of prison.relay_groups ?? []) lines.push(`Via ${group.name}`)
+  for (const group of prison.relay_groups ?? []) if (group.accountStatus === 'active') lines.push(`Via ${group.name}`)
   return lines
 }
 

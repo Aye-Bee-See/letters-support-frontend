@@ -57,6 +57,8 @@ export default function FacilityProfile() {
   const stale = isStale(f.verifiedAt)
   const months = f.verifiedAt ? monthsSince(f.verifiedAt) : null
   const prisoners = f.prisoners ?? []
+  // Only an active group mails anything; a pending or suspended one isn't named.
+  const relays = (f.relay_groups ?? []).filter((g) => g.accountStatus === 'active')
   const scanLines = (f.scanService ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
 
   return (
@@ -101,10 +103,10 @@ export default function FacilityProfile() {
                 <span className="routing-tag">{ROUTING_TAGS[f.routing]}</span>
               </div>
             )}
-            {f.relay_groups && f.relay_groups.length > 0 && (
+            {relays.length > 0 && (
               <p className="routing-note">
-                Relay {f.relay_groups.length === 1 ? 'group' : 'groups'}:{' '}
-                {f.relay_groups.map((g, i) => (
+                Relay {relays.length === 1 ? 'group' : 'groups'}:{' '}
+                {relays.map((g, i) => (
                   <Fragment key={g.id}>
                     {i > 0 && ', '}
                     <Link to={`/groups/${g.id}`}>{g.name}</Link>

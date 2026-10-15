@@ -1,6 +1,7 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getFacility } from '../../api/facilities'
+import { getGroupsByIds } from '../../api/groups'
 import { getPrisoner, getPrisoners } from '../../api/prisoners'
 import { getAllWriters } from '../../api/writers'
 import AddressSearch, { AddressOptionText } from '../../components/forms/AddressSearch'
@@ -55,10 +56,11 @@ export default function NewLetter() {
   // picker below searches the directory a page at a time.
   const chosen = useApi(() => (prisonerId !== null ? getPrisoner(prisonerId, true) : Promise.resolve(null)), [prisonerId])
   const prisoner = chosen.data ?? null
-  // full=true for the facility's relay groups (the groups that can mail the
-  // letter), which the API embeds only with its prisoners: README "The `full` parameter".
+  // The facility's rules and relay groups (the groups that can mail the
+  // letter). Without full: every prison read names its relay groups (API #213),
+  // and the prisoners held there aren't wanted. README "The `full` parameter".
   const facilityState = useApi(
-    () => (prisoner?.prison ? getFacility(prisoner.prison, true) : Promise.resolve(null)),
+    () => (prisoner?.prison ? getFacility(prisoner.prison, false) : Promise.resolve(null)),
     [prisoner?.prison ?? null],
   )
   const facility: Prison | null = facilityState.data ?? null
@@ -79,6 +81,14 @@ export default function NewLetter() {
   const draft = useLetterDraft(prisoner?.id ?? null, facility, undefined, undefined, writeAs)
   const [notesOpen, setNotesOpen] = useState(false)
   const rules = facility ? mailRuleLines(facility) : []
+  // Where each group is, for its tile: the facility names its relay groups
+  // without their records (API #213), so the few that can mail it are read by id.
+  const groupIds = draft.groups.map((g) => g.id).join(',')
+  const groupRecords = useApi(() => (groupIds ? getGroupsByIds(groupIds.split(',').map(Number)) : Promise.resolve(null)), [groupIds])
+  const placeOf = (id: number) => {
+    const g = groupRecords.data?.get(id)
+    return g ? [g.subregion, g.country].filter(Boolean).join(', ') : ''
+  }
   const group = draft.groups.find((g) => g.id === draft.relayChapterId) ?? null
   // A group writing for one of its writers, through itself: the note is for its own queue.
   const ownGroup = isGroup && group !== null && group.id === user?.chapterId
@@ -486,7 +496,7 @@ export default function NewLetter() {
                             <div>
                               <div className="relay-option-name">{g.name}</div>
                               <div className="relay-option-location">
-                                {block ? `Not mailing your letters: “${block.reason}”` : [g.subregion, g.country].filter(Boolean).join(', ')}
+                                {block ? `Not mailing your letters: “${block.reason}”` : placeOf(g.id)}
                               </div>
                             </div>
                             <span className="relay-checkmark">{g.id === draft.relayChapterId ? '✓' : ''}</span>

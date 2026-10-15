@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getGroups, updateGroup, type GroupListParams } from '../../api/groups'
+import { getGroupFilters, getGroups, updateGroup, type GroupListParams } from '../../api/groups'
 import { ADMIN_PAGER } from '../../components/forms/uiClasses'
 import Pager from '../../components/ui/Pager'
 import { useApi } from '../../hooks/useApi'
@@ -13,6 +13,8 @@ import { refusalText } from '../../utils/refusals'
 // reactivating them (accountStatus is admin-only). Rows come without `full`
 // (which embeds every facility each relays for and every prisoner it
 // supports): the edit page lists those. Filters live in the URL under the API's names.
+// The country choices, and the counts beside them and beside each account
+// status, come from GET /chapter/filters (API #213; `accountStatus` is staff-only there).
 
 const PAGE_SIZE = 25
 
@@ -33,6 +35,7 @@ export default function GroupsList() {
   const { params, page, update, clear } = useListParams()
   const q = params.get('q') ?? ''
   const account = oneOf(ACCOUNT_STATUSES, params.get('accountStatus'))
+  const country = params.get('country') || undefined
   const role = oneOf(Object.keys(ROLES) as RoleFilter[], params.get('networkRole'))
   const record = oneOf(RECORD_STATUSES, params.get('recordStatus'))
   const sort = oneOf(Object.keys(SORTS) as Sort[], params.get('sort')) ?? 'name'
@@ -40,18 +43,21 @@ export default function GroupsList() {
   const query: GroupListParams = {
     q: q || undefined,
     accountStatus: account,
+    country,
     networkRole: role,
     recordStatus: record,
     sort,
     page,
     page_size: PAGE_SIZE,
   }
-  const list = useApi(() => getGroups(query), [q, account, role, record, sort, page])
+  const list = useApi(() => getGroups(query), [q, account, country, role, record, sort, page])
+  const filters = useApi(getGroupFilters, [])
+  const statusCount = (s: AccountStatus) => filters.data?.accountStatus?.find((v) => v.value === s)?.count
 
   const setParam = (key: string, value: string | undefined) => update({ [key]: value })
   const [search, setSearch] = useSearchBox(q, (value) => update({ q: value }))
 
-  const filtered = Boolean(q || account || role || record)
+  const filtered = Boolean(q || account || country || role || record)
   const total = list.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -84,6 +90,17 @@ export default function GroupsList() {
             {ACCOUNT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {capitalise(s)}
+                {statusCount(s) !== undefined && ` (${statusCount(s)})`}
+              </option>
+            ))}
+          </select>
+          <select className="form-select" aria-label="Country" value={country ?? ''} onChange={(e) => setParam('country', e.target.value || undefined)}>
+            <option value="">Any country</option>
+            {/* A country in the URL that the filter list doesn't have (yet) still shows. */}
+            {country && !filters.data?.country.some((c) => c.value === country) && <option value={country}>{country}</option>}
+            {filters.data?.country.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.value} ({c.count})
               </option>
             ))}
           </select>

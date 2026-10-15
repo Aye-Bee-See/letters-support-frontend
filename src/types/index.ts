@@ -241,8 +241,16 @@ export interface Prison extends Timestamps {
   recordStatus?: RecordStatus
   /** full=true */
   prisoners?: Prisoner[]
-  relay_groups?: Chapter[]
+  /**
+   * The groups that print and mail for this facility, on every prison read
+   * (API #213): light without full=true, the whole group record with it. Only
+   * an `active` group routes a letter. Absent from an older API without full.
+   */
+  relay_groups?: RelayGroup[]
 }
+
+/** A facility's relay group as every prison read carries it (README "The `full` parameter"). */
+export type RelayGroup = Pick<Chapter, 'id' | 'name' | 'accountStatus'>
 
 /** The small prison summary embedded in prisoner and chat rows. */
 export type PrisonSummary = Pick<Prison, 'id' | 'prisonName' | 'country'> & Partial<Pick<Prison, 'routing'>>

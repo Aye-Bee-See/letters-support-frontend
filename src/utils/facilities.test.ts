@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Prison } from '../types'
-import { addressLine, addressLines, FILTER_LANGUAGES, isStale, languageOptions, languageParam, mailRuleLines, printLines, restrictionPhrases } from './facilities'
+import { addressLine, addressLines, FILTER_LANGUAGES, isStale, languageOptions, languageParam, mailRuleLines, printLines, restrictionPhrases, routingLines } from './facilities'
 
 type Limits = Pick<Prison, 'mail_rule_details' | 'pageLimit' | 'photoLimit' | 'mailLanguages'>
 const rules = (...labels: string[]) => labels.map((label, i) => ({ id: i + 1, label })) as unknown as Prison['mail_rule_details']
@@ -100,5 +100,17 @@ describe('the language filter', () => {
     expect(more).toContain('nl')
     expect(more).toHaveLength(FILTER_LANGUAGES.length + 1)
     expect(languageOptions('es')).toHaveLength(FILTER_LANGUAGES.length)
+  })
+})
+
+describe('routingLines', () => {
+  it('names the active relay groups every prison read carries, and no other', () => {
+    const relay_groups = [
+      { id: 1, name: 'Belarus ABC', accountStatus: 'active' },
+      { id: 2, name: 'Waiting ABC', accountStatus: 'pending' },
+      { id: 3, name: 'Paused ABC', accountStatus: 'suspended' },
+    ] as Prison['relay_groups']
+    expect(routingLines({ routing: 'relay_only', relay_groups })).toEqual(['Relay group only', 'Via Belarus ABC'])
+    expect(routingLines({ routing: null, relay_groups: undefined })).toEqual([])
   })
 })

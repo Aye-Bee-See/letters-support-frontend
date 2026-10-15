@@ -24,7 +24,7 @@ export default function ReplyPanel({
   onAvailableChange,
 }: {
   prisonerId: number
-  /** The prisoner's facility with its relay groups (full=true), loaded once by the thread and shared with its group picker. */
+  /** The prisoner's facility with its relay groups (on every prison read), loaded once by the thread and shared with its group picker. */
   facility: ApiState<Prison | null>
   preferredGroup?: number
   /**

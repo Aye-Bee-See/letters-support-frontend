@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { toApiError } from '../../api/client'
 import { addEnvelope, getGroupPublicKey } from '../../api/letters'
 import { envelopeFor } from '../../crypto'
-import type { Chapter } from '../../types'
+import type { RelayGroup } from '../../types'
 import { shareRefusal, type ShareOutcome } from '../../utils/groupLetters'
 
 // Share with a partner group (README "Sending and reading letters"): give another
@@ -12,7 +12,7 @@ import { shareRefusal, type ShareOutcome } from '../../utils/groupLetters'
 // again and sealed once more. A 409 EnvelopeError means it holds the letter
 // already. shareRefusal words each answer.
 
-async function shareWith(messageId: number, partner: Chapter, contentKey: Uint8Array): Promise<ShareOutcome> {
+async function shareWith(messageId: number, partner: RelayGroup, contentKey: Uint8Array): Promise<ShareOutcome> {
   // Ends by the second attempt: shareRefusal answers `retry` only to the first.
   for (let attempt = 0; ; attempt++) {
     const key = await getGroupPublicKey(partner.id)
@@ -30,7 +30,7 @@ async function shareWith(messageId: number, partner: Chapter, contentKey: Uint8A
   }
 }
 
-export default function ShareLetter({ messageId, partners, contentKey }: { messageId: number; partners: Chapter[]; contentKey: Uint8Array }) {
+export default function ShareLetter({ messageId, partners, contentKey }: { messageId: number; partners: RelayGroup[]; contentKey: Uint8Array }) {
   const [open, setOpen] = useState(false)
   const [partnerId, setPartnerId] = useState('')
   const [busy, setBusy] = useState(false)

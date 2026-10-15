@@ -567,10 +567,12 @@ export default function Thread() {
     // After a reply, a block or a correction the thread stays on screen while it loads again.
     { keepPrevious: true },
   )
-  // The prisoner's facility with its relay groups (full=true), for the writer's
-  // reply panel and a held letter's group picker: fetched once here for both.
+  // The prisoner's facility with its relay groups, for the writer's reply panel
+  // and a held letter's group picker: fetched once here for both. Without full:
+  // every prison read names its relay groups (API #213), and the prisoners held
+  // there aren't wanted.
   const prisonId = !isChapter ? ((page.data?.chat.prisoner_details as Pick<Prisoner, 'prison'> | null | undefined)?.prison ?? null) : null
-  const facilityState = useApi<Prison | null>(() => (prisonId !== null ? getFacility(prisonId, true) : Promise.resolve(null)), [prisonId])
+  const facilityState = useApi<Prison | null>(() => (prisonId !== null ? getFacility(prisonId, false) : Promise.resolve(null)), [prisonId])
   // A returned or declined letter being written again in the reply panel below.
   const [resend, setResend] = useState<Resend | null>(null)
   // False once the reply panel finds no group taking this writer's letters: then "Write it again" has nowhere to go.
