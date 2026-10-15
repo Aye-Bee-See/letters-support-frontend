@@ -11,17 +11,24 @@ import type { ApiError, Chapter } from '../../types'
 import { MIN_PASSWORD_LENGTH, passwordStrength } from '../../utils/password'
 import { createRefusal } from '../../utils/users'
 
-// A staff account made by a site admin (POST /auth/user, README "Creating
-// accounts with other roles"): a group admin or a site admin, with no pen name.
-// The password the site admin types is split on this device and never sent
-// (auth/staffAccount.ts). No keys are made here: a site admin must
-// never hold anyone's private key, so the account gets them at its first
-// sign-in on a phone app, and the web refuses it until then.
+// Staff accounts (README "Creating accounts with other roles"). What this page
+// is depends on how the site encrypts letters (GET /auth/encryption-readiness).
 //
-// That only works in server mode. In end-to-end mode the API takes a split
-// account's salt only together with its keys (keys.controller keyFields), so a
-// staff account can't be made here at all; the page says so and points to an
-// invitation, which makes the account with its keys on the person's device.
+// In end-to-end mode, the default, a site admin makes no account for anyone:
+// an account's keys are made on its holder's own device, and the API refuses a
+// split account without them (keys.controller keyFields). So the page is a
+// landing that says how it is done there (API #211): a group admin joins
+// through an invitation (`member` into a group, or `group` founding one); a
+// site admin is an account that joined like anyone else and is then promoted
+// on its own page (EditUser, PUT /auth/user {role: 'admin'}). The accounts
+// list's button leads to the invitation page instead of here in that mode.
+//
+// In server mode a site admin can still make a group admin or site admin
+// account (POST /auth/user), with no pen name. The password the site admin
+// types is split on this device and never sent (auth/staffAccount.ts). No keys
+// are made here: a site admin must never hold anyone's private key, so the
+// account gets them at its first sign-in on a phone app, and the web refuses
+// it until then.
 
 type StaffRole = 'chapter' | 'admin'
 
@@ -71,10 +78,12 @@ export default function NewAccount() {
       </div>
 
       <div className="admin-content">
-        <p className="dash-note">
-          The usual way to add a group admin is to <Link to="/admin/invite">invite them</Link>: they make the account themselves, with its keys, on their own
-          device. Writers join with an invite code from a group.
-        </p>
+        {mode !== 'e2e' && (
+          <p className="dash-note">
+            The usual way to add a group admin is to <Link to="/admin/invite">invite them</Link>: they make the account themselves, with its keys, on their own
+            device. Writers join with an invite code from a group.
+          </p>
+        )}
         {readiness.loading && <p className="dash-note">Checking how the site encrypts letters…</p>}
         {readiness.error && (
           <div className="admin-alert admin-alert-err" role="alert">
@@ -84,15 +93,47 @@ export default function NewAccount() {
             </button>
           </div>
         )}
-        {mode === 'e2e' && (
-          <div className="admin-alert admin-alert-warn" role="status">
-            This site encrypts letters end to end, and then the API makes an account only together with its keys. Those must be made on the person’s own device
-            (a site admin never holds anyone’s private key), so a staff account can’t be made here. <Link to="/admin/invite">Invite them</Link> as a group
-            admin of their group instead. To make someone a site admin, change the role of their account once it exists.
-          </div>
-        )}
+        {mode === 'e2e' && <EndToEndLanding />}
         {mode === 'server' && <AccountForm />}
       </div>
+    </>
+  )
+}
+
+/** How staff accounts are made when letters are encrypted end to end: nobody makes one for someone else. */
+function EndToEndLanding() {
+  return (
+    <>
+      <p className="dash-note">
+        This site encrypts letters end to end, so every account is made by the person who will use it, on their own device, together with its keys. A site
+        admin never holds anyone’s private key, so no account is made on this page. Staff accounts come about like this:
+      </p>
+      <div className="admin-form">
+        <Section title="A group admin">
+          <p>
+            Invite them. An invitation into an existing group makes them one of its group admins; an invitation to found a new group makes them its first, and
+            the group waits for a site admin’s approval. They choose their username and password and make their keys when they accept, and they read the group’s
+            letters once its group-owner admin hands them the group key.
+          </p>
+          <p>
+            <Link to="/admin/invite" className="a-btn a-btn-primary">
+              Invite a group admin
+            </Link>
+          </p>
+        </Section>
+        <Section title="A site admin">
+          <p>
+            Someone joins like anyone else, with an invite code from a group or an invitation. Then find their account and, on the account’s page, change its
+            role to site admin. A site admin runs the whole site: the directory, every group, every account. They hold no group key and can read no letter.
+          </p>
+          <p>
+            <Link to="/admin/users" className="a-btn">
+              Find the account
+            </Link>
+          </p>
+        </Section>
+      </div>
+      <p className="dash-note">An account already in use moves into a group, or to another role, the same way: on the account’s page.</p>
     </>
   )
 }

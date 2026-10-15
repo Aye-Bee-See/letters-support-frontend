@@ -222,9 +222,9 @@ A separate layout with its own stylesheet, loaded only under `/admin`.
 | `/admin/prisoners`, `/admin/facilities`, `/admin/groups` | The directory records, and `…/:id/edit` for each. Groups are approved, suspended and linked to facilities here. |
 | `/admin/prisoners/new`, `/admin/facilities/new`, `/admin/groups/new` | A record made directly rather than by approving a proposal; a draft unless chosen otherwise. Then its edit page. |
 | `/admin/mail-rules`          | The master list of mail rules every facility links into: add, reword, retire, restore, delete.                            |
-| `/admin/users`               | Every account, searched by username, email or name and narrowed by role.                                                  |
+| `/admin/users`               | Every account, searched by username, email or name and narrowed by role. In end-to-end mode its button invites rather than making an account. |
 | `/admin/users/:id`           | One account: change its role (or ban it), move a group admin to another group, end its sessions, reset two-factor, delete it. |
-| `/admin/users/new`           | Make a group admin or site admin account with a first password, split in the browser (server mode only).                   |
+| `/admin/users/new`           | In end-to-end mode (the default), how staff accounts are made there: a group admin by invitation, a site admin by promoting an account that joined like any other. In server mode, a group admin or site admin account made with a first password, split in the browser. |
 | `/admin/invite`              | Invite a new group (vouched for by a group, or by nobody) or a member of a group.                                           |
 | `/admin/audit`               | The audit log.                                                                                                             |
 | `/admin/settings`            | Site-wide switches: who must use two-factor sign-in.                                                                       |
