@@ -22,7 +22,7 @@ describe('photoRefusal', () => {
 
   it('says a 403 in each role’s terms', () => {
     expect(photoRefusal(refusal(403), 'admin')).toMatch(/as a site admin/)
-    expect(photoRefusal(refusal(403), 'group')).toMatch(/only an active group can/)
+    expect(photoRefusal(refusal(403, { name: 'AuthorizationError', condition: 'group_suspended' }), 'group')).toMatch(/^Your group has been suspended/)
     expect(photoRefusal(refusal(404), 'group')).toMatch(/isn’t one your group can see/)
   })
 })

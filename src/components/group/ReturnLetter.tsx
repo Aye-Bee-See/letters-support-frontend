@@ -125,8 +125,7 @@ const OFFER: Record<DirectoryReason, { heading: string; why: string }> = {
 /** A refusal of the proposal in words (README "POST /moderation/submission"). */
 function proposalRefusal(err: unknown): string {
   const e = toApiError(err)
-  if (e.status === 403 && e.condition === null)
-    return 'Your group can’t propose changes right now: only an active group can, and yours may be waiting for approval, or suspended.'
+  // A group that can't act (no group, pending, suspended) is commonRefusal's, by its condition (API #212).
   return commonRefusal(e) ?? otherRefusal(e)
 }
 

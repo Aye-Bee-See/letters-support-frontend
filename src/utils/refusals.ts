@@ -7,15 +7,27 @@ import type { ApiError } from '../types'
 // API's sentence, which isn't stable and isn't written for the people here.
 
 /**
- * The 403 a group admin gets when their group can't act: no group, or a group
- * that is pending or suspended (README "What each role can do"). The API sends
- * it as a plain AuthorizationError with no condition; refusals with a reason of
- * their own (`authorization.not_yours`, two-factor, owner-only) carry a
- * condition or another name. GroupGate keeps such a group's pages closed, so on
- * a page this means the group stopped being active since the page opened.
+ * The 403 a group admin gets when their group can't act (README "What each
+ * role can do"): an AuthorizationError whose condition says which, since API
+ * #212: `no_group` (in no group yet), `group_pending` (waiting for a site
+ * admin's approval) or `group_suspended`. Refusals with a reason of their own
+ * (`not_yours`, two-factor, owner-only) carry another condition or name.
+ * GroupGate keeps such a group's pages closed, so on a page this means the
+ * group stopped being active since the page opened.
  */
 export const isGroupNotActive = (error: ApiError) =>
-  error.status === 403 && (error.name === 'AuthorizationError' || error.name === null) && error.condition === null
+  error.status === 403 &&
+  error.name === 'AuthorizationError' &&
+  error.condition !== null &&
+  (error.condition === 'no_group' || error.condition.startsWith('group_'))
+
+/** The inactive-group refusal, by its condition. */
+function groupNotActiveText(condition: string | null): string {
+  if (condition === 'no_group') return 'Your account isn’t in a group yet, so it can’t do this. A site admin puts a group admin in their group. Nothing was changed.'
+  if (condition === 'group_pending') return 'Your group is still waiting for a site admin’s approval, so it can’t do this yet. Nothing was changed.'
+  if (condition === 'group_suspended') return 'Your group has been suspended, so it can’t do this. A site admin can say why, and reactivate it. Nothing was changed.'
+  return 'Your group can’t do this right now: only an active group can. Nothing was changed.'
+}
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
 
@@ -29,7 +41,7 @@ function waitFor(seconds: number | undefined): string {
 /**
  * The shared cases, or null for one the caller words itself: the server not
  * reached (status 0), a session that ended (401), a group that isn't active
- * (the 403 above), a record gone (404), a record changed meanwhile (409
+ * (the 403 above, by its condition), a record gone (404), a record changed meanwhile (409
  * `changed_meanwhile`), too many requests (429, with Retry-After), and a fault
  * on the server (5xx). A caller with a better word for one of these (a 404
  * that names the letter) says it before asking here.
@@ -37,8 +49,7 @@ function waitFor(seconds: number | undefined): string {
 export function commonRefusal(error: ApiError): string | null {
   if (error.status === 0) return 'Couldn’t reach the server. Check your connection and try again.'
   if (error.status === 401) return 'Your session has ended. Sign in again, then try once more.'
-  if (isGroupNotActive(error))
-    return 'Your group can’t do this right now: only an active group can, and yours may be waiting for a site admin’s approval, or suspended.'
+  if (isGroupNotActive(error)) return groupNotActiveText(error.condition)
   if (error.status === 404) return 'That isn’t there any more: someone may have removed it meanwhile. Reload the page to see where things stand.'
   if (error.status === 409 && error.condition === 'changed_meanwhile')
     return 'Someone else changed this meanwhile, and nothing was saved. Reload the page and try again.'
