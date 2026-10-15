@@ -20,7 +20,9 @@ import { accountName, accountRefusal, deleteRefusal, managedNote, ROLE_LABELS, R
 //     which ends every session at once;
 //   - put a group admin in a group or take them out (PUT /auth/user { chapterId });
 //   - end every session (POST /auth/revoke), without banning;
-//   - reset two-factor sign-in, for a lost phone (DELETE /auth/two-factor/user);
+//   - reset two-factor sign-in, for a lost phone (DELETE /auth/two-factor/user),
+//     offered only where it is on (`twoFactorEnabled`, API #215; an older API
+//     that doesn't say gets the offer, and its 409 `not_enabled` is worded);
 //   - delete the account and everything written or received through it
 //     (DELETE /auth/user), confirmed by typing the username.
 // An account record holds no letters, and nothing here reads one. Your own
@@ -150,6 +152,11 @@ function AccountRecord({ u, groups }: { u: User; groups: Chapter[] | null }) {
           </Row>
           <Row label="Made">{shortDate(u.createdAt)}</Row>
         </div>
+        {u.twoFactorEnabled !== undefined && (
+          <div className="form-row">
+            <Row label="Two-factor sign-in">{u.twoFactorEnabled ? 'On' : 'Off'}</Row>
+          </div>
+        )}
         {(u.managedBy !== null || u.claimedFrom !== null) && (
           <div className="form-row">
             {u.managedBy !== null && <Row label="Looked after by">{groupLink(u.managedBy, groups)}</Row>}
@@ -364,28 +371,33 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
                 Sign out everywhere
               </button>
             </div>
-            <p className="form-hint">
-              Reset two-factor sign-in only for someone who has lost their phone and their recovery codes, once you are sure it is them: it switches it off, and
-              their recovery codes stop working. They sign in with their password, and set it up again if it is required of them.
-            </p>
-            <div className="relay-add">
-              <button
-                type="button"
-                className="a-btn a-btn-danger a-btn-sm"
-                disabled={busy}
-                onClick={() =>
-                  act(
-                    `Reset two-factor sign-in for ${name}? It is switched off and their recovery codes stop working: anyone with their password can then sign in. Do this only once you are sure it is them.`,
-                    async () => {
-                      await resetTwoFactor(u.id)
-                      return `Two-factor sign-in is off for ${name}. They sign in with their password, and set it up again if it is required of them.`
-                    },
-                  )
-                }
-              >
-                Reset two-factor sign-in
-              </button>
-            </div>
+            {u.twoFactorEnabled === false && <p className="form-hint">Two-factor sign-in isn’t on for this account, so there is nothing to reset.</p>}
+            {u.twoFactorEnabled !== false && (
+              <>
+                <p className="form-hint">
+                  Reset two-factor sign-in only for someone who has lost their phone and their recovery codes, once you are sure it is them: it switches it off, and
+                  their recovery codes stop working. They sign in with their password, and set it up again if it is required of them.
+                </p>
+                <div className="relay-add">
+                  <button
+                    type="button"
+                    className="a-btn a-btn-danger a-btn-sm"
+                    disabled={busy}
+                    onClick={() =>
+                      act(
+                        `Reset two-factor sign-in for ${name}? It is switched off and their recovery codes stop working: anyone with their password can then sign in. Do this only once you are sure it is them.`,
+                        async () => {
+                          await resetTwoFactor(u.id)
+                          return `Two-factor sign-in is off for ${name}. They sign in with their password, and set it up again if it is required of them.`
+                        },
+                      )
+                    }
+                  >
+                    Reset two-factor sign-in
+                  </button>
+                </div>
+              </>
+            )}
           </Section>
         </div>
       )}

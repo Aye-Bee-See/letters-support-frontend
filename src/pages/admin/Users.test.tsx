@@ -5,7 +5,8 @@ import { renderApp } from '../../test/render'
 import { testUser } from '../../test/session'
 import Users from './Users'
 
-// The accounts list: its button by encryption mode (API #211).
+// The accounts list: its button by encryption mode (API #211), and two-factor
+// sign-in on each row (API #215).
 
 function serve(mode: 'e2e' | 'server', users = [testUser({ id: 7, username: 'ana' })]) {
   fakeApi.on('GET', '/auth/encryption-readiness', { mode })
@@ -25,5 +26,14 @@ describe('Users', () => {
     renderApp(<Users />, { at: '/admin/users', session: { role: 'admin' } })
     await screen.findByText('ana')
     expect(screen.getByRole('link', { name: 'New account' }).getAttribute('href')).toBe('/admin/users/new')
+  })
+
+  it('marks the accounts with two-factor sign-in on', async () => {
+    serve('e2e', [testUser({ id: 7, username: 'ana', twoFactorEnabled: true }), testUser({ id: 8, username: 'bo', twoFactorEnabled: false })])
+    renderApp(<Users />, { at: '/admin/users', session: { role: 'admin' } })
+    const ana = (await screen.findByRole('link', { name: 'ana' })).closest('tr')!
+    const bo = screen.getByRole('link', { name: 'bo' }).closest('tr')!
+    expect(ana.textContent).toContain('2FA on')
+    expect(bo.textContent).not.toContain('2FA on')
   })
 })

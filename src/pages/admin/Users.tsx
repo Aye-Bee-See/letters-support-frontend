@@ -22,8 +22,8 @@ import { refusalText } from '../../utils/refusals'
 // is known, or in server mode, it leads to New staff account, which says the
 // same for end-to-end mode.
 //
-// Whether an account has two-factor sign-in on isn't in the record (the API
-// sends no two-factor column to anyone), so it isn't shown.
+// Whether an account has two-factor sign-in on comes with each row read by an
+// admin (`twoFactorEnabled`, API #215), shown beside the role.
 
 const PAGE_SIZE = 25
 
@@ -158,6 +158,14 @@ function UserTable({ users, groups }: { users: User[]; groups: Map<number, Chapt
             <td>{u.penName ?? <span className="list-sub">—</span>}</td>
             <td>
               {u.role === 'banned' ? <span className="badge badge-pending">banned</span> : ROLE_LABELS[u.role]}
+              {u.twoFactorEnabled && (
+                <>
+                  {' '}
+                  <span className="badge badge-published" title="Two-factor sign-in is on">
+                    2FA on
+                  </span>
+                </>
+              )}
               {u.managedBy !== null && !u.claimedAt && <div className="list-sub">{u.anonymousForChapter !== null ? 'group’s anonymous account' : 'managed by a group'}</div>}
             </td>
             <td>

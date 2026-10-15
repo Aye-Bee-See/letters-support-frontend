@@ -187,6 +187,11 @@ export interface User extends Timestamps {
   managerNote?: string | null
   retentionDays: number | null
   publicKey: string | null
+  /**
+   * Admins only (GET /auth/users, GET /auth/user, API #215): two-factor sign-in
+   * is set up and on. Absent for anyone else, and from an older API.
+   */
+  twoFactorEnabled?: boolean
 }
 
 export interface MailRule {
