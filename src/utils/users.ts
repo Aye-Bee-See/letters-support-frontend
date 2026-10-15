@@ -50,8 +50,14 @@ export function deleteRefusal(error: ApiError): string {
   return accountRefusal(error)
 }
 
-/** Any other account call (role, group, revoke, two-factor reset). */
+/**
+ * Any other account call (role, group, revoke, two-factor reset). A role change
+ * that would leave the site with no site admin is `409 RoleChangeError`
+ * `last_admin` (`role_change.last_admin`, API #208).
+ */
 export function accountRefusal(error: ApiError): string {
+  if (error.status === 409 && error.name === 'RoleChangeError' && error.condition === 'last_admin')
+    return 'Make another site admin first: this is the only site admin account, and the site always keeps one, or nobody could approve groups, moderate or make another site admin. Nothing was changed.'
   if (error.status === 409 && error.name === 'TwoFactorError' && error.condition === 'not_enabled')
     return 'Two-factor sign-in isn’t on for this account, so there is nothing to reset.'
   if (error.status === 409 && error.name === 'KeyChangeError')

@@ -50,6 +50,12 @@ describe('deleteRefusal', () => {
 })
 
 describe('accountRefusal', () => {
+  it('words the last site admin stepping down (role_change.last_admin), never the API’s sentence', () => {
+    const text = accountRefusal(refusal({ status: 409, name: 'RoleChangeError', condition: 'last_admin' }))
+    expect(text).toMatch(/^Make another site admin first/)
+    expect(text).not.toContain(SENTENCE)
+  })
+
   it('words a two-factor reset with nothing to reset', () => {
     expect(accountRefusal(refusal({ status: 409, name: 'TwoFactorError', condition: 'not_enabled' }))).toMatch(/isn’t on for this account/)
   })

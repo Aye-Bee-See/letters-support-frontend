@@ -24,8 +24,11 @@ import { accountName, accountRefusal, deleteRefusal, managedNote, ROLE_LABELS, R
 //   - delete the account and everything written or received through it
 //     (DELETE /auth/user), confirmed by typing the username.
 // An account record holds no letters, and nothing here reads one. Your own
-// account isn't changed here: a role change or a revocation would end the
-// session you are using.
+// account isn't changed here: a new role or a revocation would shut you out of
+// the page you are on. The API refuses only a change that would leave no site
+// admin (409 RoleChangeError `last_admin`, API #208), so another site admin may
+// still change yours; that refusal is worded in utils/users.ts in case a
+// change here meets it (two site admins demoting each other at once).
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -88,8 +91,10 @@ function EditUser({ id }: { id: number }) {
             <AccountRecord u={user.data} groups={groups} />
             {me?.id === user.data.id ? (
               <div className="admin-alert admin-alert-warn" role="status">
-                This is your own account. Its role, sessions and deletion are another site admin’s to change; your password and two-factor sign-in are on{' '}
-                <Link to="/account/security">your account’s security page</Link>.
+                This is your own account, so its role and sessions aren’t changed here: a new role, or ending its sessions, would shut you out of the page you are
+                on. Another site admin can change them for you, unless you are the only one: the site always keeps a site admin, so make another first. Your
+                password and two-factor sign-in are on <Link to="/account/security">your account’s security page</Link>, and deleting it on{' '}
+                <Link to="/account/delete">its own page</Link>.
               </div>
             ) : (
               <Actions key={`${user.data.id}-${user.data.updatedAt}`} u={user.data} groups={groups} onDone={done} onEdit={() => setNotice(null)} />
