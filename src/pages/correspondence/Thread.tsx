@@ -741,6 +741,7 @@ export default function Thread() {
               prisonerId={prisoner.id}
               facility={facilityState}
               preferredGroup={lastRelayId}
+              released={prisoner.status === 'free' ? prisonerName : undefined}
               resend={resend ?? undefined}
               onCancelResend={() => setResend(null)}
               onDraftChange={onReplyDraftChange}

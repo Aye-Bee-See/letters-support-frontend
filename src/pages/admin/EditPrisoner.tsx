@@ -296,7 +296,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
           <div className="form-group">
             <span className="form-label">Address last checked</span>
             <p className="form-static">
-              {prisoner.addressCheckedAt ? shortDate(prisoner.addressCheckedAt) : 'Never'}
+              {prisoner.addressCheckedAt ? shortDate(prisoner.addressCheckedAt) : 'Not since the record was made'}
               <span className="list-sub"> · when the facility or inmate ID was last edited or confirmed</span>
             </p>
           </div>
