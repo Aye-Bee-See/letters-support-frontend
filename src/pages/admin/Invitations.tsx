@@ -54,7 +54,7 @@ export default function Invitations() {
 
   return (
     <>
-      <title>Invitations · Admin · letters.support</title>
+      <title>Invitations · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Invitations</span>
       </div>

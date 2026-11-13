@@ -142,7 +142,7 @@ export default function NewLetter() {
 
   return (
     <div className="letter-wrap">
-      <title>New letter · letters.support</title>
+      <title>New letter · Paper Kites</title>
       <div className="letter-layout">
         {/* LEFT: composition area */}
         <main className="letter-main">

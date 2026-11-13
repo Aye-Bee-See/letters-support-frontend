@@ -70,7 +70,7 @@ export default function NewAccount() {
 
   return (
     <>
-      <title>New staff account · Admin · letters.support</title>
+      <title>New staff account · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">
           <Link to="/admin/users">Accounts</Link> / New staff account

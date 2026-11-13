@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="wrap">
         <div>
-          <p className="footer-brand">letters.support</p>
+          <p className="footer-brand">Paper Kites</p>
           <p className="footer-copy">
             A volunteer-maintained directory for political prisoner correspondence. Information is submitted by
             support groups and verified by network administrators.

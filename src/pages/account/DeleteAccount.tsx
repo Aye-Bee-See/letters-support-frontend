@@ -65,7 +65,7 @@ export default function DeleteAccount() {
 
   return (
     <div className="claim-page">
-      <title>Delete your account · letters.support</title>
+      <title>Delete your account · Paper Kites</title>
       <div className="claim-column is-wide">
         <div className="claim-box">
           {busy ? (

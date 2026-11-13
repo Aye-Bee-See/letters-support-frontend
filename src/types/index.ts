@@ -1,4 +1,4 @@
-// Data model types for the letters.support API (sqlite-express-api).
+// Data model types for the Paper Kites API (sqlite-express-api).
 // Source of truth: sqlite-express-api/database/schemas/*.schema.js and the
 // README's field tables. Field names are the API's (camelCase, with a few
 // snake_case embeds such as prison_details). Dates arrive as ISO-8601 strings.

@@ -16,7 +16,7 @@ export default function Blocks() {
   const blocks = useApi(getMyBlocks, [])
   return (
     <div className="claim-page">
-      <title>Groups not mailing your letters · letters.support</title>
+      <title>Groups not mailing your letters · Paper Kites</title>
       <div className="claim-column is-wider">
         <div className="claim-box">
           <div className="claim-state is-active">

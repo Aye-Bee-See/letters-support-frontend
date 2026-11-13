@@ -47,7 +47,7 @@ export default function AdminLayout() {
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <Link to="/admin" className="sidebar-brand-name">
-            letters.support
+            Paper Kites
             <span className="sidebar-brand-sub">Admin</span>
           </Link>
         </div>

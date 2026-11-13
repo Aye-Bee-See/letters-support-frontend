@@ -216,7 +216,7 @@ export default function InboxWriter() {
 
   return (
     <AppShell sidebar={sidebar}>
-      <title>Inbox · letters.support</title>
+      <title>Inbox · Paper Kites</title>
       <div className="inbox-hero">
         <p className="inbox-hero-sub">Signed in as</p>
         <h1 className="inbox-hero-title">{user?.penName ?? user?.username}</h1>

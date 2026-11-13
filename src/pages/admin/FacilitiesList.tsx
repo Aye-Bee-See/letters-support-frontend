@@ -81,7 +81,7 @@ export default function FacilitiesList() {
 
   return (
     <>
-      <title>Facilities · Admin · letters.support</title>
+      <title>Facilities · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Facilities</span>
         <span className="topbar-right">

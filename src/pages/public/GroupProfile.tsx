@@ -32,7 +32,7 @@ export default function GroupProfile() {
   if (!page.data) {
     return (
       <div className="wrap">
-        <title>Group · letters.support</title>
+        <title>Group · Paper Kites</title>
         <LoadState state={page} what="group" notFound="This group is not in the directory." />
       </div>
     )
@@ -47,7 +47,7 @@ export default function GroupProfile() {
 
   return (
     <div className="wrap">
-      <title>{`${g.name} · letters.support`}</title>
+      <title>{`${g.name} · Paper Kites`}</title>
       <div className="group-layout">
         <main className="group-main">
           {g.announcement && <div className="group-announcement">{g.announcement}</div>}

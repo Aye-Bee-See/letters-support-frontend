@@ -53,7 +53,7 @@ export default function PenName() {
 
   return (
     <div className="claim-page">
-      <title>Choose a pen name · letters.support</title>
+      <title>Choose a pen name · Paper Kites</title>
       <div className="claim-column">
         <div className="claim-box">
           <form className="claim-state is-active" onSubmit={onSubmit} noValidate>

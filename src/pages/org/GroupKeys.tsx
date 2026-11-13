@@ -111,7 +111,7 @@ export default function GroupKeys() {
 
   return (
     <div className="settings-wrap">
-      <title>Group key · letters.support</title>
+      <title>Group key · Paper Kites</title>
       <div className="settings-inner">
         <Link to="/settings" className="settings-back">
           ← Group settings

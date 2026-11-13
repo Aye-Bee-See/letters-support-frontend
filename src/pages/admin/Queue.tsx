@@ -155,7 +155,7 @@ export default function Queue() {
 
   return (
     <>
-      <title>Moderation queue · Admin · letters.support</title>
+      <title>Moderation queue · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Moderation queue</span>
         <span className="topbar-right">

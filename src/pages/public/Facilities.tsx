@@ -81,7 +81,7 @@ export default function Facilities() {
 
   return (
     <>
-      <title>Facilities &amp; Mail Rules · letters.support</title>
+      <title>Facilities &amp; Mail Rules · Paper Kites</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Directory</p>

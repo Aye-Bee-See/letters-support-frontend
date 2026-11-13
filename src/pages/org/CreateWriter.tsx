@@ -60,7 +60,7 @@ export default function CreateWriter() {
 
   return (
     <div className="create-writer-wrap">
-      <title>Add a writer · letters.support</title>
+      <title>Add a writer · Paper Kites</title>
       <div className="create-writer-inner">
         <Link to="/inbox?tab=writers" className="create-writer-back">
           ← Your writers

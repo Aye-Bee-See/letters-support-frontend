@@ -78,7 +78,7 @@ export default function Join() {
 
   return (
     <div className="claim-page">
-      <title>Join · letters.support</title>
+      <title>Join · Paper Kites</title>
       <div className="claim-column">
         <div className="claim-box">
           {step.name === 'enter-code' && (

@@ -82,7 +82,7 @@ export default function AcceptInvitation() {
 
   return (
     <div className="claim-page">
-      <title>Accept an invitation · letters.support</title>
+      <title>Accept an invitation · Paper Kites</title>
       <div className="claim-column is-wide">
         <div className="claim-box">
           {step.name === 'enter-code' && (

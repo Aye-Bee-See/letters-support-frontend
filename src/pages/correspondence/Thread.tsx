@@ -608,7 +608,7 @@ export default function Thread() {
   if (!page.data) {
     return (
       <div className="app-wrap">
-        <title>Conversation · letters.support</title>
+        <title>Conversation · Paper Kites</title>
         <div className="wrap">
           <LoadState state={page} what="conversation" notFound="This conversation couldn’t be found." />
         </div>
@@ -656,7 +656,7 @@ export default function Thread() {
 
   return (
     <div className="app-wrap">
-      <title>{`Letters with ${prisonerName} · letters.support`}</title>
+      <title>{`Letters with ${prisonerName} · Paper Kites`}</title>
       <div className="app-layout">
         <main className="thread-main">
           <div className="thread-header">
