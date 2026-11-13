@@ -45,16 +45,15 @@ export default function Index() {
       <section className="splash">
         <div className="wrap splash-two-col">
           <div className="splash-inner">
-            <p className="splash-eyebrow">Prisoner correspondence network</p>
             <h1 className="splash-headline">
-              Letters matter.
-              <br />
-              Write one today.
+              Global prisoner solidarity (coming soon)
             </h1>
             <p className="splash-body">
-              Paper Kites connects letter writers with political prisoners around the world. Browse prisoner
-              profiles, find a support group near you, and learn exactly what each facility requires before you
-              write. Groups organizing letter writing nights can print ready-made info sheets directly from this site.
+              Paper Kites is an index of anarchist prisoners and a secure mail relay between ABC chapters & support 
+	      groups to make sending letters to distant prisoners (and recieving responses) easy. Avoid international
+	      mail fees by sending directly to local groups who can then print and mail for you. Find a support group 
+	      doing letter writing nights near you. Learn the mail rules of different prisons. Print info sheets on
+      	      various prisoners to hand out. (This project is still in early alpha testing!!)
             </p>
             <div className="splash-actions">
               <Link to="/prisoners" className="btn btn-primary">
