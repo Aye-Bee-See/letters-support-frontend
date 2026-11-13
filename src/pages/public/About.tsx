@@ -16,40 +16,47 @@ export default function About() {
           <h2 className="static-section-heading">What this is</h2>
           <div className="static-body">
             <p>
-              Paper Kites is a correspondence platform for political prisoner support. It serves two purposes: a
-              public directory of political prisoners, the facilities holding them, and the groups supporting them; and a
-              private platform through which letter writers can correspond with prisoners via support group relays.
+              Paper Kites is a mail relay platform for anarchist prisoner support. It serves two purposes: 1) a
+              public directory of anarchist prisoners, the facilities holding them, and the groups supporting them; and 2) a
+              messaging application through which folks can correspond with prisoners via support group relays.
             </p>
             <p>
-              The public directory is maintained by network administrators, with edits and corrections submitted by
-              member groups. Anyone can browse it — no account required.
+              The public directory is maintained by the admin collective, who approve edits and corrections submitted by
+              member groups.
             </p>
-            {/* Changed: writers join with an invite code from a group (22 Sept). */}
             <p>
-              The correspondence platform is for writers with accounts. You join with an invite code from a member
-              group, or a group can set up an account for you that you later claim as your own. Letters are end-to-end
+              The message relay platform is for groups and individuals. You join with an invite code from a member
+              group, or a group sets up an account for you that you can later claim as your own. Letters are end-to-end
               encrypted and never stored in plaintext on the server.
             </p>
           </div>
         </div>
 
         <div className="static-section">
-          <h2 className="static-section-heading">How the relay network works</h2>
+          <h2 className="static-section-heading">The relay network</h2>
           <div className="static-body">
             <p>
-              Mailing letters internationally is expensive and unreliable. A letter sent from the United States to a
-              prison in Belarus may cost several dollars in postage, take weeks, and arrive damaged or not at all. The
-              relay network addresses this by routing letters through local groups closer to the destination.
+              Mailing letters internationally is costly and unreliable. A letter sent from the United States to a
+              prison in Belarus may cost several dollars in postage, take weeks, and arrive damaged or not at all.
+	      Prisoner support work is also often highly local -- with some countries not having any ABC chapters.
+	      Writing letters for prisoners abroad helps strengthen local organizing in places where repression and
+	      imprisonment is less frequent, but it also provides a deeper pool of potential support for those in
+	      local contexts who otherwise might see very little direct support or engagement.
+	      Moreover, many comrades flake out of writing letters to prisoners because it's not particularly easy.
+	      The goal with this project is to make the process as easy as email or messaging.
             </p>
             <p>
-              When a writer submits a letter through this site, it goes into a queue for their relay group — a local ABC
-              chapter that handles printing and physical mailing. If the prisoner is in another country, that group may
-              forward the letter to a partner group closer to the facility, who then handles the final mailing locally.
+              As folks with a lot of experience in or organizing letter writing nights (and as targets for political repression),
+	      this project is basically our technological wishlist and has been in the works for years.
             </p>
             <p>
-              Every group in the network can relay to every other group. There is no fixed hierarchy — just a web of
-              mutual support between chapters.
+              When a writer (or org) submits a letter to a prisoner through this site, it goes into a queue for a chosen
+              relay group — one that offers to handle printing and physical mailing to that prisoner (and potentially
+	      many others). The prisoner gets a letter with a name within the site to respond to and when they mail
+	      something back to their local relay group, that group can scan and relay that response letter back in the app to
+	      the original writer.
             </p>
+
           </div>
         </div>
 
@@ -58,14 +65,16 @@ export default function About() {
           <div className="static-body">
             {/* Changed: says plainly that the printing group can read the letter (22 Sept). */}
             <p>
-              Letters are encrypted in your browser before they leave your device. The server receives and stores only
+              Letters are encrypted in your browser before they leave your device. Our server receives and stores only
               ciphertext — scrambled data that is unreadable without a key. Your password never leaves your device.
             </p>
             <p>
-              A letter can be read by you and by the group that prints and mails it, because someone has to print it.
+              A letter on this site can be read by you and by the group that prints and mails it (because someone has to print it).
               Within that group, only the volunteers who hold the group's key can read it, and groups are asked to keep
-              that circle small. Nobody else can: not the people who run the server, and not anyone who seizes or
-              subpoenas it.
+              that circle small. Nobody else can: not the collective running the server, and not anyone who seizes or
+              subpoenas it. Although, obviously, once a letter is mailed in the physical mail the local mail carriers can read it
+      	      as can the prison authorities. Our encryption scheme can't protect ink on paper, but it can help ensure that
+	      hackers or the local government of a writer (writing to a prisoner in a different country) can't get access.
             </p>
           </div>
           {/* Changed: recovery codes exist; decided wording (22 Sept). */}
@@ -120,10 +129,10 @@ export default function About() {
           <h2 className="static-section-heading">The Anarchist Black Cross</h2>
           <div className="static-body">
             <p>
-              The Anarchist Black Cross is a network of autonomous groups providing support to political prisoners
+              Anarchist Black Cross is a network of autonomous groups providing support to political prisoners
               worldwide. Chapters operate independently in dozens of countries. This platform is a tool built for use by
               ABC chapters and allied groups — it is not a central organization and does not speak for any chapter or the
-              network as a whole.
+              network as a whole. If you're interested in learning about the original genesis of the Black Cross, read Shadows in the Struggle for Equality: The History of the Anarchist Red Cross by Boris Yelensky. The brilliant PM Press edition is edited by Matthew Hart and illustrated by N.O. Bonzo.
             </p>
             <p>
               For more information about the ABC network, visit{' '}
