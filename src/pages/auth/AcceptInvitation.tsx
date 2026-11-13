@@ -20,7 +20,7 @@ import { dateTime } from '../../utils/dates'
 type Step =
   | { name: 'enter-code' }
   | { name: 'checking' }
-  | { name: 'bad-code'; error: ApiError }
+  | { name: 'bad-code'; error: ApiError; /** The code, when it was refused on being looked up: it may be a claim code instead. */ token?: string }
   | { name: 'form'; token: string; info: InvitationInfo }
   | { name: 'recovery'; joined: Joined; activation: 'immediate' | 'admin_review'; group: string }
 
@@ -64,7 +64,7 @@ export default function AcceptInvitation() {
     try {
       setStep({ name: 'form', token, info: await getInvitationInfo(token) })
     } catch (err) {
-      setStep({ name: 'bad-code', error: toApiError(err) })
+      setStep({ name: 'bad-code', error: toApiError(err), token })
     }
   }
 
@@ -74,7 +74,7 @@ export default function AcceptInvitation() {
     let current = true
     getInvitationInfo(tokenFromLink)
       .then((info) => current && setStep({ name: 'form', token: tokenFromLink, info }))
-      .catch((err) => current && setStep({ name: 'bad-code', error: toApiError(err) }))
+      .catch((err) => current && setStep({ name: 'bad-code', error: toApiError(err), token: tokenFromLink }))
     return () => {
       current = false
     }
@@ -135,6 +135,13 @@ export default function AcceptInvitation() {
                 <div className="token-error-title">{codeProblem(step.error).title}</div>
                 <div className="token-error-body">
                   <p>{codeProblem(step.error).body}</p>
+                  {/* A claim code has the same length and look (issue #67). */}
+                  {step.error.status === 404 && step.token && (
+                    <p>
+                      Did a group set up an account for you to take over? That is a claim code, and it goes in on another page:{' '}
+                      <Link to={`/claim?token=${encodeURIComponent(step.token.trim())}`}>try this code as a claim code</Link>.
+                    </p>
+                  )}
                   <p className="token-error-action">
                     <a
                       href="/invitation"

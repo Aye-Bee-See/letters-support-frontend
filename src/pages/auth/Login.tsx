@@ -243,11 +243,12 @@ export default function Login() {
             </button>
           </form>
 
-          {/* 22 Sept: registration is closed; people join with an invite code or a claim code. */}
+          {/* 22 Sept: registration is closed; people join with an invite code, a claim code or an invitation. */}
+          {/* The three codes each have their own page; an invitation's is also reached by its link (issue #67). */}
           <div className="login-footer">
             <p className="login-footer-note">
               <strong>New here?</strong> <Link to="/join">I have an invite code</Link> ·{' '}
-              <Link to="/claim">I have a claim code</Link>
+              <Link to="/claim">I have a claim code</Link> · <Link to="/invitation">I have an invitation to help run a group</Link>
             </p>
             <p className="login-footer-note">
               <strong>Forgot your password?</strong> <Link to="/forgot-password">See what your options are.</Link>

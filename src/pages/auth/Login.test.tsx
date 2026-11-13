@@ -156,6 +156,13 @@ describe('Login', () => {
     expect(fakeApi.callsTo('POST', '/auth/login')).toEqual([])
   })
 
+  it('has a way in for each of the three codes: invite, claim and invitation', () => {
+    visit()
+    expect(screen.getByRole('link', { name: 'I have an invite code' }).getAttribute('href')).toBe('/join')
+    expect(screen.getByRole('link', { name: 'I have a claim code' }).getAttribute('href')).toBe('/claim')
+    expect(screen.getByRole('link', { name: 'I have an invitation to help run a group' }).getAttribute('href')).toBe('/invitation')
+  })
+
   it('shows the line a page sent the person here with', () => {
     visit({ pathname: '/login', state: { notice: 'Your password is changed. Sign in with your new password.' } })
     expect(screen.getByRole('status').textContent).toBe('Your password is changed. Sign in with your new password.')

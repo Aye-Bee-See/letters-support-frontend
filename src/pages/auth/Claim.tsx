@@ -21,7 +21,7 @@ import { refusalText } from '../../utils/refusals'
 type Step =
   | { name: 'enter-code' }
   | { name: 'checking' }
-  | { name: 'bad-code'; title: string; body: string }
+  | { name: 'bad-code'; title: string; body: string; /** The code, when it may be an invitation's instead (a 404). */ elsewhere?: string }
   | { name: 'form'; token: string; info: ClaimInfo }
   | { name: 'recovery'; joined: Joined }
 
@@ -32,6 +32,17 @@ function codeProblem(error: ApiError): { title: string; body: string } {
   if (error.condition === 'expired') return { title: 'This claim code has expired', body: 'Claim codes work for two weeks. Ask the group that set up your account for a new one.' }
   return { title: 'This claim code could not be checked', body: refusalText(error) }
 }
+
+/**
+ * The step for a refused code. An invitation to help run a group has a code of
+ * the same length and look, and the join page sends every code this long here,
+ * so a code that is no claim code (a 404) is offered the invitation page too.
+ */
+const refused = (token: string, error: ApiError): Step => ({
+  name: 'bad-code',
+  ...codeProblem(error),
+  ...(error.status === 404 ? { elsewhere: token.trim() } : {}),
+})
 
 const UNUSABLE = {
   title: 'This claim code cannot be used',
@@ -58,7 +69,7 @@ export default function Claim() {
     try {
       setStep(toStep(token, await getClaimInfo(token)))
     } catch (err) {
-      setStep({ name: 'bad-code', ...codeProblem(toApiError(err)) })
+      setStep(refused(token, toApiError(err)))
     }
   }
 
@@ -71,7 +82,7 @@ export default function Claim() {
     let current = true
     getClaimInfo(tokenFromLink)
       .then((info) => current && setStep(toStep(tokenFromLink, info)))
-      .catch((err) => current && setStep({ name: 'bad-code', ...codeProblem(toApiError(err)) }))
+      .catch((err) => current && setStep(refused(tokenFromLink, toApiError(err))))
     return () => {
       current = false
     }
@@ -132,6 +143,12 @@ export default function Claim() {
                 <div className="token-error-title">{step.title}</div>
                 <div className="token-error-body">
                   <p>{step.body}</p>
+                  {step.elsewhere && (
+                    <p>
+                      Were you invited to help run a group, or to bring a group into the network? That is an invitation, and its code goes in on another page:{' '}
+                      <Link to={`/invitation?token=${encodeURIComponent(step.elsewhere)}`}>try this code as an invitation</Link>.
+                    </p>
+                  )}
                   <p className="token-error-action">
                     <a
                       href="/claim"
