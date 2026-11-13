@@ -33,17 +33,23 @@ function keysFor(items: AbcfFeedItem[]): string[] {
 
 // Markup and classes from solidarity-site/index.html.
 export default function Index() {
-  // No loading or error line for the feed: until the API has fetched it, it is empty and shows nothing.
+  // No loading or error line for the feed. With no items (the API has news
+  // switched off, hasn't pulled the feed yet, or couldn't be reached) the panel
+  // isn't shown at all: a "News from" heading over nothing reads as broken.
   const feed = useApi(() => getAbcfFeed(3), [])
   const feedItems = feed.data ?? []
   const feedKeys = keysFor(feedItems)
+  const showFeed = feedItems.length > 0
+  // While the answer is on its way the second column is kept, empty, so the
+  // text doesn't move when the news arrives; it closes up only once there is none.
+  const twoColumns = showFeed || feed.loading
   const tiles = useApi(getFrontPagePrisoners, [])
 
   return (
     <>
       {/* SPLASH + FEED */}
       <section className="splash">
-        <div className="wrap splash-two-col">
+        <div className={twoColumns ? 'wrap splash-two-col' : 'wrap'}>
           <div className="splash-inner">
             <p className="splash-eyebrow">Prisoner correspondence network</p>
             <h1 className="splash-headline">
@@ -66,41 +72,43 @@ export default function Index() {
             </div>
           </div>
 
-          <aside className="feed-panel">
-            <div className="feed-header">
-              <span className="feed-label">News from</span>
-              <a href={ABCF_URL} target="_blank" rel="noopener noreferrer" className="feed-source-link">
-                ABCF.net
-              </a>
-            </div>
+          {showFeed && (
+            <aside className="feed-panel">
+              <div className="feed-header">
+                <span className="feed-label">News from</span>
+                <a href={ABCF_URL} target="_blank" rel="noopener noreferrer" className="feed-source-link">
+                  ABCF.net
+                </a>
+              </div>
 
-            {feedItems.map((item, i) => {
-              const date = feedDate(item.date)
-              return (
-                <article key={feedKeys[i]} className="feed-item">
-                  {date && item.date && (
-                    <time className="feed-date" dateTime={item.date}>
-                      {date}
-                    </time>
-                  )}
-                  <h3 className="feed-item-title">
-                    <a href={item.url} target="_blank" rel="noopener noreferrer">
-                      {item.title}
-                    </a>
-                  </h3>
-                  <p className="feed-item-excerpt">{item.summary}</p>
-                </article>
-              )
-            })}
+              {feedItems.map((item, i) => {
+                const date = feedDate(item.date)
+                return (
+                  <article key={feedKeys[i]} className="feed-item">
+                    {date && item.date && (
+                      <time className="feed-date" dateTime={item.date}>
+                        {date}
+                      </time>
+                    )}
+                    <h3 className="feed-item-title">
+                      <a href={item.url} target="_blank" rel="noopener noreferrer">
+                        {item.title}
+                      </a>
+                    </h3>
+                    <p className="feed-item-excerpt">{item.summary}</p>
+                  </article>
+                )
+              })}
 
-            <div className="feed-footer">
-              <a href={ABCF_URL} target="_blank" rel="noopener noreferrer" className="feed-more">
-                More at ABCF.net →
-              </a>
-              {/* The API fetches every few hours (NEWS_EVERY_HOURS, 6 by default); the prototype said hourly. */}
-              <span className="feed-note">Updated regularly</span>
-            </div>
-          </aside>
+              <div className="feed-footer">
+                <a href={ABCF_URL} target="_blank" rel="noopener noreferrer" className="feed-more">
+                  More at ABCF.net →
+                </a>
+                {/* The API fetches every few hours (NEWS_EVERY_HOURS, 6 by default); the prototype said hourly. */}
+                <span className="feed-note">Updated regularly</span>
+              </div>
+            </aside>
+          )}
         </div>
       </section>
 
