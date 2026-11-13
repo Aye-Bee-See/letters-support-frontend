@@ -31,7 +31,7 @@ export default function Header() {
     <header className="site-header">
       <div className="wrap">
         <Link to="/" className="site-logo">
-          letters.support
+          Paper Kites
           <span>Political Prisoner Correspondence Network</span>
         </Link>
         <button

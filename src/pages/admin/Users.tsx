@@ -51,7 +51,7 @@ export default function Users() {
 
   return (
     <>
-      <title>Accounts · Admin · letters.support</title>
+      <title>Accounts · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Accounts</span>
         <span className="topbar-right">

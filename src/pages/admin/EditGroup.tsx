@@ -61,7 +61,7 @@ export default function EditGroup() {
 
   return (
     <>
-      <title>{`${group.data?.name ?? 'Group'} · Admin · letters.support`}</title>
+      <title>{`${group.data?.name ?? 'Group'} · Admin · Paper Kites`}</title>
       <div className="admin-topbar">
         <span className="topbar-title">
           <Link to="/admin/groups">Groups</Link> / {group.data?.name ?? 'Group'}

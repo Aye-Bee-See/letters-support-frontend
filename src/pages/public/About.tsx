@@ -6,17 +6,17 @@ import { Link } from 'react-router-dom'
 export default function About() {
   return (
     <div className="static-page">
-      <title>About · letters.support</title>
+      <title>About · Paper Kites</title>
       <div className="static-inner">
         <p className="static-eyebrow">About this site</p>
-        <h1 className="static-title">letters.support</h1>
+        <h1 className="static-title">Paper Kites</h1>
         <div className="static-title-rule"></div>
 
         <div className="static-section">
           <h2 className="static-section-heading">What this is</h2>
           <div className="static-body">
             <p>
-              letters.support is a correspondence platform for political prisoner support. It serves two purposes: a
+              Paper Kites is a correspondence platform for political prisoner support. It serves two purposes: a
               public directory of political prisoners, the facilities holding them, and the groups supporting them; and a
               private platform through which letter writers can correspond with prisoners via support group relays.
             </p>

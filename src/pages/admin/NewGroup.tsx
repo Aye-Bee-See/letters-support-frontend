@@ -95,7 +95,7 @@ export default function NewGroup() {
 
   return (
     <>
-      <title>New group · Admin · letters.support</title>
+      <title>New group · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">
           <Link to="/admin/groups">Groups</Link> / New group

@@ -79,7 +79,7 @@ export default function Claim() {
 
   return (
     <div className="claim-page">
-      <title>Claim your account · letters.support</title>
+      <title>Claim your account · Paper Kites</title>
       <div className="claim-column">
         <div className="claim-box">
           {step.name === 'enter-code' && (

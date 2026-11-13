@@ -67,7 +67,7 @@ export default function ChangePassword() {
 
   return (
     <div className="claim-page">
-      <title>Change your password · letters.support</title>
+      <title>Change your password · Paper Kites</title>
       <div className="claim-column is-wide">
         <div className="claim-box">
           {step.name === 'working' ? (

@@ -38,7 +38,7 @@ export default function Handoff() {
   if (!writer) {
     return (
       <div className="handoff-wrap">
-        <title>Hand off account · letters.support</title>
+        <title>Hand off account · Paper Kites</title>
         <div className="handoff-inner">
           <Link to="/inbox?tab=writers" className="handoff-back">
             ← Your writers
@@ -109,7 +109,7 @@ export default function Handoff() {
 
   return (
     <div className="handoff-wrap">
-      <title>Hand off account · letters.support</title>
+      <title>Hand off account · Paper Kites</title>
       <div className="handoff-inner">
         <Link to="/inbox?tab=writers" className="handoff-back">
           ← Your writers

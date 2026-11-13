@@ -42,7 +42,7 @@ export default function Security() {
 
   return (
     <div className="claim-page">
-      <title>Security · letters.support</title>
+      <title>Security · Paper Kites</title>
       <div className="claim-column is-wide">
         <div className="claim-box">
           <div className="claim-state is-active">
@@ -391,7 +391,7 @@ function Scan({ secret, otpauthUri, onConfirmed, onCancel }: { secret: string; o
 /** Save the recovery codes as a text file, made here: they never leave this device another way. */
 function downloadCodes(codes: string[]) {
   const text = [
-    'letters.support: two-factor sign-in recovery codes',
+    'Paper Kites: two-factor sign-in recovery codes',
     `Saved ${longDate(new Date())}`,
     '',
     'Each code signs you in once, in place of a code from your authenticator app.',
@@ -403,7 +403,7 @@ function downloadCodes(codes: string[]) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
   const a = document.createElement('a')
   a.href = url
-  a.download = 'letters-support-recovery-codes.txt'
+  a.download = 'paper-kites-recovery-codes.txt'
   a.click()
   // After the click has started the download.
   window.setTimeout(() => URL.revokeObjectURL(url), 0)

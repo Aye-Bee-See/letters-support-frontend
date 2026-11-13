@@ -61,7 +61,7 @@ export default function PrisonersList() {
 
   return (
     <>
-      <title>Prisoners · Admin · letters.support</title>
+      <title>Prisoners · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Prisoners</span>
         <span className="topbar-right">

@@ -27,7 +27,7 @@ export default function Retention() {
   const [saved, setSaved] = useState(false)
   return (
     <div className="claim-page">
-      <title>How long letters are kept · letters.support</title>
+      <title>How long letters are kept · Paper Kites</title>
       <div className="claim-column is-wide">
         <div className="claim-box">
           <div className="claim-state is-active">

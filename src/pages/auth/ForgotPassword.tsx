@@ -83,7 +83,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="fp-page">
-      <title>Forgot your password · letters.support</title>
+      <title>Forgot your password · Paper Kites</title>
       <div>
         <div className="fp-box">
           {step.name === 'start' && (

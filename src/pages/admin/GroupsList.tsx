@@ -63,7 +63,7 @@ export default function GroupsList() {
 
   return (
     <>
-      <title>Groups · Admin · letters.support</title>
+      <title>Groups · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Groups</span>
         <span className="topbar-right">

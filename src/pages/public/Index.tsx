@@ -52,7 +52,7 @@ export default function Index() {
               Write one today.
             </h1>
             <p className="splash-body">
-              letters.support connects letter writers with political prisoners around the world. Browse prisoner
+              Paper Kites connects letter writers with political prisoners around the world. Browse prisoner
               profiles, find a support group near you, and learn exactly what each facility requires before you
               write. Groups organizing letter writing nights can print ready-made info sheets directly from this site.
             </p>

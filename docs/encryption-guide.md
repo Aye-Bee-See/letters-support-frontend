@@ -1,4 +1,4 @@
-# Encryption in the letters.support web client
+# Encryption in the Paper Kites web client
 
 A guided tour of the end-to-end encryption code: what each file does, how the pieces fit, and why they are built the way they are. It grows as the crypto phase is built; the **Status** section at the end says what exists so far.
 

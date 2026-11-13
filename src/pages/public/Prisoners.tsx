@@ -48,7 +48,7 @@ export default function Prisoners() {
 
   return (
     <>
-      <title>Political Prisoners · letters.support</title>
+      <title>Political Prisoners · Paper Kites</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Directory</p>

@@ -66,7 +66,7 @@ export default function Groups() {
 
   return (
     <>
-      <title>Support Groups · letters.support</title>
+      <title>Support Groups · Paper Kites</title>
       <div className="page-hero">
         <div className="wrap">
           <p className="section-label">Network</p>

@@ -1,6 +1,6 @@
-# letters.support web client
+# Paper Kites web client
 
-The website for the letters.support network: a public directory of political
+The website for the Paper Kites network: a public directory of political
 prisoners, the facilities that hold them and the groups that write to them, and
 behind a sign-in the tools for writing, printing and mailing letters. It is a
 React 19 and TypeScript single-page app built with Vite, talking to the

@@ -155,7 +155,7 @@ export async function signIn(
       if (params.scheme !== 'split') {
         throw new SignInError(
           'plain_account',
-          'This account still uses an older sign-in that sends your password to the server, which letters.support no longer does. ' +
+          'This account still uses an older sign-in that sends your password to the server, which Paper Kites no longer does. ' +
             'Your password was not sent. Ask a network admin to move your account.',
         )
       }

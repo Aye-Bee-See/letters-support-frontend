@@ -59,7 +59,7 @@ function EditUser({ id }: { id: number }) {
 
   return (
     <>
-      <title>{`${user.data?.username ?? `Account #${id}`} · Admin · letters.support`}</title>
+      <title>{`${user.data?.username ?? `Account #${id}`} · Admin · Paper Kites`}</title>
       <div className="admin-topbar">
         <span className="topbar-title">
           <Link to="/admin/users">Accounts</Link> / {user.data?.username ?? `Account #${id}`}

@@ -37,7 +37,7 @@ export default function BlockedWriters() {
 
   return (
     <div className="settings-wrap">
-      <title>Blocked writers · letters.support</title>
+      <title>Blocked writers · Paper Kites</title>
       <div className="settings-inner">
         <Link to="/settings" className="settings-back">
           ← Group settings

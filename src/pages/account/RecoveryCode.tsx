@@ -86,7 +86,7 @@ export default function RecoveryCode() {
 
   return (
     <div className="claim-page">
-      <title>Recovery code · letters.support</title>
+      <title>Recovery code · Paper Kites</title>
       <div className="claim-column is-wide">
         <div className="claim-box">
           {step.name === 'code' ? (

@@ -46,7 +46,7 @@ export default function BanRecommendations() {
 
   return (
     <>
-      <title>Block recommendations · Admin · letters.support</title>
+      <title>Block recommendations · Admin · Paper Kites</title>
       <div className="admin-topbar">
         <span className="topbar-title">Block recommendations</span>
         <span className="topbar-right">{list.data && `${list.data.length} ${status === 'pending' ? 'waiting' : status}`}</span>
