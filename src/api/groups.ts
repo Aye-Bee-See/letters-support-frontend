@@ -4,6 +4,7 @@
 import { del, getList, getOne, post, put } from './client'
 import { forgetWriters } from './writers'
 import type {
+  AccountBrief,
   AccountStatus,
   Chapter,
   ChapterService,
@@ -83,6 +84,27 @@ export const deleteGroup = (id: number) => del<number>('/chapter/chapter', { id 
 /** GET /chapter/blocks: the group's blocks, newest first. A superadmin names the group. */
 export const getGroupBlocks = (chapter?: number) =>
   getOne<GroupBlock[]>('/chapter/blocks', chapter !== undefined ? { chapter } : undefined)
+
+/**
+ * The people a group admin's own pages can put a name to, by account id: the
+ * group's admins (GET /auth/member-keys) and, when asked for, the writers it
+ * has blocked (GET /chapter/blocks), under the pen name the group knows them
+ * by. A group can't look an account up by id as a site admin can, so someone
+ * who has left the group, or a writer since unblocked, isn't in it. Either
+ * list failing leaves its people out rather than failing the page.
+ */
+export async function getGroupPeople(chapter: number, withBlocked: boolean): Promise<Map<number, Pick<AccountBrief, 'id' | 'username' | 'name' | 'role'>>> {
+  const people = new Map<number, Pick<AccountBrief, 'id' | 'username' | 'name' | 'role'>>()
+  const [roster, blocks] = await Promise.all([
+    getMemberKeys(chapter).catch(() => null),
+    withBlocked ? getGroupBlocks().catch(() => null) : null,
+  ])
+  for (const block of blocks ?? []) {
+    if (block.writer) people.set(block.writer.id, { id: block.writer.id, username: '', name: block.writer.penName ?? block.writer.name, role: 'user' })
+  }
+  for (const m of roster?.members ?? []) people.set(m.id, { id: m.id, username: m.username, name: m.name, role: 'chapter' })
+  return people
+}
 
 /**
  * POST /chapter/block: stop a writer (role `user`) sending letters through the

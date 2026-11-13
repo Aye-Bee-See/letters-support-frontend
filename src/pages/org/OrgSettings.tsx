@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getGroupHistory, updateGroup } from '../../api/groups'
+import { getGroupHistory, getGroupPeople, updateGroup } from '../../api/groups'
 import { HistoryItem } from '../../components/admin/RecordHistory'
 import { GROUP_UI } from '../../components/forms/uiClasses'
 import PrisonerPhotoPanel from '../../components/forms/PrisonerPhotoPanel'
@@ -10,6 +10,7 @@ import { useApi } from '../../hooks/useApi'
 import { useGatedGroup } from '../../hooks/useGroup'
 import type { ApiError, Chapter, ChapterService, NetworkRole, SocialLinkKey } from '../../types'
 import { serviceLabel } from '../../utils/groups'
+import { actorsOf, detailAccountIds, type NamedAccounts } from '../../utils/history'
 import { displayName } from '../../utils/prisoners'
 import { changes, LETTERS_SHOWN_FROM, problems, ROLES, SERVICES, SOCIAL, SOCIAL_KEYS, toForm, type GroupFormValues } from '../../utils/groupForm'
 import { isGroupNotActive, refusalText } from '../../utils/refusals'
@@ -38,6 +39,25 @@ export default function OrgSettings() {
   const { group, reload } = useGatedGroup()
   const [saved, setSaved] = useState(false)
   const history = useApi(() => getGroupHistory(group.id, { page: 1, page_size: HISTORY_SIZE }), [group.id, group.updatedAt])
+  // The people the entries name by account id (who was handed the key, who was
+  // blocked), from the lists a group can read: asked for only when an entry
+  // names someone its own actors don't cover.
+  const entries = history.data?.items
+  const named = useMemo(() => {
+    const actors = actorsOf(entries ?? [])
+    const unknown = detailAccountIds(entries ?? []).filter((id) => !actors.has(id))
+    const writers = (entries ?? []).some((e) => e.action.startsWith('chapter.block'))
+    return { actors, wanted: unknown.length > 0, writers }
+  }, [entries])
+  const people = useApi(
+    () => (named.wanted ? getGroupPeople(group.id, named.writers) : Promise.resolve(null)),
+    [group.id, named.wanted, named.writers],
+    { keepPrevious: true },
+  )
+  const accounts = useMemo<NamedAccounts | undefined>(
+    () => (named.wanted && !people.data && !people.error ? undefined : new Map([...(people.data ?? []), ...named.actors])),
+    [named, people.data, people.error],
+  )
 
   return (
     <div className="settings-wrap">
@@ -120,7 +140,7 @@ export default function OrgSettings() {
           {history.data && history.data.items.length > 0 && (
             <ul className="settings-history">
               {history.data.items.map((entry) => (
-                <HistoryItem key={entry.id} entry={entry} variant="group" />
+                <HistoryItem key={entry.id} entry={entry} variant="group" accounts={accounts} />
               ))}
             </ul>
           )}
