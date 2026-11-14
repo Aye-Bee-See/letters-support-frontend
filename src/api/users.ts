@@ -1,7 +1,7 @@
 // Accounts, for a site admin (README "Users"). Every call here is a 403 for
 // anyone else; the /admin routes are behind RequireAdmin. Letters are never
 // part of an account record, and nothing here can read one.
-import { del, getList, getOne, post, put } from './client'
+import { del, getList, getOne, post, put, toApiError } from './client'
 import type { KdfParams, ListParams, User, UserRole } from '../types'
 
 export interface UserListParams extends ListParams {
@@ -13,6 +13,26 @@ export const getUsers = (params?: UserListParams) => getList<User>('/auth/users'
 
 /** GET /auth/user?id= */
 export const getUser = (id: number) => getOne<User>('/auth/user', { id })
+
+/**
+ * Accounts by id, for a site admin: GET /auth/user?id= for each, together (the
+ * people a group's history names by number, issue #68). A null is an account
+ * that isn't there any more (a 404). An id whose lookup failed another way is
+ * left out, for the page to say it couldn't be looked up.
+ */
+export async function getAccountsByIds(ids: Iterable<number>): Promise<Map<number, User | null>> {
+  const found = new Map<number, User | null>()
+  await Promise.all(
+    [...new Set(ids)].map(async (id) => {
+      try {
+        found.set(id, await getUser(id))
+      } catch (err) {
+        if (toApiError(err).status === 404) found.set(id, null)
+      }
+    }),
+  )
+  return found
+}
 
 /**
  * PUT /auth/user { id, role, chapterId? }. `banned` ends every session at once
