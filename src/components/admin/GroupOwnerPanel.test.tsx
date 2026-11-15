@@ -86,6 +86,21 @@ describe('GroupOwnerPanel', () => {
     await waitFor(() => expect(fakeApi.callsTo('GET', '/auth/member-keys').length).toBeGreaterThan(1))
   })
 
+  it('names an owner who has left the group and links them, but not one whose account is gone', async () => {
+    fakeApi.on('GET', '/auth/member-keys', rosterOf({ owner: 12 }))
+    fakeApi.on('GET', '/auth/user', { id: 12, username: 'robin', name: 'Robin', role: 'admin' }, { params: { id: '12' } })
+    const first = renderApp(<GroupOwnerPanel group={{ ...group, ownerId: 12 }} onChanged={() => {}} />, { session })
+    expect((await screen.findByRole('link', { name: 'Robin' })).getAttribute('href')).toBe('/admin/users/12')
+    expect(screen.getByText('(not one of this group’s admins any more)')).toBeTruthy()
+    first.unmount()
+
+    fakeApi.on('GET', '/auth/user', reply.error(404, { name: 'NotFoundError' }), { params: { id: '12' } })
+    renderApp(<GroupOwnerPanel group={{ ...group, ownerId: 12 }} onChanged={() => {}} />, { session })
+    expect(await screen.findByText(/an account that isn’t there any more\./)).toBeTruthy()
+    // No page to open for an account that is gone: nothing links to it.
+    expect(document.querySelector('a[href="/admin/users/12"]')).toBeNull()
+  })
+
   it('does nothing when the question is answered no', async () => {
     fakeApi.on('GET', '/auth/member-keys', rosterOf({}))
     vi.stubGlobal('confirm', vi.fn(() => false))

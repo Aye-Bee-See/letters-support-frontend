@@ -189,9 +189,12 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
 
   const name = accountName(u)
   const managed = managedNote(u) !== null
-  const groupName = (groupId: number) => [...picked, ...(groups ?? [])].find((g) => g.id === groupId)?.name ?? `group #${groupId}`
-  // A refusal about the group's ownership or key names the group the account is in now.
-  const { busy, error, run } = useLinkAction((e) => accountRefusal(e, u.chapterId !== null ? groupName(u.chapterId) : undefined))
+  /** A group's name once it is known: found with a picker, or loaded for the page. */
+  const knownGroupName = (groupId: number) => [...picked, ...(groups ?? [])].find((g) => g.id === groupId)?.name
+  const groupName = (groupId: number) => knownGroupName(groupId) ?? `group #${groupId}`
+  // A refusal about the group's ownership or key names the group the account is in now. Never by its
+  // number: while the page's groups are still loading (or couldn't be), it says "their group".
+  const { busy, error, run } = useLinkAction((e) => accountRefusal(e, u.chapterId !== null ? knownGroupName(u.chapterId) : undefined))
   const groupPicker = (inputId: string | undefined, label: string, placeholder: string, exclude: number | null, onSelect: (g: Chapter) => void) => (
     <RecordPicker
       id={inputId}

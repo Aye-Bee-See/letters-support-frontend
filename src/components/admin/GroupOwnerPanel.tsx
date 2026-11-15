@@ -96,13 +96,12 @@ export default function GroupOwnerPanel({ group, onChanged }: Props) {
             </>
           )}
           {ownerId !== null && !owner && !roster.data && 'loading…'}
-          {ownerId !== null && !owner && roster.data && (
+          {/* An account that is gone has no page to link (as in the history below). */}
+          {ownerId !== null && !owner && roster.data && outside.error?.status === 404 && 'an account that isn’t there any more.'}
+          {ownerId !== null && !owner && roster.data && outside.error?.status !== 404 && (
             <>
               <Link to={`/admin/users/${ownerId}`}>{outside.data ? accountName(outside.data) : `account #${ownerId}`}</Link>
-              <span className="list-sub">
-                {' '}
-                {outside.error?.status === 404 ? '(an account that isn’t there any more)' : '(not one of this group’s admins any more)'}
-              </span>
+              <span className="list-sub"> (not one of this group’s admins any more)</span>
             </>
           )}
         </p>
