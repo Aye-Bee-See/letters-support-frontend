@@ -181,7 +181,6 @@ interface ActionsProps {
 
 function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
   const navigate = useNavigate()
-  const { busy, error, run } = useLinkAction(accountRefusal)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [role, setRole] = useState<UserRole>(u.role)
   const [roleGroup, setRoleGroup] = useState(u.chapterId !== null ? String(u.chapterId) : '')
@@ -191,6 +190,8 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
   const name = accountName(u)
   const managed = managedNote(u) !== null
   const groupName = (groupId: number) => [...picked, ...(groups ?? [])].find((g) => g.id === groupId)?.name ?? `group #${groupId}`
+  // A refusal about the group's ownership or key names the group the account is in now.
+  const { busy, error, run } = useLinkAction((e) => accountRefusal(e, u.chapterId !== null ? groupName(u.chapterId) : undefined))
   const groupPicker = (inputId: string | undefined, label: string, placeholder: string, exclude: number | null, onSelect: (g: Chapter) => void) => (
     <RecordPicker
       id={inputId}
@@ -233,7 +234,7 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
     if (role === 'chapter' && toGroup !== null)
       parts.push(`They act for ${groupName(toGroup)} from their next request, and read its letters once its owner hands them the group key.`)
     if (leavingGroupAdmin && u.chapterId !== null)
-      parts.push(`They stop acting for ${groupName(u.chapterId)}. If they are its group-owner admin, it has no owner until another is chosen, and it is told.`)
+      parts.push(`They stop acting for ${groupName(u.chapterId)}. If they own the group, or are the last of its admins to hold its key, the server refuses until that is handed on.`)
     act(parts.join('\n\n'), async () => {
       await setUserRole(u.id, role, role === 'chapter' && toGroup !== u.chapterId ? toGroup : undefined)
       return role === 'banned' ? `${name} is banned: every session has ended.` : `${name} is now ${role === 'chapter' ? `a group admin of ${groupName(toGroup!)}` : `a ${ROLE_LABELS[role]}`}.`
@@ -244,7 +245,7 @@ function Actions({ u, groups, onDone, onEdit }: ActionsProps) {
   function changeGroup(to: Chapter | null) {
     const question =
       to === null
-        ? `Take ${name} out of ${groupName(u.chapterId!)}? They stop acting for it at once. If they are its group-owner admin, it has no owner until another is chosen, and it is told.`
+        ? `Take ${name} out of ${groupName(u.chapterId!)}? They stop acting for it at once. If they own the group, or are the last of its admins to hold its key, the server refuses until that is handed on.`
         : u.chapterId === null
           ? `Put ${name} in ${to.name}? They act for it from their next request, and read its letters once its owner hands them the group key.`
           : `Move ${name} from ${groupName(u.chapterId)} to ${to.name}? They stop acting for ${groupName(u.chapterId)} at once, and read ${to.name}’s letters once its owner hands them its key.`

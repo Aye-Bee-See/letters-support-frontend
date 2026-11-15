@@ -219,7 +219,7 @@ A separate layout with its own stylesheet, loaded only under `/admin`.
 | `/admin`                     | Dashboard: what is waiting, backups, and whether every relaying group has a key.                                          |
 | `/admin/queue`               | Directory changes proposed by groups, each against the record's current values; approve or reject with a note.             |
 | `/admin/bans`                | Groups' recommendations to block a writer site-wide; ban or dismiss, with a note back to the group.                        |
-| `/admin/prisoners`, `/admin/facilities`, `/admin/groups` | The directory records, and `…/:id/edit` for each. Groups are approved, suspended and linked to facilities here. |
+| `/admin/prisoners`, `/admin/facilities`, `/admin/groups` | The directory records, and `…/:id/edit` for each. Groups are approved, suspended and linked to facilities here, and a group's owner can be chosen from its group admins. |
 | `/admin/prisoners/new`, `/admin/facilities/new`, `/admin/groups/new` | A record made directly rather than by approving a proposal; a draft unless chosen otherwise. Then its edit page. |
 | `/admin/mail-rules`          | The master list of mail rules every facility links into: add, reword, retire, restore, delete.                            |
 | `/admin/users`               | Every account, searched by username, email or name and narrowed by role, with whether two-factor sign-in is on. In end-to-end mode its button invites rather than making an account. |
