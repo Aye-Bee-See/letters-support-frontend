@@ -65,7 +65,8 @@ function visit(at: RenderOptions['at'] = '/login') {
 
 async function signInWith(password: string) {
   const user = userEvent.setup()
-  await user.type(screen.getByLabelText('Username'), 'sam')
+  // The form appears once the site has looked for a session to carry on with (another tab's, or a remembered sign-in).
+  await user.type(await screen.findByLabelText('Username'), 'sam')
   await user.type(screen.getByLabelText('Password'), password)
   await user.click(screen.getByRole('button', { name: 'Sign in' }))
   return user
@@ -156,16 +157,16 @@ describe('Login', () => {
     expect(fakeApi.callsTo('POST', '/auth/login')).toEqual([])
   })
 
-  it('has a way in for each of the three codes: invite, claim and invitation', () => {
+  it('has a way in for each of the three codes: invite, claim and invitation', async () => {
     visit()
-    expect(screen.getByRole('link', { name: 'I have an invite code' }).getAttribute('href')).toBe('/join')
+    expect((await screen.findByRole('link', { name: 'I have an invite code' })).getAttribute('href')).toBe('/join')
     expect(screen.getByRole('link', { name: 'I have a claim code' }).getAttribute('href')).toBe('/claim')
     expect(screen.getByRole('link', { name: 'I have an invitation to help run a group' }).getAttribute('href')).toBe('/invitation')
   })
 
-  it('shows the line a page sent the person here with', () => {
+  it('shows the line a page sent the person here with', async () => {
     visit({ pathname: '/login', state: { notice: 'Your password is changed. Sign in with your new password.' } })
-    expect(screen.getByRole('status').textContent).toBe('Your password is changed. Sign in with your new password.')
+    expect((await screen.findByRole('status')).textContent).toBe('Your password is changed. Sign in with your new password.')
   })
 
   it('a page that signs the person out to sign in again (the recovery-code page) leaves its line here', async () => {

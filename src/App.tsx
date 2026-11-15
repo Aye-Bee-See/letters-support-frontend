@@ -5,6 +5,7 @@ import { GroupProvider } from './context/GroupContext'
 import { useAuth } from './hooks/useAuth'
 import { SiteLayout, SignedInLayout } from './components/layout/Layouts'
 import GroupGate from './components/layout/GroupGate'
+import UnlockGate from './components/layout/UnlockGate'
 import { PenNameLock, RequireAdmin, RequireAuth, TwoFactorSetupLock } from './components/layout/RouteGuards'
 import ScrollToTop from './components/layout/ScrollToTop'
 
@@ -116,11 +117,14 @@ export default function App() {
             <Route path="invitation" element={<AcceptInvitation />} />
 
             <Route element={<RequireAuth roles={['user', 'chapter']} />}>
-              {/* The group notices for group admins; writers pass straight through. */}
-              <Route element={<GroupGate />}>
-                <Route path="inbox" element={<InboxRoute />} />
-                <Route path="threads/:id" element={<Thread />} />
-                <Route path="letters/new" element={<NewLetter />} />
+              {/* A session restored after a reload gives its password before a page that needs the keys. */}
+              <Route element={<UnlockGate />}>
+                {/* The group notices for group admins; writers pass straight through. */}
+                <Route element={<GroupGate />}>
+                  <Route path="inbox" element={<InboxRoute />} />
+                  <Route path="threads/:id" element={<Thread />} />
+                  <Route path="letters/new" element={<NewLetter />} />
+                </Route>
               </Route>
             </Route>
 
@@ -139,18 +143,20 @@ export default function App() {
 
             {/* Group admins (group-admin-plan.md): GroupGate says when the group isn't active or the key isn't held. */}
             <Route element={<RequireAuth roles={['chapter']} />}>
-              <Route element={<GroupGate />}>
-                <Route path="writers/new" element={<CreateWriter />} />
-                <Route path="writers/:id/edit" element={<EditWriter />} />
-                <Route path="writers/:id/handoff" element={<Handoff />} />
-                <Route path="invite-codes" element={<InviteCodes />} />
-                <Route path="settings" element={<OrgSettings />} />
-                <Route path="settings/keys" element={<GroupKeys />} />
-                <Route path="settings/invitations" element={<GroupInvitations />} />
-                <Route path="blocked-writers" element={<BlockedWriters />} />
-                <Route path="replies/new" element={<RecordReply />} />
-                <Route path="letters/:id/print" element={<PrintLetter />} />
-                <Route path="letters/print-batch" element={<PrintBatch />} />
+              <Route element={<UnlockGate />}>
+                <Route element={<GroupGate />}>
+                  <Route path="writers/new" element={<CreateWriter />} />
+                  <Route path="writers/:id/edit" element={<EditWriter />} />
+                  <Route path="writers/:id/handoff" element={<Handoff />} />
+                  <Route path="invite-codes" element={<InviteCodes />} />
+                  <Route path="settings" element={<OrgSettings />} />
+                  <Route path="settings/keys" element={<GroupKeys />} />
+                  <Route path="settings/invitations" element={<GroupInvitations />} />
+                  <Route path="blocked-writers" element={<BlockedWriters />} />
+                  <Route path="replies/new" element={<RecordReply />} />
+                  <Route path="letters/:id/print" element={<PrintLetter />} />
+                  <Route path="letters/print-batch" element={<PrintBatch />} />
+                </Route>
               </Route>
             </Route>
           </Route>

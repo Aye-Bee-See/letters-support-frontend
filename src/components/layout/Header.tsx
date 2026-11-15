@@ -7,7 +7,7 @@ import { useUnreadCount } from '../../hooks/useUnreadCount'
 // Markup and classes from solidarity-site/index.html and inbox-writer.html.
 // The hamburger behaviour replaces solidarity-site/site.js.
 export default function Header() {
-  const { isAuthenticated, isAdmin, isChapter } = useAuth()
+  const { isAuthenticated, isAdmin, isChapter, restoring } = useAuth()
   const [open, setOpen] = useState(false)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -94,7 +94,8 @@ export default function Header() {
                   Sign out
                 </button>
               </>
-            ) : (
+            ) : restoring ? null : (
+              // Not while the site is still looking for its session (another tab's, or a remembered sign-in): "Sign in" would flash at someone signed in.
               <Link to="/login" className="btn btn-sm">
                 Sign in
               </Link>

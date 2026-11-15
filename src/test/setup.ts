@@ -1,5 +1,6 @@
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+import { configureSessionSharing } from '../auth/sessionChannel'
 import { fakeApi } from './fakeApi'
 
 // Set-up for every DOM test (*.test.tsx, the `dom` project in vite.config.ts).
@@ -13,9 +14,17 @@ vi.mock('../api/client', async (importOriginal) => {
   return actual
 })
 
+// Tabs share a session over a BroadcastChannel (src/auth/sessionChannel.ts), and
+// Node has one that reaches every test file in the process. Each file gets a
+// channel of its own, and a signed-out render waits only a moment for a tab
+// that isn't there. A test of two tabs renders two apps on this channel.
+configureSessionSharing({ channel: `test-${Date.now()}-${Math.random()}`, askWindowMs: 20 })
+
 afterEach(() => {
   // Without Vitest's globals, Testing Library can't unmount by itself.
   cleanup()
   fakeApi.reset()
   vi.restoreAllMocks()
+  // The sign-in a render left for "the tab's next load" (src/auth/sessionStore.ts) is not the next test's.
+  sessionStorage.clear()
 })

@@ -13,7 +13,11 @@ export interface AuthState {
   expires: number | null
   /** The account's key bundle from sign-in (wrapped keys only; nothing unlocked). */
   keys: KeyBundle | null
-  /** The account's unlocked keypair. Memory only; gone on sign-out or refresh. */
+  /**
+   * The account's unlocked keypair. Memory only, never stored; gone on sign-out.
+   * Null in a session restored after a reload (`locked`) until the password is
+   * given again.
+   */
   keypair: Keypair | null
   /** The group's unlocked keypair (group admins who hold the group key). Memory only. */
   groupKeypair: Keypair | null
@@ -23,6 +27,22 @@ export interface AuthState {
    * to the security page. Lists why (superadmins, all_groups, group).
    */
   twoFactorSetupRequired: TwoFactorReason[] | null
+  /**
+   * The site has just opened and is still looking for a session to carry on
+   * with: another tab's, or the sign-in this tab remembers (issue #76). Until
+   * it knows, a page for signed-in people waits rather than sending the person
+   * to sign in.
+   */
+  restoring: boolean
+  /**
+   * Signed in, with the keys not open: a session restored after a reload from
+   * the remembered token, before the password has been given again. Pages that
+   * need no key work; one that opens or seals a letter asks first
+   * (components/layout/UnlockGate.tsx).
+   */
+  locked: boolean
+  /** Call with the keys once the password has opened them (auth/unlock.ts). */
+  unlocked: (keypair: Keypair, groupKeypair: Keypair | null) => void
   /** Call once two-factor sign-in is switched on. */
   twoFactorSetUp: () => void
   /** Call once the account has chosen a pen name (the name as the API stored it). */

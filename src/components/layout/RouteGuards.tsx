@@ -3,14 +3,25 @@ import { useAuth } from '../../hooks/useAuth'
 import type { UserRole } from '../../types'
 import { homeFor, PEN_NAME_PATH, SECURITY_PATH } from './paths'
 
+/** What a signed-in page shows for the moment the site spends looking for its session (context/AuthContext.tsx `restoring`). */
+function Restoring() {
+  return (
+    <p className="wrap" role="status">
+      Loading…
+    </p>
+  )
+}
+
 /**
  * Signed-in routes. Without a session: to /login, remembering where the user
  * was going. With the wrong role: to their own home.
  */
 export function RequireAuth({ roles }: { roles?: UserRole[] }) {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, restoring } = useAuth()
   const location = useLocation()
 
+  // The site has just opened and may yet find its session (another tab's, or the remembered sign-in): wait, don't send to sign in.
+  if (restoring) return <Restoring />
   if (!isAuthenticated || !user) return <Navigate to="/login" replace state={{ from: location }} />
   if (roles && !roles.includes(user.role)) return <Navigate to={homeFor(user.role)} replace />
   return <Outlet />
@@ -18,13 +29,13 @@ export function RequireAuth({ roles }: { roles?: UserRole[] }) {
 
 /**
  * Superadmin routes. Without a session: to the one sign-in page, remembering
- * where they were going (a refresh signs out, so this is common). Signed in as
- * anyone else: to their own home.
+ * where they were going. Signed in as anyone else: to their own home.
  */
 export function RequireAdmin() {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, restoring } = useAuth()
   const location = useLocation()
 
+  if (restoring) return <Restoring />
   if (!isAuthenticated || !user) return <Navigate to="/login" replace state={{ from: location }} />
   if (user.role !== 'admin') return <Navigate to={homeFor(user.role)} replace />
   return <Outlet />
