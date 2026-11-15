@@ -288,7 +288,7 @@ function PrisonerForm({ prisoner, onSaved, onEdit }: FormProps) {
           <Field label="Country" htmlFor="f-country">
             <input className="form-input" {...field('country')} />
           </Field>
-          <Field label="Inmate ID" htmlFor="f-inmateID">
+          <Field label="Inmate ID" htmlFor="f-inmateID" hint="Inmate number, or a wing, cell or birth year that must follow the name on the envelope. Printed as written.">
             <input className="form-input" {...field('inmateID')} />
           </Field>
         </div>

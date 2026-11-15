@@ -61,6 +61,19 @@ describe('PrisonerProfile', () => {
     expect(print).toHaveBeenCalledOnce()
   })
 
+  // Issue #72: not always a number, so not labelled as one.
+  it('shows what follows the name on the envelope under that label', async () => {
+    fakeApi.on('GET', '/prisoner/prisoner', { ...prisoner, inmateID: 'born 1997' })
+    renderApp(
+      <Routes>
+        <Route path="/prisoners/:id" element={<PrisonerProfile />} />
+      </Routes>,
+      { at: '/prisoners/5' },
+    )
+    expect((await screen.findByText('On the envelope')).nextElementSibling?.textContent).toBe('born 1997')
+    expect(screen.queryByText('Inmate no.')).toBeNull()
+  })
+
   // API #210: a letter written to someone already free is held from the start.
   it('tells a writer a new letter to someone released is held', async () => {
     fakeApi.on('GET', '/prisoner/prisoner', { ...prisoner, prison: 3, status: 'free', prison_details: { id: 3, prisonName: 'North Unit' } })

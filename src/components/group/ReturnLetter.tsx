@@ -275,7 +275,7 @@ function ProposeCorrection({
           <>
             <label htmlFor="propose-notice">Note shown on their public page</label>
             <textarea id="propose-notice" value={statusNotice} onChange={(e) => setStatusNotice(e.target.value)} />
-            <label htmlFor="propose-inmate">Their prisoner number, if it was wrong</label>
+            <label htmlFor="propose-inmate">Their inmate number, or whatever follows their name on the envelope, if it was wrong</label>
             <input id="propose-inmate" type="text" value={inmateID} onChange={(e) => setInmateID(e.target.value)} />
             {facility && (
               <p className="letter-action-hint">
