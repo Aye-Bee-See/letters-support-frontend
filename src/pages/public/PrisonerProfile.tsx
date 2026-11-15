@@ -90,10 +90,10 @@ export default function PrisonerProfile() {
                 )}
               </dd>
 
-              {/* Not in the prototype: needed to address a letter. */}
+              {/* Not in the prototype: needed to address a letter. Not always a number: a wing, a cell or a birth year where that is what follows the name (issue #72). */}
               {p.inmateID && (
                 <>
-                  <dt>Inmate no.</dt>
+                  <dt>On the envelope</dt>
                   <dd>{p.inmateID}</dd>
                 </>
               )}

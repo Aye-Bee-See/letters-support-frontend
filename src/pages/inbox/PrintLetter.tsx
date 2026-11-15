@@ -192,10 +192,11 @@ function Sidebar({ page, mine, rules, canRead, onDone }: { page: Page; mine: boo
             <div className="thread-sidebar-heading">Address the envelope</div>
             <div className="thread-sidebar-info">
               <strong>{prisoner.birthName || prisoner.chosenName}</strong>
+              {/* As given, with nothing put in front: it is whatever must follow the name on the envelope, a prison number or a wing, cell or birth year (issue #72). */}
               {prisoner.inmateID && (
                 <>
                   <br />
-                  No. {prisoner.inmateID}
+                  {prisoner.inmateID}
                 </>
               )}
               {prisoner.chosenName && prisoner.birthName && prisoner.chosenName !== prisoner.birthName && (
