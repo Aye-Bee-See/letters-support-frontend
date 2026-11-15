@@ -40,7 +40,7 @@ export function deleteRefusal(error: ApiError): string {
       case 'only_admin':
         return 'This is the only site admin account. Make another account a site admin first, or nobody could run the site.'
       case 'group_owner':
-        return 'This account is its group’s group-owner admin, and the group has other group admins. Ownership passes to one of them first: the owner does it on their group’s keys page.'
+        return 'This account is its group’s group-owner admin, and the group has other group admins. Ownership passes to one of them first: the owner does it on their group’s keys page, or a site admin on the group’s page here.'
       case 'last_key_holder':
         return 'This account is the last holder of its group’s key. Deleting it would leave the group unable to read its letters for ever: the key goes to another group admin first.'
       case 'anonymous':
@@ -53,11 +53,24 @@ export function deleteRefusal(error: ApiError): string {
 /**
  * Any other account call (role, group, revoke, two-factor reset). A role change
  * that would leave the site with no site admin is `409 RoleChangeError`
- * `last_admin` (`role_change.last_admin`, API #208).
+ * `last_admin` (`role_change.last_admin`, API #208). One that would take a
+ * group's owner, or the last holder of its key, out of the group is the same
+ * error with `group_owner` or `last_key_holder` (API #232): the pair
+ * AccountDeleteError carries. `group` is the name of the group the account is
+ * in now, to say which.
  */
-export function accountRefusal(error: ApiError): string {
-  if (error.status === 409 && error.name === 'RoleChangeError' && error.condition === 'last_admin')
-    return 'Make another site admin first: this is the only site admin account, and the site always keeps one, or nobody could approve groups, moderate or make another site admin. Nothing was changed.'
+export function accountRefusal(error: ApiError, group?: string): string {
+  if (error.status === 409 && error.name === 'RoleChangeError') {
+    const theirs = group ?? 'their group'
+    switch (error.condition) {
+      case 'last_admin':
+        return 'Make another site admin first: this is the only site admin account, and the site always keeps one, or nobody could approve groups, moderate or make another site admin. Nothing was changed.'
+      case 'group_owner':
+        return `Pass ownership of ${theirs} to another group admin first: this account is its group-owner admin, and the group has other group admins. The owner does it on the group’s keys page, or a site admin on the group’s page here. Nothing was changed.`
+      case 'last_key_holder':
+        return `Hand ${theirs}’s key to another group admin first: this account is the last of its group admins to hold it, and without a holder the group could never read its letters again. The group-owner admin hands it over on the group’s keys page. Nothing was changed.`
+    }
+  }
   if (error.status === 409 && error.name === 'TwoFactorError' && error.condition === 'not_enabled')
     return 'Two-factor sign-in isn’t on for this account, so there is nothing to reset.'
   if (error.status === 409 && error.name === 'KeyChangeError')
@@ -76,3 +89,25 @@ export function createRefusal(error: ApiError): string {
   if (error.status === 403) return 'The server refused this: only a site admin can make staff accounts.'
   return commonRefusal(error) ?? otherRefusal(error)
 }
+
+/**
+ * PUT /auth/chapter-owner refusals, for a site admin choosing a group's owner
+ * (README "Group keys" > "Ownership"). `409 OwnerError` `no_key`: the group has
+ * a key and they don't hold it. `409 OwnerError` with no condition: the owner
+ * changed meanwhile, or they are the owner already. A 400 on `user`: they have
+ * stopped being a group admin of the group. `name` is the person chosen.
+ */
+export function ownerRefusal(error: ApiError, name: string): string {
+  if (error.status === 409 && error.name === 'OwnerError') {
+    return error.condition === 'no_key'
+      ? `${name} needs the group key first: an owner without it couldn’t hand it on, take it back, or rotate it. The current owner hands it over on the group’s keys page. Nothing was changed.`
+      : 'Someone else changed the owner just now. The list is up to date again: check who owns the group before trying once more.'
+  }
+  if (error.status === 400 && error.problems?.some((p) => p.field === 'user'))
+    return `${name} isn’t a group admin of this group any more. The list is up to date again.`
+  return accountRefusal(error)
+}
+
+/** A chapter-owner refusal that means the page's list is out of date and should be read again. */
+export const ownerListStale = (error: ApiError) =>
+  (error.status === 409 && error.name === 'OwnerError' && error.condition !== 'no_key') || error.status === 400 || error.status === 404

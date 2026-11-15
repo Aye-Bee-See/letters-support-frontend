@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { deleteGroup, getGroup, getGroups, updateGroup, type GroupFields } from '../../api/groups'
 import { getTwoFactorPolicy, setGroupTwoFactor } from '../../api/twoFactor'
-import { getUser } from '../../api/users'
+import GroupOwnerPanel from '../../components/admin/GroupOwnerPanel'
 import RecordHistory from '../../components/admin/RecordHistory'
 import { Field, Section } from '../../components/forms/AdminFormParts'
 import RecordPicker from '../../components/forms/RecordPicker'
@@ -25,7 +25,8 @@ import { refusalText } from '../../utils/refusals'
 // the facilities the group relays for (PUT/DELETE /prison/relay) and the
 // prisoners it supports (PUT/DELETE /prisoner/support), in components/group,
 // shared with the group's own settings page. Group keys are set by
-// the group's own members through /auth, never here.
+// the group's own members through /auth, never here; who owns the group can be
+// chosen here (components/admin/GroupOwnerPanel.tsx).
 
 const ACCOUNT_STATUSES: AccountStatus[] = ['pending', 'active', 'suspended']
 
@@ -59,6 +60,8 @@ export default function EditGroup() {
   const [saved, setSaved] = useState(false)
   // How many facilities it relays for now: the panel below changes it without a reload.
   const [relayCount, setRelayCount] = useState<number | null>(null)
+  // The owner panel below changes the owner without a reload: the history is asked again.
+  const [ownerChanges, setOwnerChanges] = useState(0)
 
   return (
     <>
@@ -113,9 +116,9 @@ export default function EditGroup() {
               classes={ADMIN_UI}
               linkTo={(p) => `/admin/prisoners/${p.id}/edit`}
             />
-            <GroupOwner key={`owner-${group.data.id}-${group.data.ownerId}`} ownerId={group.data.ownerId} />
+            <GroupOwnerPanel key={`owner-${group.data.id}`} group={group.data} onChanged={() => setOwnerChanges((n) => n + 1)} />
             <GroupTwoFactor key={`2fa-${group.data.id}`} group={group.data} />
-            <RecordHistory resource="chapter" id={group.data.id} version={group.data.updatedAt} />
+            <RecordHistory resource="chapter" id={group.data.id} version={`${group.data.updatedAt}/${ownerChanges}`} />
           </>
         )}
       </div>
@@ -448,46 +451,6 @@ function GroupForm({ group: g, relayCount, onSaved, onEdit }: FormProps) {
  * Applies at once, like the link panels, and keeps its own state, so unsaved
  * edits in the form above survive. The site-wide switches are on Site settings.
  */
-/**
- * Who owns the group now (`ownerId` on the record; README "Group keys" >
- * "Ownership"): the one group admin who hands the group key on, takes it back
- * and rotates it. The history below only says who owned it when something
- * happened (issue #68). Read only: ownership is passed with PUT
- * /auth/chapter-owner, which has no page here yet.
- */
-function GroupOwner({ ownerId }: { ownerId: number | null }) {
-  const owner = useApi(() => (ownerId !== null ? getUser(ownerId) : Promise.resolve(null)), [ownerId])
-  return (
-    <div className="admin-form relay-panel">
-      <Section title="Group-owner admin">
-        <p className="form-hint">
-          The one group admin who hands the group key to the others, takes it back, and rotates it. The first to set up the group’s key becomes its
-          owner, and the owner can pass it on.
-        </p>
-        {ownerId === null && <p className="form-static">Nobody yet.</p>}
-        {ownerId !== null && owner.loading && <p className="form-static">Loading…</p>}
-        {ownerId !== null && owner.data && (
-          <p className="form-static">
-            <Link to={`/admin/users/${ownerId}`}>{owner.data.name || owner.data.username}</Link>
-            {owner.data.name && <span className="list-sub"> ({owner.data.username})</span>}
-          </p>
-        )}
-        {ownerId !== null && owner.error && (
-          <p className="form-static">
-            {owner.error.status === 404 ? (
-              'An account that isn’t there any more.'
-            ) : (
-              <>
-                <Link to={`/admin/users/${ownerId}`}>Account #{ownerId}</Link> <span className="list-sub">(couldn’t load its name: {refusalText(owner.error)})</span>
-              </>
-            )}
-          </p>
-        )}
-      </Section>
-    </div>
-  )
-}
-
 function GroupTwoFactor({ group: g }: { group: Chapter }) {
   const [required, setRequired] = useState(Boolean(g.requireTwoFactor))
   // "Every group's admins" overrides this group's own setting while it's on.

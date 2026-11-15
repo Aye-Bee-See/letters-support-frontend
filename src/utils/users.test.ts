@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiError } from '../types'
-import { accountRefusal, createRefusal, deleteRefusal, isRole, managedNote, ROLE_LABELS } from './users'
+import { accountRefusal, createRefusal, deleteRefusal, isRole, managedNote, ownerListStale, ownerRefusal, ROLE_LABELS } from './users'
 
 const SENTENCE = 'The API’s own sentence, not stable.'
 const refusal = (over: Partial<ApiError>): ApiError => ({ status: 400, name: null, condition: null, errors: [], message: SENTENCE, ...over })
@@ -56,6 +56,19 @@ describe('accountRefusal', () => {
     expect(text).not.toContain(SENTENCE)
   })
 
+  it('words a group’s owner or last key holder being moved (API #232), naming the group', () => {
+    const owner = accountRefusal(refusal({ status: 409, name: 'RoleChangeError', condition: 'group_owner', message: 'User 2 owns chapter 1.' }), 'Lisbon ABC')
+    expect(owner).toMatch(/^Pass ownership of Lisbon ABC to another group admin first/)
+    const holder = accountRefusal(refusal({ status: 409, name: 'RoleChangeError', condition: 'last_key_holder', message: 'User 2 holds the last key.' }), 'Lisbon ABC')
+    expect(holder).toMatch(/^Hand Lisbon ABC’s key to another group admin first/)
+    for (const text of [owner, holder]) {
+      expect(text).toMatch(/Nothing was changed\.$/)
+      expect(text).not.toMatch(/User 2|chapter|member|superadmin/)
+    }
+    // Without the group's name to hand, it still reads.
+    expect(accountRefusal(refusal({ status: 409, name: 'RoleChangeError', condition: 'group_owner' }))).toMatch(/^Pass ownership of their group/)
+  })
+
   it('words a two-factor reset with nothing to reset', () => {
     expect(accountRefusal(refusal({ status: 409, name: 'TwoFactorError', condition: 'not_enabled' }))).toMatch(/isn’t on for this account/)
   })
@@ -74,5 +87,23 @@ describe('createRefusal', () => {
   it('says a 403 is about being a site admin, and shows a 400’s first sentence', () => {
     expect(createRefusal(refusal({ status: 403, name: 'AuthorizationError' }))).toMatch(/only a site admin can make staff accounts/)
     expect(createRefusal(refusal({ errors: ['username must be unique'] }))).toBe('username must be unique')
+  })
+})
+
+describe('ownerRefusal', () => {
+  it('words the chapter-owner refusals, never the API’s sentence', () => {
+    const noKey = refusal({ status: 409, name: 'OwnerError', condition: 'no_key', message: 'User 8 does not hold the chapter key.' })
+    expect(ownerRefusal(noKey, 'Alex')).toMatch(/^Alex needs the group key first/)
+    expect(ownerListStale(noKey)).toBe(false)
+
+    const meanwhile = refusal({ status: 409, name: 'OwnerError', message: 'The group-owner admin changed meanwhile; read the chapter again.' })
+    expect(ownerRefusal(meanwhile, 'Alex')).toMatch(/^Someone else changed the owner just now/)
+    expect(ownerListStale(meanwhile)).toBe(true)
+
+    const left = refusal({ status: 400, errors: ['User 8 is not a group admin of chapter 4.'], problems: [{ field: 'user', code: 'not_eligible' }] })
+    expect(ownerRefusal(left, 'Alex')).toBe('Alex isn’t a group admin of this group any more. The list is up to date again.')
+    expect(ownerListStale(left)).toBe(true)
+
+    expect(ownerRefusal(refusal({ status: 403, name: 'AuthorizationError' }), 'Alex')).toMatch(/only a site admin/)
   })
 })
