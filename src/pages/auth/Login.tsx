@@ -26,7 +26,7 @@ function failureMessage(err: unknown): string {
 // Markup and classes from solidarity-site/login.html (pages/login.css).
 // The sign-in itself is src/auth/signIn.ts: the password never leaves the device.
 export default function Login() {
-  const { startSession, user, twoFactorSetupRequired, endedNotice } = useAuth()
+  const { startSession, user, twoFactorSetupRequired, endedNotice, restoring } = useAuth()
   const navigate = useNavigate()
   const state = useLocation().state as { from?: Location; notice?: string } | null
   const from = state?.from
@@ -132,6 +132,8 @@ export default function Login() {
   // Signed in (just now, or earlier and back here by a bookmark or Back): where
   // finish() sends them, not a second sign-in.
   if (user) return <Navigate to={twoFactorSetupRequired ? SECURITY_PATH : destination(from, homeFor(user.role))} replace />
+  // The site has just opened and may yet find its session (another tab's, or the remembered sign-in): no form to fill in meanwhile.
+  if (restoring) return null
 
   return (
     <div className="login-page">

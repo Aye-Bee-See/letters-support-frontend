@@ -241,7 +241,7 @@ src/
   crypto/       the end-to-end core: libsodium lives here and nowhere else (index.ts is the only import point)
   letters/      sending a letter (send.ts), recording a reply (record.ts), opening one (open.ts)
   groups/       group-admin logic with no React: housekeeping, key hand-out, rotation
-  context/      AuthContext: the session, in memory only; GroupContext: the group admin's group record, fetched once
+  context/      AuthContext: the session (keys in memory only; shared between tabs; restored locked after a reload); GroupContext: the group admin's group record, fetched once
   hooks/        useApi (load + reload), useGroup (the admin's group and key state), drafts, list params, leave guard
   components/
     admin/      parts of the admin record pages: the photo panel, a record's history
@@ -278,9 +278,41 @@ Three rules hold the shape together:
 
 ## Sessions, keys and what a refresh does
 
-- The session, including the unlocked private key and the group key, lives in
-  React state only: never `localStorage` or `sessionStorage`. **A page refresh
-  signs you out.** That is deliberate for now; sign in again.
+- **Unlocked keys are never stored.** The unlocked private key and the group
+  key live in memory only: never `localStorage`, never `sessionStorage`. What
+  keeps you signed in is two things that need no stored key (decided 15
+  November 2026):
+  - **A new tab or window is signed in if another tab is.** A tab that opens
+    with no session asks the other open tabs over a `BroadcastChannel`
+    (`src/auth/sessionChannel.ts`), and one that is signed in hands the whole
+    session over, unlocked keys included. The hand-over writes nothing: the
+    keys go from memory to memory, and it works only while a signed-in tab is
+    open. (The new tab then remembers the token for its own reloads, like any
+    signed-in tab; see the next point.) Same browser profile only. A session
+    that must still set up two-factor sign-in is neither handed over nor
+    restored after a reload: the API answers it only for setting that up.
+  - **A reload brings you back signed in but locked.** The tab remembers the
+    sign-in in `sessionStorage`: the token, its expiry and the account's id,
+    never a key (`src/auth/sessionStore.ts`). After a reload the account and
+    its still-wrapped keys are read again, and pages that need no key work at
+    once: every site admin page, the directory, a writer's inbox, the account
+    pages. A page that opens or seals a letter asks for the password first,
+    once ("Unlock your letters", `components/layout/UnlockGate.tsx`): the same
+    unwrap as sign-in, on the device, with nothing sent. A group admin is
+    asked on every group page, because without the group key open a page
+    can't tell holding it from never having been handed it.
+- **The tabs of one session act as one.** Signing out in one tab, a `401`, or
+  the token expiring ends every tab of that session. A new token (after a
+  password change), the group key, a chosen pen name and unlocking reach every
+  tab. Tabs signed in separately, to another account or again to the same one,
+  are separate sessions and leave each other alone.
+- **Closing every tab signs you out.** `sessionStorage` goes with its tab, and
+  no other window reads it. It is not `localStorage`, which would leave a
+  shared computer signed in for the token's week; a "keep me signed in on this
+  computer" box would be a separate decision.
+- **What the stored token risks.** Script running on the page could read it. It
+  gives API access as the account, but opens no letter: those need the keys,
+  which need the password. The production CSP limits what script can run.
 - Tokens last a week and are revoked on sign-out. A `401` anywhere ends the
   session and sends you to `/login`, remembering where you were going.
 - A `403` saying two-factor sign-in must be set up first, from any request,
@@ -375,7 +407,11 @@ not a convenience.
   has no keys. On a local database, run `npm run dev:split-accounts`. On the
   test server, the account was made before keys existed; it needs recovery or
   a new account.
-- **Signed out on refresh.** Expected; the session is memory-only.
+- **Asked to "Unlock your letters" after a reload.** Expected: a reload keeps
+  you signed in from the remembered token, but keys are never stored, so the
+  password opens them again. Closing every tab signs you out.
+- **Two accounts in two tabs.** Still works: each tab's sign-in is its own
+  session. A third tab opened with no session takes whichever answers first.
 - **Every request fails from the browser but curl works.** CORS: the API's
   `CORS_ORIGIN` must list this app's origin exactly (`http://localhost:3001` by
   default).

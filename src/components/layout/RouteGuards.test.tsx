@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { Route, Routes, type Location } from 'react-router-dom'
 import { fakeApi } from '../../test/fakeApi'
@@ -73,10 +73,12 @@ describe('who reaches which signed-in page', () => {
     })
   }
 
-  it('without a session, every one goes to /login, remembering where it was going', () => {
+  it('without a session, every one goes to /login, remembering where it was going', async () => {
     for (const path of pages) {
       const view = visit(`${path}?page=2#top`)
-      expect(view.at()).toBe('/login')
+      // Not at once: the site first looks for a session to carry on with (another tab's, or a remembered sign-in).
+      expect(view.at()).toBe(path)
+      await waitFor(() => expect(view.at()).toBe('/login'))
       const from = (view.location().state as { from: Location }).from
       expect([from.pathname, from.search, from.hash]).toEqual([path, '?page=2', '#top'])
       view.unmount()
@@ -130,11 +132,11 @@ describe('the two locks', () => {
     expect(screen.getByText('page: pen-name')).toBeTruthy()
   })
 
-  it('signing out lifts both', () => {
+  it('signing out lifts both', async () => {
     const view = visit('/prisoners', { role: 'user', user: { penName: null }, twoFactorSetupRequired: ['group'] })
     expect(view.at()).toBe('/account/security')
     act(() => view.auth().endSession())
     // The security page is behind RequireAuth: signed out, it sends to /login.
-    expect(view.at()).toBe('/login')
+    await waitFor(() => expect(view.at()).toBe('/login'))
   })
 })

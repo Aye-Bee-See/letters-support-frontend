@@ -68,6 +68,10 @@ src/auth/              flows that join the API calls and the crypto
   acceptInvitation.ts  accepting an invitation: account and keys in one request, as joining does
   account.ts           the signed-in account's own keys: change the password, make a new recovery code
   staffAccount.ts      a staff account a site admin makes: the password split, no keys (server mode)
+  sessionStore.ts      the sign-in a tab remembers across a reload: the token, never a key
+  sessionChannel.ts    one session shared by the open tabs, over a BroadcastChannel
+  restore.ts           finding a session on load: another tab's, else the remembered token (locked)
+  unlock.ts            opening a locked session's keys with the password, as sign-in does
 src/components/forms/
   AccountFields.tsx    username, pen name, password fields (Join, Claim)
   NewPasswordFields.tsx a new password with the strength meter, and its confirmation
@@ -77,7 +81,9 @@ src/letters/           letter flows that join the API calls and the crypto
   send.ts              encrypting and sending a letter (with idempotency and key-version retry)
   record.ts            recording a prisoner's reply: a fresh content key, sealed to the writer and the group
 src/context/
-  AuthContext.tsx      holds the session and unlocked keys, in memory only
+  AuthContext.tsx      holds the session and unlocked keys (keys in memory only)
+src/components/layout/
+  UnlockGate.tsx       asks a locked session for its password before a page that needs keys
 src/pages/auth/
   Login.tsx            the sign-in form
   Join.tsx             joining: code, form, recovery code
@@ -214,7 +220,15 @@ It's the only code in the repository that sends a real password, and it refuses 
 
 ### `AuthContext`: keeping keys in memory
 
-`startSession(signedIn)` stores the user, the token, the key bundle (still wrapped), and the **unlocked keypairs** in React state. They're never written to `localStorage` or `sessionStorage`. A page refresh signs you out, and that's accepted for v1. `endSession()` drops everything.
+`startSession(signedIn)` stores the user, the token, the key bundle (still wrapped), and the **unlocked keypairs** in React state. The unlocked keypairs are never written to `localStorage` or `sessionStorage`. `endSession()` drops everything, in every tab of the session.
+
+A person stays signed in across reloads and new tabs without any key being stored (decided 15 November 2026, web issue #76):
+
+- **A new tab borrows the session** (`src/auth/sessionChannel.ts`). A tab that opens with no session posts `ask` on a `BroadcastChannel`; a signed-in tab answers with `offer`, carrying the token, the user, the key bundle and the unlocked keypairs. The keys cross from one page of this origin to another in the same browser profile, in memory, and are written nowhere. A tab that is signed out, still on the two-factor step, or signed in but required to set up two-factor sign-in first, stays silent. Afterwards the tabs keep in step: `changed` carries a new session state (a refreshed token, the group key, a pen name, unlocking) and `ended` ends it, each naming the token it is about, so tabs signed in separately are untouched.
+- **A reload restores a locked session** (`src/auth/sessionStore.ts`, `src/auth/restore.ts`). On sign-in the tab keeps `{ token, expires, userId }` in `sessionStorage`. On load, if no tab answers, the token is used to read the account (`GET /auth/user`) and the key bundle (`GET /auth/keys`, still wrapped). The session is then signed in with `keypair` and `groupKeypair` null: `locked`. An expired stored token is dropped unread; one the API answers `401` to is forgotten; any other failure keeps it for the next load. A tab that borrowed its session remembers the token in the same way, for its own reloads.
+- **Unlocking** (`src/auth/unlock.ts`, `components/layout/UnlockGate.tsx`). A page that opens or seals a letter shows "Unlock your letters" to a locked session. The password is run through the same derivation as sign-in, with the bundle's salt and parameters (checked against the same floor and cap), and the wrap key opens the private key and then the group key. Nothing is sent: the token already says who this is. The other tabs of the session are unlocked with it.
+
+**What changed in the threat model.** The token now sits in `sessionStorage` for the life of the tab, where script running on the page could read it. That gives API access as the account for up to a week, and no letter: reading one still needs the private key, which still needs the password. Keys shared over the `BroadcastChannel` are reachable only by pages of this origin in this profile, which already run the same script. `sessionStorage` was chosen over `localStorage` so that closing every tab still signs the person out.
 
 JavaScript strings can't be overwritten, so an unlocked private key held as a base64 string lingers in memory until garbage collection. Byte arrays (master keys, wrap keys) *are* wiped. Holding private keys as bytes would be a possible later hardening.
 
