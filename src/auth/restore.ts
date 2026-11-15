@@ -15,9 +15,8 @@ import { forgetSignIn, recallSignIn } from './sessionStore'
 //    their password to a page that needs the keys (components/layout/UnlockGate).
 //
 // A remembered token the API no longer takes (a 401: expired, revoked, the
-// account banned) is forgotten, and the person signs in as before. If the API
-// can't be reached the token is kept for the next load, and this load is
-// signed out.
+// account banned) is forgotten, and the person signs in as before. Any other
+// failure keeps the token for the next load, and this load is signed out.
 
 /** The remembered sign-in's account, asked for with its own token: no session exists yet to carry one. */
 async function accountOf(id: number, token: string): Promise<User> {
@@ -28,27 +27,31 @@ async function accountOf(id: number, token: string): Promise<User> {
 async function fromRememberedSignIn(): Promise<SharedSession | null> {
   const remembered = recallSignIn()
   if (!remembered) return null
-  try {
-    const [user, keys] = await Promise.all([accountOf(remembered.userId, remembered.token), getKeys(remembered.token)])
-    if (user.id !== remembered.userId) throw new Error('The remembered sign-in names another account.')
+  // Both answers are waited for: a 401 from either says the token is over, whichever failed first and however the other failed.
+  const [account, bundle] = await Promise.allSettled([accountOf(remembered.userId, remembered.token), getKeys(remembered.token)])
+  if (account.status === 'fulfilled' && bundle.status === 'fulfilled' && account.value.id === remembered.userId) {
     return {
-      user,
+      user: account.value,
       token: remembered.token,
       expires: remembered.expires,
-      keys,
+      keys: bundle.value,
       keypair: null,
       groupKeypair: null,
-      // Not known without signing in; the API's first refusal says so if it is (AuthContext).
+      // Both reads were answered, and the API answers neither to an account that
+      // must still set up two-factor sign-in (see below): so it need not.
       twoFactorSetupRequired: null,
     }
-  } catch (err) {
-    const status = toApiError(err).status
-    // Unreachable or a fault on the server: the token may well still be good.
-    if (status === 0 || status >= 500 || status === 429) return null
-    // Only this token: another tab's session may have been taken over, and remembered, meanwhile.
-    forgetSignIn(remembered.token)
-    return null
   }
+  const refusedAs = (status: number) => [account, bundle].some((r) => r.status === 'rejected' && toApiError(r.reason).status === status)
+  // Only a 401 says the token itself is over (expired, revoked, the account
+  // banned): forgotten, unless a session that began meanwhile is remembered now.
+  if (refusedAs(401)) forgetSignIn(remembered.token)
+  // Anything else leaves it for the next load: the API out of reach or at
+  // fault, too many requests, or a 403. An account that must set up two-factor
+  // sign-in is refused these two reads (the API answers such a session only for
+  // setting it up and signing out), so it can't be restored: the person signs
+  // in, and the sign-in takes them to set it up.
+  return null
 }
 
 /**

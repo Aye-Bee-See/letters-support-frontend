@@ -27,7 +27,9 @@ const WRITER_KEYLESS = ['/inbox']
 export default function UnlockGate() {
   const { locked, isWriter } = useAuth()
   const { pathname } = useLocation()
-  if (locked && !(isWriter && WRITER_KEYLESS.includes(pathname))) return <UnlockPrompt />
+  // As the router matches it: "/inbox/" is the inbox too (GroupGate does the same for its lists).
+  const path = pathname.replace(/\/+$/, '') || '/'
+  if (locked && !(isWriter && WRITER_KEYLESS.includes(path))) return <UnlockPrompt />
   return <Outlet />
 }
 

@@ -8,7 +8,10 @@ import type { KeyBundle, TwoFactorReason, User } from '../types'
 // step: a change in one (a new token, the group key, unlocking) reaches the
 // others, and so does the end of the session.
 //
-// Nothing is written to storage here. A BroadcastChannel reaches only pages of
+// The hand-over itself writes nothing to storage: the keys go from one tab's
+// memory to another's. (The tab that takes a session over then remembers the
+// token for its own reloads, as any signed-in tab does: sessionStore.ts. Never
+// a key.) A BroadcastChannel reaches only pages of
 // this origin in this browser profile, which already run the same script with
 // the same reach; it never crosses to another site, profile or device. It works
 // only while a signed-in tab is open: close them all and nothing is left.
@@ -123,7 +126,7 @@ export function askOtherTabs(): Promise<SharedSession | null> {
 }
 
 export interface SessionChannelHandlers {
-  /** This tab's session now, to offer a tab that asks; null stays silent (signed out, or still on the sign-in page). */
+  /** This tab's session now, to offer a tab that asks; null stays silent (signed out, or still on the sign-in page), and so does a session that must still set up two-factor sign-in. */
   current: () => SharedSession | null
   /** Another tab changed the session this tab shares. */
   onChanged: (session: SharedSession) => void
@@ -155,7 +158,9 @@ export function joinSessionChannel(handlers: SessionChannelHandlers): SessionCha
     if (!message) return
     const mine = handlers.current()
     if (message.type === 'ask') {
-      if (mine && typeof message.id === 'string') post({ type: 'offer', to: message.id, session: mine })
+      // A session that must still set up two-factor sign-in is handed to nobody:
+      // until it has, it is good for that one page, in the tab that signed in.
+      if (mine && !mine.twoFactorSetupRequired && typeof message.id === 'string') post({ type: 'offer', to: message.id, session: mine })
     } else if (message.type === 'changed') {
       const session = sessionIn(message.session)
       if (mine && session && message.was === mine.token && session.user.id === mine.user.id) handlers.onChanged(session)

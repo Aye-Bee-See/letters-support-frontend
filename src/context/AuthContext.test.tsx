@@ -159,6 +159,41 @@ describe('a reload', () => {
     expect(sessionStorage.getItem(STORE)).toBeNull()
   })
 
+  it('forgets the token on a 401 from either read, however the other one failed', async () => {
+    remember()
+    // The keys read fails first and differently; the account read, answered later, says the token is over.
+    fakeApi.on('GET', '/auth/keys', reply.network())
+    fakeApi.on('GET', '/auth/user', () => new Promise((answer) => setTimeout(() => answer(reply.error(401, { name: 'AuthenticationError' })), 40)))
+    tab('/inbox')
+
+    expect(await screen.findByText('sign-in page')).toBeTruthy()
+    expect(sessionStorage.getItem(STORE)).toBeNull()
+  })
+
+  it('keeps the token, and restores nothing, for an account that must set up two-factor sign-in first', async () => {
+    remember()
+    // The API answers such a session only for setting it up and signing out.
+    const setUpFirst = reply.error(403, { name: 'TwoFactorRequiredError', condition: 'setup_required' })
+    fakeApi.on('GET', '/auth/user', setUpFirst)
+    fakeApi.on('GET', '/auth/keys', setUpFirst)
+    const view = tab('/inbox')
+
+    expect(await screen.findByText('sign-in page')).toBeTruthy()
+    expect(view.auth().isAuthenticated).toBe(false)
+    // Not a 401: the token isn't over, and isn't forgotten.
+    expect(sessionStorage.getItem(STORE)).not.toBeNull()
+  })
+
+  it('counts “/inbox/” as a writer’s inbox, which needs no key', async () => {
+    remember()
+    serveAccount()
+    const view = tab('/inbox/')
+
+    expect(await screen.findByText('the inbox')).toBeTruthy()
+    expect(view.auth().locked).toBe(true)
+    expect(screen.queryByRole('heading', { name: 'Unlock your letters' })).toBeNull()
+  })
+
   it('keeps the token for the next load when the server can’t be reached', async () => {
     remember()
     fakeApi.on('GET', '/auth/user', reply.network())
@@ -186,6 +221,20 @@ describe('a new tab', () => {
     expect(auth.locked).toBe(false)
     expect(auth.keypair).toEqual(first.auth().keypair)
     expect(fakeApi.calls).toEqual([])
+    // The hand-over wrote nothing; the tab then remembers the token for its own reloads, as any signed-in tab does. Never a key.
+    await waitFor(() => expect(sessionStorage.getItem(STORE)).not.toBeNull())
+    expect(JSON.parse(sessionStorage.getItem(STORE) ?? '{}')).toEqual({ token: TEST_TOKEN, expires: auth.expires, userId: 7 })
+  })
+
+  it('is handed nothing by a tab that must still set up two-factor sign-in', async () => {
+    const first = tab('/inbox', { role: 'user', user: { id: 7, username: 'sam' }, twoFactorSetupRequired: ['group'] })
+    await within(first.container).findByText('the inbox')
+    expect(first.auth().twoFactorSetupRequired).toEqual(['group'])
+    sessionStorage.clear()
+
+    const second = tab('/inbox')
+    expect(await within(second.container).findByText('sign-in page')).toBeTruthy()
+    expect(second.auth().isAuthenticated).toBe(false)
   })
 
   it('is signed out when no tab answers: a tab that is itself signed out stays silent', async () => {

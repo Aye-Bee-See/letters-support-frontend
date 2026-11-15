@@ -285,8 +285,12 @@ Three rules hold the shape together:
   - **A new tab or window is signed in if another tab is.** A tab that opens
     with no session asks the other open tabs over a `BroadcastChannel`
     (`src/auth/sessionChannel.ts`), and one that is signed in hands the whole
-    session over, unlocked keys included. Nothing is written anywhere, and it
-    works only while a signed-in tab is open. Same browser profile only.
+    session over, unlocked keys included. The hand-over writes nothing: the
+    keys go from memory to memory, and it works only while a signed-in tab is
+    open. (The new tab then remembers the token for its own reloads, like any
+    signed-in tab; see the next point.) Same browser profile only. A session
+    that must still set up two-factor sign-in is neither handed over nor
+    restored after a reload: the API answers it only for setting that up.
   - **A reload brings you back signed in but locked.** The tab remembers the
     sign-in in `sessionStorage`: the token, its expiry and the account's id,
     never a key (`src/auth/sessionStore.ts`). After a reload the account and
